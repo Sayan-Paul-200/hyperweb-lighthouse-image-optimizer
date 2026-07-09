@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for settings repository subphase scope boundaries.
+ * Tests for settings subphase scope boundaries.
  *
  * @package Hyperweb_Lighthouse_Image_Optimizer
  */
@@ -13,7 +13,7 @@ use RecursiveIteratorIterator;
 use SplFileInfo;
 
 /**
- * Verifies Subphase 2.1 does not introduce later-phase behavior.
+ * Verifies Subphase 2.2 does not introduce later-phase behavior.
  */
 final class SettingsScopePolicyTest extends TestCase {
 
@@ -22,11 +22,14 @@ final class SettingsScopePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function test_settings_repository_does_not_introduce_later_phase_behavior(): void {
+	public function test_settings_api_registration_does_not_introduce_later_phase_behavior(): void {
 		$forbidden_patterns = array(
-			'Settings API registration' => '/\bregister_setting\s*\(/',
-			'settings section'          => '/\badd_settings_section\s*\(/',
 			'settings field'            => '/\badd_settings_field\s*\(/',
+			'admin menu page'           => '/\badd_menu_page\s*\(/',
+			'admin submenu page'        => '/\badd_submenu_page\s*\(/',
+			'global admin asset hook'   => '/\badmin_enqueue_scripts\b/',
+			'stylesheet enqueue'        => '/\bwp_enqueue_style\s*\(/',
+			'script enqueue'            => '/\bwp_enqueue_script\s*\(/',
 			'REST route registration'   => '/\bregister_rest_route\s*\(/',
 			'REST API hook'             => '/\brest_api_init\b/',
 			'new-upload media hook'     => '/\bwp_generate_attachment_metadata\b/',

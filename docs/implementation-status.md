@@ -76,7 +76,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - Deactivation/uninstall lifecycle policy, safe derivative cleanup primitives, and bounded multisite uninstall orchestration exist as of Subphase 1.3.
 - A bounded logging foundation, database writer, sanitizer, and log-retention maintenance provider exist as of Subphase 1.4.
 - A schema-driven settings repository, sanitizer, result object, and typed settings accessors exist as of Subphase 2.1.
-- No settings UI, queue abstraction, diagnostics UI, or image optimization services exist yet.
+- WordPress Settings API registration, save-time sanitization, admin validation feedback, and minimal format-support guarding exist as of Subphase 2.2.
+- No visible settings UI, queue abstraction, diagnostics UI, or image optimization services exist yet.
 
 ## Phase Status
 
@@ -92,7 +93,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 1.4 - Implement logging foundation
 - [ ] Phase 2 - Settings, Environment, and Diagnostics Foundation
   - [x] Subphase 2.1 - Settings schema and repository
-  - [ ] Subphase 2.2 - Settings API registration
+  - [x] Subphase 2.2 - Settings API registration
   - [ ] Subphase 2.3 - Environment and format support
   - [ ] Subphase 2.4 - Diagnostics framework
 - [ ] Phase 3 - Core Image Domain
@@ -1017,3 +1018,113 @@ WordPress runtime settings persistence remains pending until Settings API regist
 - No Settings API registration, admin settings screen, validation feedback UI, REST endpoint, diagnostics UI, environment support detection, queue behavior, image conversion, frontend delivery, Elementor integration, or WooCommerce integration was added.
 - WebP/AVIF server support checks remain deferred to Subphase 2.3.
 - Diagnostics framework remains deferred to Subphase 2.4.
+
+## Subphase 2.2 - Settings API Registration
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Register `hwlio_settings` with the WordPress Settings API.
+- [x] Add Settings API wrapper services so registration behavior can be unit-tested without WordPress bootstrap.
+- [x] Register the canonical option group and six basic settings sections.
+- [x] Connect the Settings API sanitize callback to the schema-driven settings sanitizer.
+- [x] Add capability enforcement and Settings API validation feedback.
+- [x] Add minimal save-time WebP/AVIF support guarding through WordPress image APIs.
+- [x] Keep visible settings screens, REST endpoints, assets, queues, image conversion, and delivery deferred.
+
+### Files Added
+
+```text
+src/Settings/FormatSupportCheckerInterface.php
+src/Settings/SettingsApiInterface.php
+src/Settings/SettingsApiRegistrar.php
+src/Settings/WordPressFormatSupportChecker.php
+src/Settings/WordPressSettingsApi.php
+tests/Unit/Settings/FakeFormatSupportChecker.php
+tests/Unit/Settings/FakeSettingsApi.php
+tests/Unit/Settings/SettingsApiRegistrarTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Plugin.php
+tests/Unit/PluginTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Files Removed
+
+```text
+None
+```
+
+### Settings API Registration
+
+- `SettingsApiRegistrar` is registered by the composition root and hooks only into `admin_init`.
+- Option group: `hwlio_settings`.
+- Option name: `hwlio_settings`.
+- Settings page slug reserved for future UI: `hwlio-settings`.
+- `register_setting()` uses `type => array`, `show_in_rest => false`, schema defaults, and a schema-backed sanitize callback.
+- Basic sections are registered for general, formats and quality, processing, delivery, logging and cleanup, and advanced exclusions.
+- No admin menu page, submenu page, settings field rendering, scripts, styles, or visible settings screen was added.
+
+### Validation and Guard Behavior
+
+- Saves require `manage_options`.
+- Unauthorized saves return the existing sanitized settings and add a settings error.
+- Malformed non-array payloads preserve existing settings and add a settings error.
+- Unknown keys are dropped, missing keys are filled, booleans are normalized, numeric values are clamped, and format arrays are allowlisted through `SettingsSanitizer`.
+- Unsupported `enabled_formats` entries are removed when WordPress image APIs conclusively report no support.
+- If every submitted enabled format is unsupported, the previous persisted enabled formats are preserved and a settings error is recorded.
+- `format_preference` remains an ordering preference; full environment support diagnostics are deferred to Subphase 2.3.
+
+### Hook Changes
+
+```text
+admin_init priority 10 -> HyperWeb\LighthouseImageOptimizer\Settings\SettingsApiRegistrar::register_settings()
+```
+
+`Plugin::create()` now composes providers in this order:
+
+```text
+UpgradeRunner
+SettingsApiRegistrar
+LogMaintenance
+I18n
+```
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 68 tests and 2473 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Additional source scans confirm only `WordPressSettingsApi` wraps Settings API globals, no visible settings UI or settings fields were introduced, no REST routes or REST hooks were added, no admin/frontend assets were added, and no queue, media scan, image conversion, or delivery hooks were introduced.
+
+### Acceptance Criteria
+
+- [x] Only authorized administrators can save settings through the Settings API sanitizer.
+- [x] Malformed arrays, quality values, and enums are rejected, normalized, or preserved safely.
+- [x] Unsupported enabled formats are guarded when support can be determined through WordPress image APIs.
+- [ ] Settings save successfully on single-site WordPress.
+
+Single-site WordPress settings-save smoke testing remains pending until this plugin is run inside a WordPress 6.5+ test installation.
+
+### Deferred Work
+
+- No visible settings page, admin menu, field renderer, or asset loading was added.
+- Full WebP/AVIF environment diagnostics, editor reporting, upload-directory checks, and Action Scheduler readiness diagnostics remain deferred to Subphase 2.3.
+- Diagnostics framework remains deferred to Subphase 2.4.
+- No media scans, image conversion, queue jobs, REST endpoints, frontend delivery, Elementor integration, or WooCommerce integration was added.
