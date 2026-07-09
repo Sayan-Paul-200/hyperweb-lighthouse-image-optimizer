@@ -16,6 +16,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added lifecycle installer routines for default settings, version state, activation diagnostics, and the initial log table schema.
 - Added non-destructive deactivation cleanup and opt-in uninstall policy services with safe derivative path validation.
 - Added a bounded logging foundation with sanitization, database-backed writes, and Action Scheduler log-retention maintenance.
+- Added a schema-driven settings repository with sanitization, default merging, typed getters, and filtered defaults.
 
 ### Removed
 

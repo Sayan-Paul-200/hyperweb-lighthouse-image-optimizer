@@ -7,14 +7,16 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Infrastructure;
 
-use HyperWeb\LighthouseImageOptimizer\Settings\SettingsSchema;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsResult;
 
 /**
  * Initializes persistent plugin state and schema-owned storage.
  */
 final class Installer {
 
-	public const OPTION_SETTINGS         = 'hwlio_settings';
+	public const OPTION_SETTINGS         = SettingsRepository::OPTION_NAME;
 	public const OPTION_VERSION          = 'hwlio_version';
 	public const OPTION_DB_VERSION       = 'hwlio_db_version';
 	public const OPTION_ACTIVATION_STATE = 'hwlio_activation_state';
@@ -32,6 +34,13 @@ final class Installer {
 	 * @var LogTableInstallerInterface
 	 */
 	private $log_table_installer;
+
+	/**
+	 * Settings repository.
+	 *
+	 * @var SettingsRepositoryInterface
+	 */
+	private $settings_repository;
 
 	/**
 	 * Current plugin version.
@@ -70,24 +79,29 @@ final class Installer {
 	 * @return self
 	 */
 	public static function for_wordpress( string $version, string $db_version, int $schema_version ): self {
+		$options = new WordPressOptionStore();
+
 		return new self(
-			new WordPressOptionStore(),
+			$options,
 			new DbDeltaLogTableInstaller(),
 			$version,
 			$db_version,
-			$schema_version
+			$schema_version,
+			null,
+			SettingsRepository::for_options( $options )
 		);
 	}
 
 	/**
 	 * Create the installer.
 	 *
-	 * @param OptionStoreInterface       $options Option store.
-	 * @param LogTableInstallerInterface $log_table_installer Log table installer.
-	 * @param string                     $version Current plugin version.
-	 * @param string                     $db_version Current database schema version.
-	 * @param int                        $schema_version Current settings/setup schema version.
-	 * @param callable|null              $clock Optional clock callback returning GMT datetime text.
+	 * @param OptionStoreInterface             $options Option store.
+	 * @param LogTableInstallerInterface       $log_table_installer Log table installer.
+	 * @param string                           $version Current plugin version.
+	 * @param string                           $db_version Current database schema version.
+	 * @param int                              $schema_version Current settings/setup schema version.
+	 * @param callable|null                    $clock Optional clock callback returning GMT datetime text.
+	 * @param SettingsRepositoryInterface|null $settings_repository Optional settings repository.
 	 */
 	public function __construct(
 		OptionStoreInterface $options,
@@ -95,10 +109,12 @@ final class Installer {
 		string $version,
 		string $db_version,
 		int $schema_version,
-		?callable $clock = null
+		?callable $clock = null,
+		?SettingsRepositoryInterface $settings_repository = null
 	) {
 		$this->options             = $options;
 		$this->log_table_installer = $log_table_installer;
+		$this->settings_repository = $settings_repository ?? SettingsRepository::for_options( $options );
 		$this->version             = $version;
 		$this->db_version          = $db_version;
 		$this->schema_version      = $schema_version;
@@ -140,13 +156,9 @@ final class Installer {
 			return true;
 		}
 
-		$settings = $this->options->get( self::OPTION_SETTINGS, null );
+		$settings = $this->settings_repository->read();
 
-		if ( ! is_array( $settings ) ) {
-			return true;
-		}
-
-		if ( $this->merge_settings( $settings ) !== $settings ) {
+		if ( ! $settings->is_valid() || $settings->has_changes() ) {
 			return true;
 		}
 
@@ -165,32 +177,7 @@ final class Installer {
 	 * @return InstallerResult
 	 */
 	private function install_settings(): InstallerResult {
-		$current = $this->options->get( self::OPTION_SETTINGS, null );
-
-		if ( null === $current ) {
-			$this->set_option( self::OPTION_SETTINGS, SettingsSchema::defaults(), true );
-
-			return InstallerResult::success( array( InstallerResult::CODE_SETTINGS_INITIALIZED ) );
-		}
-
-		if ( ! is_array( $current ) ) {
-			$this->set_option( self::OPTION_SETTINGS, SettingsSchema::defaults(), true );
-
-			return InstallerResult::warning(
-				array( InstallerResult::CODE_SETTINGS_REPAIRED ),
-				array( 'Invalid settings were replaced with defaults.' )
-			);
-		}
-
-		$merged = $this->merge_settings( $current );
-
-		if ( $merged !== $current ) {
-			$this->set_option( self::OPTION_SETTINGS, $merged, true );
-
-			return InstallerResult::success( array( InstallerResult::CODE_SETTINGS_MERGED ) );
-		}
-
-		return InstallerResult::success( array( InstallerResult::CODE_ALREADY_CURRENT ) );
+		return $this->installer_result_from_settings( $this->settings_repository->ensure() );
 	}
 
 	/**
@@ -240,19 +227,6 @@ final class Installer {
 	}
 
 	/**
-	 * Merge existing settings with defaults while preserving user values.
-	 *
-	 * @param array<mixed> $settings Existing settings.
-	 * @return array<string,mixed>
-	 */
-	private function merge_settings( array $settings ): array {
-		$merged                   = array_replace( SettingsSchema::defaults(), $settings );
-		$merged['schema_version'] = $this->schema_version;
-
-		return $merged;
-	}
-
-	/**
 	 * Convert log table failures into non-fatal installer warnings.
 	 *
 	 * @param InstallerResult $table_result Log table installer result.
@@ -267,6 +241,31 @@ final class Installer {
 			array( InstallerResult::CODE_LOG_TABLE_UNAVAILABLE ),
 			$table_result->messages()
 		);
+	}
+
+	/**
+	 * Convert a settings repository result into installer result codes.
+	 *
+	 * @param SettingsResult $settings_result Settings result.
+	 * @return InstallerResult
+	 */
+	private function installer_result_from_settings( SettingsResult $settings_result ): InstallerResult {
+		if ( ! $settings_result->is_valid() ) {
+			return InstallerResult::warning(
+				array( InstallerResult::CODE_SETTINGS_REPAIRED ),
+				array( 'Invalid settings were replaced with defaults.' )
+			);
+		}
+
+		if ( $settings_result->has_code( SettingsResult::CODE_INITIALIZED ) ) {
+			return InstallerResult::success( array( InstallerResult::CODE_SETTINGS_INITIALIZED ) );
+		}
+
+		if ( $settings_result->has_changes() ) {
+			return InstallerResult::success( array( InstallerResult::CODE_SETTINGS_MERGED ) );
+		}
+
+		return InstallerResult::success( array( InstallerResult::CODE_ALREADY_CURRENT ) );
 	}
 
 	/**

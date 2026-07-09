@@ -9,6 +9,7 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Logging;
 
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\Installer;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogPruner;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeOptionStore;
 use PHPUnit\Framework\TestCase;
 
@@ -26,7 +27,7 @@ final class LogPrunerTest extends TestCase {
 		$database                = new FakeLogDatabase();
 		$database->delete_result = 12;
 		$pruner                  = new LogPruner(
-			new FakeOptionStore(),
+			SettingsRepository::for_options( new FakeOptionStore() ),
 			$database,
 			'wp_hwlio_logs',
 			static function (): int {
@@ -53,7 +54,7 @@ final class LogPrunerTest extends TestCase {
 			)
 		);
 		$pruner   = new LogPruner(
-			$options,
+			SettingsRepository::for_options( $options ),
 			$database,
 			'wp_hwlio_logs',
 			static function (): int {
@@ -79,7 +80,7 @@ final class LogPrunerTest extends TestCase {
 			)
 		);
 		$pruner   = new LogPruner(
-			$options,
+			SettingsRepository::for_options( $options ),
 			$database,
 			'wp_hwlio_logs',
 			static function (): int {

@@ -7,7 +7,8 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Infrastructure;
 
-use HyperWeb\LighthouseImageOptimizer\Settings\SettingsSchema;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
 /**
  * Runs uninstall cleanup according to explicit user settings.
@@ -15,11 +16,11 @@ use HyperWeb\LighthouseImageOptimizer\Settings\SettingsSchema;
 final class Uninstaller {
 
 	/**
-	 * Option store.
+	 * Settings repository.
 	 *
-	 * @var OptionStoreInterface
+	 * @var SettingsRepositoryInterface
 	 */
-	private $options;
+	private $settings_repository;
 
 	/**
 	 * Derivative cleanup.
@@ -50,25 +51,28 @@ final class Uninstaller {
 				new WordPressFilesystem(),
 				new WordPressDerivativeManifestProvider()
 			),
-			new WordPressPluginDataCleaner( $options )
+			new WordPressPluginDataCleaner( $options ),
+			SettingsRepository::for_options( $options )
 		);
 	}
 
 	/**
 	 * Create the uninstaller.
 	 *
-	 * @param OptionStoreInterface       $options Option store.
-	 * @param DerivativeCleanupInterface $derivatives Derivative cleanup.
-	 * @param PluginDataCleanerInterface $data_cleaner Data cleaner.
+	 * @param OptionStoreInterface             $options Option store.
+	 * @param DerivativeCleanupInterface       $derivatives Derivative cleanup.
+	 * @param PluginDataCleanerInterface       $data_cleaner Data cleaner.
+	 * @param SettingsRepositoryInterface|null $settings_repository Optional settings repository.
 	 */
 	public function __construct(
 		OptionStoreInterface $options,
 		DerivativeCleanupInterface $derivatives,
-		PluginDataCleanerInterface $data_cleaner
+		PluginDataCleanerInterface $data_cleaner,
+		?SettingsRepositoryInterface $settings_repository = null
 	) {
-		$this->options      = $options;
-		$this->derivatives  = $derivatives;
-		$this->data_cleaner = $data_cleaner;
+		$this->settings_repository = $settings_repository ?? SettingsRepository::for_options( $options );
+		$this->derivatives         = $derivatives;
+		$this->data_cleaner        = $data_cleaner;
 	}
 
 	/**
@@ -77,19 +81,19 @@ final class Uninstaller {
 	 * @return LifecycleResult
 	 */
 	public function uninstall(): LifecycleResult {
-		$settings        = $this->settings();
-		$settings_result = $settings['valid']
+		$settings        = $this->settings_repository->read();
+		$settings_result = $settings->is_valid()
 			? LifecycleResult::success( array( LifecycleResult::CODE_UNINSTALL_COMPLETE ) )
 			: LifecycleResult::warning(
 				array( LifecycleResult::CODE_INVALID_SETTINGS_PRESERVED ),
 				array( 'Uninstall settings were invalid; plugin data and derivatives were preserved by default.' )
 			);
 
-		$derivative_result = true === $settings['values']['delete_derivatives_on_uninstall']
+		$derivative_result = $settings->is_valid() && $this->settings_repository->delete_derivatives_on_uninstall()
 			? $this->derivatives->cleanup()
 			: LifecycleResult::success( array( LifecycleResult::CODE_DERIVATIVES_PRESERVED ) );
 
-		$data_result = true === $settings['values']['delete_data_on_uninstall']
+		$data_result = $settings->is_valid() && $this->settings_repository->delete_data_on_uninstall()
 			? $this->data_cleaner->cleanup()
 			: LifecycleResult::success( array( LifecycleResult::CODE_UNINSTALL_DATA_PRESERVED ) );
 
@@ -98,27 +102,6 @@ final class Uninstaller {
 			$derivative_result,
 			$data_result,
 			LifecycleResult::success( array( LifecycleResult::CODE_UNINSTALL_COMPLETE ) )
-		);
-	}
-
-	/**
-	 * Get uninstall settings.
-	 *
-	 * @return array{valid:bool,values:array<string,mixed>}
-	 */
-	private function settings(): array {
-		$settings = $this->options->get( Installer::OPTION_SETTINGS, null );
-
-		if ( ! is_array( $settings ) ) {
-			return array(
-				'valid'  => false,
-				'values' => SettingsSchema::defaults(),
-			);
-		}
-
-		return array(
-			'valid'  => true,
-			'values' => array_replace( SettingsSchema::defaults(), $settings ),
 		);
 	}
 

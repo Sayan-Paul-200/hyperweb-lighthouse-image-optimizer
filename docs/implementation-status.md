@@ -75,7 +75,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - Minimal settings defaults, lifecycle installer services, activation diagnostics, and a log table schema exist as of Subphase 1.2.
 - Deactivation/uninstall lifecycle policy, safe derivative cleanup primitives, and bounded multisite uninstall orchestration exist as of Subphase 1.3.
 - A bounded logging foundation, database writer, sanitizer, and log-retention maintenance provider exist as of Subphase 1.4.
-- No settings repository/UI, queue abstraction, diagnostics UI, or image optimization services exist yet.
+- A schema-driven settings repository, sanitizer, result object, and typed settings accessors exist as of Subphase 2.1.
+- No settings UI, queue abstraction, diagnostics UI, or image optimization services exist yet.
 
 ## Phase Status
 
@@ -90,6 +91,10 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 1.3 - Implement activation, deactivation, and uninstall policy
   - [x] Subphase 1.4 - Implement logging foundation
 - [ ] Phase 2 - Settings, Environment, and Diagnostics Foundation
+  - [x] Subphase 2.1 - Settings schema and repository
+  - [ ] Subphase 2.2 - Settings API registration
+  - [ ] Subphase 2.3 - Environment and format support
+  - [ ] Subphase 2.4 - Diagnostics framework
 - [ ] Phase 3 - Core Image Domain
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
 - [ ] Phase 5 - Action Scheduler Queue and Automatic Processing
@@ -769,7 +774,7 @@ Supported-environment deactivation/uninstall smoke testing remains pending until
 - Scheduling actual recurring maintenance actions for non-logging maintenance remains deferred to later queue/diagnostics phases.
 - Diagnostics views remain deferred to later admin and REST phases.
 - Attachment deletion cleanup remains deferred to Subphase 4.5.
-- Full settings validation/repository behavior remains deferred to Phase 2.1.
+- Settings API registration and UI remain deferred to Phase 2.2.
 - No Action Scheduler queue jobs, image conversion, media scans, REST endpoints, admin screens, frontend delivery, Elementor integration, or WooCommerce integration were added.
 
 ## Subphase 1.4 - Implement Logging Foundation
@@ -897,5 +902,118 @@ Supported-environment logging, retention scheduling, and database-write smoke te
 
 - No admin log viewer, diagnostics REST endpoint, or log pagination was added.
 - No image conversion, media scans, queue abstraction, automatic upload optimization, frontend delivery, Elementor integration, or WooCommerce integration was added.
-- Full settings validation/repository behavior remains deferred to Phase 2.1.
+- Settings API registration and UI remain deferred to Phase 2.2.
 - Logging reads and admin diagnostics remain deferred to Subphase 6.8 and later diagnostics phases.
+
+## Subphase 2.1 - Settings Schema and Repository
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Define all initial settings, types, defaults, groups, capabilities, descriptions, sanitizers, and validation rules in one schema.
+- [x] Add a schema-driven settings sanitizer and repository.
+- [x] Add filtered defaults through `hwlio_default_settings` with normalization after filtering.
+- [x] Add immutable-style default merging and typed getters for current settings.
+- [x] Refactor installer, uninstall policy, and log pruning to read settings through the repository.
+- [x] Keep Settings API registration, UI, REST, environment checks, queueing, conversion, and delivery deferred.
+
+### Files Added
+
+```text
+src/Settings/SettingsRepository.php
+src/Settings/SettingsRepositoryInterface.php
+src/Settings/SettingsResult.php
+src/Settings/SettingsSanitizer.php
+tests/Unit/Settings/SettingsRepositoryTest.php
+tests/Unit/Settings/SettingsSanitizerTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+tests/Unit/Settings/SettingsTestFilterShim.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Infrastructure/Installer.php
+src/Infrastructure/Uninstaller.php
+src/Logging/LogPruner.php
+src/Settings/SettingsSchema.php
+tests/Unit/Logging/LogPrunerTest.php
+tests/Unit/Settings/SettingsSchemaTest.php
+```
+
+### Files Removed
+
+```text
+None
+```
+
+### Settings Schema
+
+- `SettingsSchema::definitions()` now exposes metadata for every initial setting.
+- Each setting has type, default, group, capability, description, sanitizer, validation rule, and internal/public metadata.
+- `SettingsSchema::defaults()` remains the single source of default values and applies `hwlio_default_settings`.
+- Filtered defaults are sanitized after filtering, unknown keys are dropped, and `schema_version` is forced to `1`.
+
+### Repository API
+
+```text
+SettingsRepositoryInterface::read()
+SettingsRepositoryInterface::ensure()
+SettingsRepositoryInterface::save()
+SettingsRepositoryInterface::all()
+SettingsRepositoryInterface::get()
+```
+
+Typed accessors added for automatic optimization, delivery, enabled formats, format preference, per-format quality, minimum savings, retry limit, worker budget, queue concurrency, log retention, and uninstall cleanup settings.
+
+### Sanitization Policy
+
+- Unknown keys are dropped.
+- Missing keys receive defaults.
+- Booleans accept common WordPress-style truthy and falsy values.
+- Format arrays accept only `webp` and `avif`, de-duplicate values, and fall back to defaults when empty.
+- Numeric values are clamped:
+  - quality: `1-100`
+  - minimum savings percent: `0-100`
+  - max retries: `0-10`
+  - worker time budget: `1-120`
+  - queue concurrency: `1-5`
+  - log retention days: `1-3650`
+
+### Consumer Refactors
+
+- `Installer` now uses `SettingsRepository::ensure()` for settings initialization, upgrade merging, and invalid settings repair.
+- `Installer::OPTION_SETTINGS` now points to `SettingsRepository::OPTION_NAME`.
+- `Uninstaller` uses repository typed getters and still preserves data and derivatives when stored settings are invalid.
+- `LogPruner` reads retention through `SettingsRepositoryInterface::log_retention_days()`.
+
+### Verification
+
+```text
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 61 tests and 2110 assertions
+```
+
+Additional source scans confirm only `WordPressOptionStore` wraps `get_option()`, runtime settings consumers no longer parse raw `hwlio_settings` arrays directly, and no Settings API registration, REST routes, admin/frontend assets, queue hooks, image conversion hooks, or delivery hooks were introduced.
+
+### Acceptance Criteria
+
+- [x] Invalid values cannot enter persisted settings through the repository.
+- [x] Missing keys receive defaults after upgrades.
+- [x] Feature modules read settings through the repository instead of scattered raw `get_option()` calls.
+- [ ] Settings save successfully on single-site WordPress through the future Settings API.
+
+WordPress runtime settings persistence remains pending until Settings API registration is added in Subphase 2.2 and this plugin is run inside a WordPress 6.5+ test installation.
+
+### Deferred Work
+
+- No Settings API registration, admin settings screen, validation feedback UI, REST endpoint, diagnostics UI, environment support detection, queue behavior, image conversion, frontend delivery, Elementor integration, or WooCommerce integration was added.
+- WebP/AVIF server support checks remain deferred to Subphase 2.3.
+- Diagnostics framework remains deferred to Subphase 2.4.

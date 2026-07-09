@@ -7,27 +7,23 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Logging;
 
-use HyperWeb\LighthouseImageOptimizer\Infrastructure\Installer;
-use HyperWeb\LighthouseImageOptimizer\Infrastructure\OptionStoreInterface;
-use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressOptionStore;
-use HyperWeb\LighthouseImageOptimizer\Settings\SettingsSchema;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
 /**
  * Deletes old log rows without unbounded work.
  */
 final class LogPruner implements LogPrunerInterface {
 
-	public const DEFAULT_RETENTION_DAYS = 30;
-	public const MAX_RETENTION_DAYS     = 3650;
-	public const BATCH_SIZE             = 500;
-	private const DAY_IN_SECONDS        = 86400;
+	public const BATCH_SIZE      = 500;
+	private const DAY_IN_SECONDS = 86400;
 
 	/**
-	 * Option store.
+	 * Settings repository.
 	 *
-	 * @var OptionStoreInterface
+	 * @var SettingsRepositoryInterface
 	 */
-	private $options;
+	private $settings;
 
 	/**
 	 * Database adapter.
@@ -65,14 +61,14 @@ final class LogPruner implements LogPrunerInterface {
 
 		if ( $wpdb instanceof \wpdb ) {
 			return new self(
-				new WordPressOptionStore(),
+				SettingsRepository::for_wordpress(),
 				new WordPressLogDatabase( $wpdb ),
 				LogTableSchema::table_name( $wpdb->prefix )
 			);
 		}
 
 		return new self(
-			new WordPressOptionStore(),
+			SettingsRepository::for_wordpress(),
 			new NullLogDatabase(),
 			LogTableSchema::TABLE_SUFFIX
 		);
@@ -81,18 +77,18 @@ final class LogPruner implements LogPrunerInterface {
 	/**
 	 * Create the pruner.
 	 *
-	 * @param OptionStoreInterface $options Option store.
-	 * @param LogDatabaseInterface $database Database adapter.
-	 * @param string               $table_name Log table name.
-	 * @param callable|null        $clock Optional clock returning a Unix timestamp.
+	 * @param SettingsRepositoryInterface $settings Settings repository.
+	 * @param LogDatabaseInterface        $database Database adapter.
+	 * @param string                      $table_name Log table name.
+	 * @param callable|null               $clock Optional clock returning a Unix timestamp.
 	 */
 	public function __construct(
-		OptionStoreInterface $options,
+		SettingsRepositoryInterface $settings,
 		LogDatabaseInterface $database,
 		string $table_name,
 		?callable $clock = null
 	) {
-		$this->options    = $options;
+		$this->settings   = $settings;
 		$this->database   = $database;
 		$this->table_name = $table_name;
 		$this->clock      = $clock;
@@ -106,39 +102,10 @@ final class LogPruner implements LogPrunerInterface {
 	public function prune(): int {
 		$cutoff_gmt = gmdate(
 			'Y-m-d H:i:s',
-			$this->now() - ( $this->retention_days() * self::DAY_IN_SECONDS )
+			$this->now() - ( $this->settings->log_retention_days() * self::DAY_IN_SECONDS )
 		);
 
 		return $this->database->delete_older_than( $this->table_name, $cutoff_gmt, self::BATCH_SIZE );
-	}
-
-	/**
-	 * Get effective retention days from settings.
-	 *
-	 * @return int
-	 */
-	private function retention_days(): int {
-		$settings = $this->options->get( Installer::OPTION_SETTINGS, SettingsSchema::defaults() );
-
-		if ( ! is_array( $settings ) || ! array_key_exists( 'log_retention_days', $settings ) ) {
-			return self::DEFAULT_RETENTION_DAYS;
-		}
-
-		$value = $settings['log_retention_days'];
-
-		if ( is_int( $value ) ) {
-			$days = $value;
-		} elseif ( is_string( $value ) && ctype_digit( $value ) ) {
-			$days = (int) $value;
-		} else {
-			return self::DEFAULT_RETENTION_DAYS;
-		}
-
-		if ( $days < 1 || $days > self::MAX_RETENTION_DAYS ) {
-			return self::DEFAULT_RETENTION_DAYS;
-		}
-
-		return $days;
 	}
 
 	/**
