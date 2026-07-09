@@ -46,4 +46,14 @@ final class WordPressOptionStore implements OptionStoreInterface {
 	public function update( string $option, $value, ?bool $autoload = null ): bool {
 		return \update_option( $option, $value, $autoload );
 	}
+
+	/**
+	 * Delete an option value.
+	 *
+	 * @param string $option Option name.
+	 * @return bool
+	 */
+	public function delete( string $option ): bool {
+		return \delete_option( $option );
+	}
 }

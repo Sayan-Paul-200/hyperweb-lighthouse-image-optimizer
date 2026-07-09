@@ -187,6 +187,14 @@ function activate_hyperweb_lighthouse_image_optimizer() {
  * The code that runs during plugin deactivation.
  */
 function deactivate_hyperweb_lighthouse_image_optimizer() {
+	if ( file_exists( HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_PATH . 'vendor/autoload.php' ) ) {
+		require_once HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_PATH . 'vendor/autoload.php';
+	}
+
+	if ( file_exists( HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_PATH . 'libraries/action-scheduler/action-scheduler.php' ) ) {
+		require_once HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_PATH . 'libraries/action-scheduler/action-scheduler.php';
+	}
+
 	require_once HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_PATH . 'includes/class-hyperweb-lighthouse-image-optimizer-deactivator.php';
 	Hyperweb_Lighthouse_Image_Optimizer_Deactivator::deactivate();
 }

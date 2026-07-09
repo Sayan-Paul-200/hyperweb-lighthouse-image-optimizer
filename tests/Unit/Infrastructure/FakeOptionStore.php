@@ -84,4 +84,20 @@ final class FakeOptionStore implements OptionStoreInterface {
 
 		return true;
 	}
+
+	/**
+	 * Delete an option value.
+	 *
+	 * @param string $option Option name.
+	 * @return bool
+	 */
+	public function delete( string $option ): bool {
+		if ( ! array_key_exists( $option, $this->options ) ) {
+			return false;
+		}
+
+		unset( $this->options[ $option ], $this->autoload[ $option ] );
+
+		return true;
+	}
 }

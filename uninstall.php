@@ -1,31 +1,38 @@
 <?php
-
 /**
  * Fired when the plugin is uninstalled.
  *
- * When populating this file, consider the following flow
- * of control:
- *
- * - This method should be static
- * - Check if the $_REQUEST content actually is the plugin name
- * - Run an admin referrer check to make sure it goes through authentication
- * - Verify the output of $_GET makes sense
- * - Repeat with other user roles. Best directly by using the links/query string parameters.
- * - Repeat things for multisite. Once for a single site in the network, once sitewide.
- *
- * This file may be updated more in future version of the Boilerplate; however, this is the
- * general skeleton and outline for how the file should work.
- *
- * For more information, see the following discussion:
- * https://github.com/tommcfarlin/WordPress-Plugin-Boilerplate/pull/123#issuecomment-28541913
- *
- * @link       https://github.com/Sayan-Paul-200
- * @since      1.0.0
- *
- * @package    Hyperweb_Lighthouse_Image_Optimizer
+ * @link    https://github.com/Sayan-Paul-200
+ * @since   0.1.0-alpha.3
+ * @package Hyperweb_Lighthouse_Image_Optimizer
  */
 
 // If uninstall not called from WordPress, then exit.
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
+
+$hwlio_autoload = __DIR__ . '/vendor/autoload.php';
+
+if ( ! file_exists( $hwlio_autoload ) ) {
+	return;
+}
+
+require_once $hwlio_autoload;
+
+if (
+	function_exists( 'is_multisite' )
+	&& function_exists( 'is_network_admin' )
+	&& is_multisite()
+	&& is_network_admin()
+) {
+	\HyperWeb\LighthouseImageOptimizer\Infrastructure\NetworkUninstaller::for_wordpress(
+		static function () {
+			return \HyperWeb\LighthouseImageOptimizer\Infrastructure\Uninstaller::for_wordpress()->uninstall();
+		}
+	)->uninstall();
+
+	return;
+}
+
+\HyperWeb\LighthouseImageOptimizer\Infrastructure\Uninstaller::for_wordpress()->uninstall();

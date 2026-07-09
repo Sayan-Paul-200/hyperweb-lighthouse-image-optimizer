@@ -61,8 +61,9 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 
 - The project is a WordPress Plugin Boilerplate scaffold, not a partially completed optimizer.
 - The plugin entry point, activation hook, deactivation hook, admin class, public class, uninstall guard, and GPL license are present.
-- The activation class delegates to the namespaced installer as of Subphase 1.2; deactivation remains a placeholder.
-- The uninstall file contains only the standard WordPress uninstall guard.
+- The activation class delegates to the namespaced installer as of Subphase 1.2.
+- The deactivation class delegates to non-destructive scheduled-maintenance cleanup as of Subphase 1.3.
+- The uninstall file preserves data by default and delegates to opt-in cleanup services as of Subphase 1.3.
 - The legacy admin and public classes are inert coordinator placeholders and do not enqueue assets.
 - Placeholder admin/frontend CSS, JavaScript, and display partials were removed in Subphase 0.4.
 - A namespaced composition root, hook registrar, hook-provider contract, and i18n provider exist as of Subphase 1.1.
@@ -72,6 +73,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - Composer autoloading and development quality tooling exist as of Subphase 0.2.
 - Action Scheduler 3.9.3 is bundled as an unmodified upstream subtree as of Subphase 0.3.
 - Minimal settings defaults, lifecycle installer services, activation diagnostics, and a log table schema exist as of Subphase 1.2.
+- Deactivation/uninstall lifecycle policy, safe derivative cleanup primitives, and bounded multisite uninstall orchestration exist as of Subphase 1.3.
 - No settings repository/UI, queue abstraction, log writer, diagnostics UI, or image optimization services exist yet.
 
 ## Phase Status
@@ -84,7 +86,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - [ ] Phase 1 - Application Foundation and Lifecycle
   - [x] Subphase 1.1 - Build the composition root
   - [x] Subphase 1.2 - Implement installation and upgrade routines
-  - [ ] Subphase 1.3 - Implement activation, deactivation, and uninstall policy
+  - [x] Subphase 1.3 - Implement activation, deactivation, and uninstall policy
   - [ ] Subphase 1.4 - Implement logging foundation
 - [ ] Phase 2 - Settings, Environment, and Diagnostics Foundation
 - [ ] Phase 3 - Core Image Domain
@@ -629,8 +631,141 @@ Supported-environment activation and database verification remain pending until 
 
 ### Deferred Work
 
-- Full activation/deactivation/uninstall retention policy remains deferred to Subphase 1.3.
+- Activation/deactivation/uninstall retention policy was added in Subphase 1.3.
 - Log writing, retention cleanup, and diagnostics views remain deferred to Subphase 1.4 and later.
 - `hwlio_statistics_cache` remains deferred until a statistics service exists.
 - Settings validation/repository behavior remains deferred to Phase 2.1.
+- No Action Scheduler queue jobs, image conversion, media scans, REST endpoints, admin screens, frontend delivery, Elementor integration, or WooCommerce integration were added.
+
+## Subphase 1.3 - Implement Activation, Deactivation, and Uninstall Policy
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Keep activation setup-only and avoid Media Library scans.
+- [x] Add non-destructive deactivation cleanup for plugin-owned recurring maintenance hooks.
+- [x] Add opt-in uninstall cleanup policy based on saved settings.
+- [x] Preserve settings, logs, metadata, and derivatives by default on uninstall.
+- [x] Add safe derivative cleanup routines that never delete source/original paths.
+- [x] Add bounded multisite uninstall orchestration.
+- [x] Add unit coverage for default preservation, explicit cleanup, invalid settings, derivative path safety, original preservation, and multisite batching.
+
+### Files Added
+
+```text
+src/Infrastructure/ActionSchedulerScheduledActionCleaner.php
+src/Infrastructure/Deactivator.php
+src/Infrastructure/DerivativeCleanup.php
+src/Infrastructure/DerivativeCleanupInterface.php
+src/Infrastructure/DerivativeManifestProviderInterface.php
+src/Infrastructure/FilesystemInterface.php
+src/Infrastructure/LifecyclePolicy.php
+src/Infrastructure/LifecycleResult.php
+src/Infrastructure/NetworkUninstaller.php
+src/Infrastructure/PluginDataCleanerInterface.php
+src/Infrastructure/ScheduledActionCleanerInterface.php
+src/Infrastructure/Uninstaller.php
+src/Infrastructure/WordPressDerivativeManifestProvider.php
+src/Infrastructure/WordPressFilesystem.php
+src/Infrastructure/WordPressPluginDataCleaner.php
+tests/Unit/Infrastructure/DeactivatorTest.php
+tests/Unit/Infrastructure/DerivativeCleanupTest.php
+tests/Unit/Infrastructure/FakeDerivativeCleanup.php
+tests/Unit/Infrastructure/FakeDerivativeManifestProvider.php
+tests/Unit/Infrastructure/FakeFilesystem.php
+tests/Unit/Infrastructure/FakePluginDataCleaner.php
+tests/Unit/Infrastructure/FakeScheduledActionCleaner.php
+tests/Unit/Infrastructure/NetworkUninstallerTest.php
+tests/Unit/Infrastructure/UninstallerTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+hyperweb-lighthouse-image-optimizer.php
+includes/class-hyperweb-lighthouse-image-optimizer-deactivator.php
+phpcs.xml.dist
+phpstan.neon.dist
+src/Infrastructure/OptionStoreInterface.php
+src/Infrastructure/WordPressOptionStore.php
+tests/Unit/Infrastructure/FakeOptionStore.php
+uninstall.php
+```
+
+### Files Removed
+
+```text
+None
+```
+
+### Lifecycle Changes
+
+- Deactivation loads Composer and Action Scheduler opportunistically, then delegates to `Infrastructure\Deactivator`.
+- `ActionSchedulerScheduledActionCleaner` unschedules only known plugin-owned recurring maintenance hooks in the `hwlio` group.
+- Default uninstall preserves all plugin options, logs, metadata, and derivative files.
+- Explicit `delete_derivatives_on_uninstall` runs derivative cleanup against attachment-owned `_hwlio_derivatives` metadata.
+- Explicit `delete_data_on_uninstall` deletes plugin-owned options, the plugin log table, and plugin-owned attachment meta keys.
+- Invalid or missing uninstall settings fall back to safe defaults and preserve everything.
+- Multisite uninstall uses bounded site batches and restores the previous blog after each site.
+
+### Owned Identifiers
+
+```text
+Action Scheduler group: hwlio
+Maintenance hooks:
+- hwlio_cleanup_logs
+- hwlio_recover_stale_locks
+- hwlio_reconcile_statistics
+
+Attachment meta keys:
+- _hwlio_derivatives
+- _hwlio_status
+- _hwlio_excluded
+- _hwlio_lock
+```
+
+### Safety Rules Added
+
+- Derivative cleanup accepts only uploads-relative metadata paths.
+- Absolute paths, traversal segments, null bytes, symlinks, directories, missing files, and files resolving outside uploads are rejected.
+- Source/original paths listed in derivative metadata are preserved even if malformed format entries point to them.
+- No recursive directory deletion is performed.
+- No core attachment metadata is modified.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 29 tests and 334 assertions
+composer run quality: pass
+git diff --check: pass
+No media scan, queue worker, conversion, REST, frontend delivery, or admin asset hooks introduced: pass
+Only plugin-owned Action Scheduler unscheduling call introduced: pass
+No original deletion path introduced: pass
+```
+
+### Acceptance Criteria
+
+- [x] Activation performs no Media Library scan.
+- [x] Deactivation preserves all files and metadata.
+- [x] Default uninstall preserves derivatives and settings unless configured otherwise.
+- [x] Destructive uninstall tests confirm originals survive.
+- [ ] Supported WordPress deactivation/uninstall smoke tests pass.
+
+Supported-environment deactivation/uninstall smoke testing remains pending until this plugin is run inside a WordPress 6.5+ test installation.
+
+### Deferred Work
+
+- Scheduling actual recurring maintenance actions remains deferred to later queue/logging phases.
+- Log writing, retention cleanup, and diagnostics views remain deferred to Subphase 1.4 and later.
+- Attachment deletion cleanup remains deferred to Subphase 4.5.
+- Full settings validation/repository behavior remains deferred to Phase 2.1.
 - No Action Scheduler queue jobs, image conversion, media scans, REST endpoints, admin screens, frontend delivery, Elementor integration, or WooCommerce integration were added.

@@ -40,4 +40,12 @@ interface OptionStoreInterface {
 	 * @return bool
 	 */
 	public function update( string $option, $value, ?bool $autoload = null ): bool;
+
+	/**
+	 * Delete an option value.
+	 *
+	 * @param string $option Option name.
+	 * @return bool
+	 */
+	public function delete( string $option ): bool;
 }
