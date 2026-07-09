@@ -20,6 +20,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added WordPress Settings API registration with schema-backed sanitization, admin validation feedback, and minimal format-support guarding.
 - Added a canonical environment capability layer for PHP/WordPress versions, image editor candidates, WebP/AVIF support, uploads status, runtime limits, and Action Scheduler readiness.
 - Added a structured diagnostics framework with user-safe results, environment checks, temporary write/rename checks, and bounded sample conversion diagnostics.
+- Added read-only source image value objects and a collector for normalized attachment full, subsize, and original-image sources.
 
 ### Removed
 

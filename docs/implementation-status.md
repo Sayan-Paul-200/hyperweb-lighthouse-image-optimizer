@@ -79,6 +79,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - WordPress Settings API registration, save-time sanitization, admin validation feedback, and minimal format-support guarding exist as of Subphase 2.2.
 - A canonical environment capability layer for versions, image editor candidates, WebP/AVIF support, uploads status, runtime limits, and Action Scheduler readiness exists as of Subphase 2.3.
 - A structured diagnostics framework with user-safe result objects, environment checks, temporary write/rename checks, and sample conversion diagnostics exists as of Subphase 2.4.
+- Read-only source image value objects and a collector for attachment full, subsize, and original-image sources exist as of Subphase 3.1.
 - No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, or production image optimization services exist yet.
 
 ## Phase Status
@@ -99,6 +100,13 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 2.3 - Environment and format support
   - [x] Subphase 2.4 - Diagnostics framework
 - [ ] Phase 3 - Core Image Domain
+  - [x] Subphase 3.1 - Source image value objects and collector
+  - [ ] Subphase 3.2 - MIME and animation validation
+  - [ ] Subphase 3.3 - Destination resolver
+  - [ ] Subphase 3.4 - Conversion result model and error taxonomy
+  - [ ] Subphase 3.5 - Converter implementation
+  - [ ] Subphase 3.6 - Resource guard
+  - [ ] Subphase 3.7 - Conversion policy
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
 - [ ] Phase 5 - Action Scheduler Queue and Automatic Processing
 - [ ] Phase 6 - Admin Screens, REST API, and Bulk Processing
@@ -1339,3 +1347,100 @@ Runtime smoke testing remains pending until this plugin is run inside a WordPres
 - Diagnostics UI, diagnostics REST endpoints, and admin rendering remain deferred to Phase 6.
 - Queue health, stale locks, conflict detection, persistent object cache interpretation, multisite policy warnings, and offload/CDN adapter diagnostics remain deferred until their owning services exist.
 - No persistent audit-results table, production image conversion, media scanning, attachment metadata writes, frontend delivery, Elementor integration, or WooCommerce integration was added.
+
+## Subphase 3.1 - Source Image Value Objects and Collector
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Add normalized source image value objects for full, subsize, and original-image records.
+- [x] Add read-only attachment source and image file probe seams.
+- [x] Add WordPress-backed adapters for `get_attached_file()`, `wp_get_attachment_metadata()`, uploads base lookup, MIME detection, dimensions, bytes, and modified time.
+- [x] Collect current full display file, metadata sizes, and `original_image` relationship.
+- [x] Resolve basename-only subsizes relative to the metadata full-file directory.
+- [x] Reject unsafe, missing, unreadable, duplicate, and outside-uploads candidates as non-fatal collection issues.
+- [x] Keep MIME allowlist decisions, animation checks, destination resolution, conversion, queueing, hooks, metadata writes, REST, UI, and delivery deferred.
+
+### Files Added
+
+```text
+src/Image/AttachmentSourceProviderInterface.php
+src/Image/ImageFileProbeInterface.php
+src/Image/SourceCollector.php
+src/Image/SourceImage.php
+src/Image/SourceImageCollection.php
+src/Image/SourceImageIssue.php
+src/Image/WordPressAttachmentSourceProvider.php
+src/Image/WordPressImageFileProbe.php
+tests/Unit/Image/FakeAttachmentSourceProvider.php
+tests/Unit/Image/FakeImageFileProbe.php
+tests/Unit/Image/ImageScopePolicyTest.php
+tests/Unit/Image/SourceCollectorTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+```
+
+### Image Source Domain
+
+- `SourceImage` stores attachment ID, WordPress size name, role, uploads-relative path, internal absolute path, MIME, dimensions, bytes, and modified time.
+- `SourceImage::to_array()` intentionally omits the internal absolute path.
+- `SourceImageCollection` returns valid sources and non-fatal issues together.
+- `SourceImageIssue` records stable collection issue codes without exposing absolute filesystem paths in serialized output.
+- `SourceCollector` is a callable service only and is not composed into plugin hooks.
+- `WordPressAttachmentSourceProvider` uses read-only WordPress attachment APIs.
+- `WordPressImageFileProbe` reads file facts after collector path validation and does not load or convert images.
+
+### Hooks, Settings, Metadata, and Database Changes
+
+```text
+New hooks: none
+New settings: none
+New options: none
+New tables: none
+New metadata keys: none
+Metadata writes: none
+Scheduled actions: none
+REST routes: none
+Admin menus/assets: none
+Frontend hooks/assets: none
+```
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 115 tests and 6208 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans confirm `src/Image/` does not call `wp_get_image_editor()`, does not write attachment metadata, does not register REST routes/hooks, does not enqueue assets, does not schedule queue jobs, and does not introduce frontend delivery hooks.
+
+### Acceptance Criteria
+
+- [x] Fixture attachments with multiple sizes produce the expected normalized list.
+- [x] A missing thumbnail does not invalidate the whole attachment.
+- [x] Files outside uploads are rejected.
+- [x] Traversal, absolute metadata paths, URL-like paths, null bytes, and realpaths outside uploads are rejected.
+- [x] Collection issues serialize without exposing absolute paths.
+- [ ] WordPress runtime source collection smoke testing passes.
+
+Runtime smoke testing remains pending until this plugin is run inside a WordPress 6.5+ test installation with representative attachment metadata.
+
+### Deferred Work
+
+- MIME allowlist validation and animated GIF/WebP detection remain deferred to Subphase 3.2.
+- Destination path resolution, temporary output paths, and sidecar naming remain deferred to Subphase 3.3.
+- Conversion result taxonomy, converter implementation, resource guard, and conversion policy remain deferred to later Phase 3 subphases.
+- No production image conversion, media hooks, queue jobs, REST endpoints, admin UI, frontend delivery, Elementor integration, or WooCommerce integration was added.
