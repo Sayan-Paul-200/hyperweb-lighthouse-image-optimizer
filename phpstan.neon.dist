@@ -1,6 +1,9 @@
 parameters:
   level: 5
   paths:
+    - admin
+    - includes
+    - public
     - src
     - tests
   scanFiles:

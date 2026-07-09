@@ -204,8 +204,7 @@ if ( array() !== $hwlio_bootstrap_failures ) {
 hwlio_load_runtime_dependencies();
 
 /**
- * The core plugin class that is used to define internationalization,
- * admin-specific hooks, and public-facing site hooks.
+ * The core plugin class that registers the remaining bootstrap-safe hooks.
  */
 require HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_PATH . 'includes/class-hyperweb-lighthouse-image-optimizer.php';
 

@@ -63,8 +63,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - The plugin entry point, activation hook, deactivation hook, loader, i18n class, admin class, public class, uninstall guard, and GPL license are present.
 - Activation and deactivation classes are placeholders.
 - The uninstall file contains only the standard WordPress uninstall guard.
-- The admin class globally enqueues placeholder admin CSS and jQuery-dependent JavaScript.
-- The public class globally enqueues placeholder frontend CSS and jQuery-dependent JavaScript.
+- The legacy admin and public classes are inert coordinator placeholders and do not enqueue assets.
+- Placeholder admin/frontend CSS, JavaScript, and display partials were removed in Subphase 0.4.
 - The README is boilerplate and does not yet describe the product accurately.
 - The POT file exists but is empty.
 - Composer autoloading and development quality tooling exist as of Subphase 0.2.
@@ -77,7 +77,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 0.1 - Create the development baseline
   - [x] Subphase 0.2 - Add Composer and quality tooling
   - [x] Subphase 0.3 - Harden the bootstrap
-  - [ ] Subphase 0.4 - Remove performance-negative placeholder behavior
+  - [x] Subphase 0.4 - Remove performance-negative placeholder behavior
 - [ ] Phase 1 - Application Foundation and Lifecycle
 - [ ] Phase 2 - Settings, Environment, and Diagnostics Foundation
 - [ ] Phase 3 - Core Image Domain
@@ -92,6 +92,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - [ ] Phase 12 - Page-Level Diagnostics and Lighthouse-Oriented Reporting
 - [ ] Phase 13 - WP-CLI and Developer Operations
 - [ ] Phase 14 - Testing, Performance, Security, and Release
+
+Phase 0 implementation subphases are complete. The phase remains unchecked at the phase level until a supported WordPress 6.5+ activation smoke test is performed.
 
 ## Subphase 0.1 - Create the Development Baseline
 
@@ -326,4 +328,88 @@ Supported-environment activation remains pending until this plugin is run inside
 
 - No settings, queue abstraction, conversion worker, diagnostics, REST endpoints, or image optimization behavior was added.
 - Action Scheduler APIs must not be used until `action_scheduler_init` or a later safe hook in later phases.
-- Global placeholder admin/frontend asset hooks remain in place until Subphase 0.4.
+- Global placeholder admin/frontend asset hooks were removed in Subphase 0.4.
+
+## Subphase 0.4 - Remove Performance-Negative Placeholder Behavior
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Remove public CSS/JS enqueue hook registration.
+- [x] Restrict admin assets to plugin-owned screens, initially none until screens exist.
+- [x] Remove jQuery dependency from placeholder assets.
+- [x] Remove or rewrite boilerplate comments that misdescribe final behavior.
+- [x] Add policy coverage that prevents scaffold asset hooks and jQuery placeholders from returning unnoticed.
+
+### Files Added
+
+```text
+tests/Unit/ScaffoldAssetPolicyTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+hyperweb-lighthouse-image-optimizer.php
+includes/class-hyperweb-lighthouse-image-optimizer.php
+admin/class-hyperweb-lighthouse-image-optimizer-admin.php
+public/class-hyperweb-lighthouse-image-optimizer-public.php
+phpcs.xml.dist
+phpstan.neon.dist
+```
+
+### Files Removed
+
+```text
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+admin/partials/hyperweb-lighthouse-image-optimizer-admin-display.php
+public/css/hyperweb-lighthouse-image-optimizer-public.css
+public/js/hyperweb-lighthouse-image-optimizer-public.js
+public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
+```
+
+### Hook and Asset Changes
+
+- Removed registration of `admin_enqueue_scripts` hooks from the legacy plugin coordinator.
+- Removed registration of `wp_enqueue_scripts` hooks from the legacy plugin coordinator.
+- Removed all plugin-owned `wp_enqueue_style()` and `wp_enqueue_script()` calls.
+- Removed placeholder jQuery-dependent JavaScript wrappers.
+- Left the plugin with only the existing bootstrap-safe textdomain hook.
+
+### Quality Coverage
+
+- PHPCS now covers the changed legacy coordinator files in addition to the entry file, `src/`, and `tests/`.
+- PHPStan now analyzes `admin/`, `includes/`, `public/`, `src/`, and `tests/`.
+- PHPUnit includes a scaffold asset policy test that scans plugin-owned runtime source for global placeholder asset hooks and jQuery usage.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 7 tests and 79 assertions
+composer run quality: pass
+git diff --check: pass
+No runtime plugin source registers placeholder asset hooks or jQuery usage: pass
+```
+
+### Acceptance Criteria
+
+- [x] Activating the plugin adds no frontend stylesheet or script requests.
+- [x] Activating the plugin adds no plugin assets to unrelated admin screens.
+
+The acceptance criteria are demonstrated by source inspection and automated policy coverage in this plugin-only workspace. Browser-level or WordPress admin network-panel verification remains pending until a WordPress 6.5+ test installation is available.
+
+### Deferred Work
+
+- Real admin screens, settings pages, Media Library controls, and REST controllers are deferred to later phases.
+- Frontend delivery behavior remains disabled and is deferred to Phase 7.
+- Full README replacement remains deferred to Subphase 14.8.
