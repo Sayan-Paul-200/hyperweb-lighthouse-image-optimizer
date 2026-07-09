@@ -10,6 +10,7 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\I18n;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\UpgradeRunner;
 use HyperWeb\LighthouseImageOptimizer\Plugin;
 use PHPUnit\Framework\TestCase;
 
@@ -29,8 +30,9 @@ final class PluginTest extends TestCase {
 		self::assertSame( 'hyperweb-lighthouse-image-optimizer', $plugin->slug() );
 		self::assertSame( '0.1.0-alpha.3', $plugin->version() );
 		self::assertInstanceOf( HookRegistrar::class, $plugin->hooks() );
-		self::assertCount( 1, $plugin->providers() );
-		self::assertInstanceOf( I18n::class, $plugin->providers()[0] );
+		self::assertCount( 2, $plugin->providers() );
+		self::assertInstanceOf( UpgradeRunner::class, $plugin->providers()[0] );
+		self::assertInstanceOf( I18n::class, $plugin->providers()[1] );
 	}
 
 	/**

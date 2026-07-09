@@ -10,6 +10,8 @@ namespace HyperWeb\LighthouseImageOptimizer;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\I18n;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\Installer;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\UpgradeRunner;
 
 /**
  * Builds shared services and registers plugin hooks.
@@ -65,12 +67,21 @@ final class Plugin {
 			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_BASENAME' )
 			: self::SLUG . '/hyperweb-lighthouse-image-optimizer.php';
 
+		$db_version = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_DB_VERSION' )
+			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_DB_VERSION' )
+			: '1';
+
+		$schema_version = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_SCHEMA_VERSION' )
+			? (int) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_SCHEMA_VERSION' )
+			: 1;
+
 		$hooks = new HookRegistrar();
 
 		return new self(
 			$version,
 			$hooks,
 			array(
+				new UpgradeRunner( Installer::for_wordpress( $version, $db_version, $schema_version ) ),
 				new I18n( self::SLUG, dirname( $basename ) . '/languages/' ),
 			)
 		);

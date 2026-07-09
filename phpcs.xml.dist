@@ -4,6 +4,7 @@
 
 	<file>hyperweb-lighthouse-image-optimizer.php</file>
 	<file>admin/class-hyperweb-lighthouse-image-optimizer-admin.php</file>
+	<file>includes/class-hyperweb-lighthouse-image-optimizer-activator.php</file>
 	<file>public/class-hyperweb-lighthouse-image-optimizer-public.php</file>
 	<file>src</file>
 	<file>tests</file>

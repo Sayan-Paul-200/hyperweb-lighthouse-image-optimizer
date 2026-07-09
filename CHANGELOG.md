@@ -13,6 +13,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added Composer PSR-4 autoloading, quality tooling configuration, and a minimal autoload proof.
 - Hardened the plugin bootstrap with platform constants, requirement guards, Composer loading, and bundled Action Scheduler 3.9.3.
 - Added a namespaced application composition root with a shared hook registrar and i18n provider.
+- Added lifecycle installer routines for default settings, version state, activation diagnostics, and the initial log table schema.
 
 ### Removed
 

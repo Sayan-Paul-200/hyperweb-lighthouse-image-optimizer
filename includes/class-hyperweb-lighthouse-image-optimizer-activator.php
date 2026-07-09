@@ -1,21 +1,18 @@
 <?php
-
 /**
- * Fired during plugin activation
+ * Activation entry point.
  *
  * @link       https://github.com/Sayan-Paul-200
- * @since      1.0.0
+ * @since      0.1.0-alpha.3
  *
  * @package    Hyperweb_Lighthouse_Image_Optimizer
  * @subpackage Hyperweb_Lighthouse_Image_Optimizer/includes
  */
 
 /**
- * Fired during plugin activation.
+ * Runs activation-safe setup routines.
  *
- * This class defines all code necessary to run during the plugin's activation.
- *
- * @since      1.0.0
+ * @since      0.1.0-alpha.3
  * @package    Hyperweb_Lighthouse_Image_Optimizer
  * @subpackage Hyperweb_Lighthouse_Image_Optimizer/includes
  * @author     Sayan Paul <sayanpaul666.ap@gmail.com>
@@ -23,14 +20,30 @@
 class Hyperweb_Lighthouse_Image_Optimizer_Activator {
 
 	/**
-	 * Short Description. (use period)
+	 * Initialize plugin storage and setup state.
 	 *
-	 * Long Description.
-	 *
-	 * @since    1.0.0
+	 * @since  0.1.0-alpha.3
+	 * @return void
 	 */
 	public static function activate() {
+		$version = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_VERSION' )
+			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_VERSION' )
+			: '0.1.0-alpha.3';
 
+		$db_version = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_DB_VERSION' )
+			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_DB_VERSION' )
+			: '1';
+
+		$schema_version = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_SCHEMA_VERSION' )
+			? (int) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_SCHEMA_VERSION' )
+			: 1;
+
+		$installer = HyperWeb\LighthouseImageOptimizer\Infrastructure\Installer::for_wordpress(
+			$version,
+			$db_version,
+			$schema_version
+		);
+
+		$installer->install();
 	}
-
 }

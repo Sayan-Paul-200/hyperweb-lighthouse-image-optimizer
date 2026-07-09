@@ -61,7 +61,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 
 - The project is a WordPress Plugin Boilerplate scaffold, not a partially completed optimizer.
 - The plugin entry point, activation hook, deactivation hook, admin class, public class, uninstall guard, and GPL license are present.
-- Activation and deactivation classes are placeholders.
+- The activation class delegates to the namespaced installer as of Subphase 1.2; deactivation remains a placeholder.
 - The uninstall file contains only the standard WordPress uninstall guard.
 - The legacy admin and public classes are inert coordinator placeholders and do not enqueue assets.
 - Placeholder admin/frontend CSS, JavaScript, and display partials were removed in Subphase 0.4.
@@ -71,7 +71,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - The POT file exists but is empty.
 - Composer autoloading and development quality tooling exist as of Subphase 0.2.
 - Action Scheduler 3.9.3 is bundled as an unmodified upstream subtree as of Subphase 0.3.
-- No settings model, queue abstraction, logging, diagnostics, or image optimization services exist yet.
+- Minimal settings defaults, lifecycle installer services, activation diagnostics, and a log table schema exist as of Subphase 1.2.
+- No settings repository/UI, queue abstraction, log writer, diagnostics UI, or image optimization services exist yet.
 
 ## Phase Status
 
@@ -82,7 +83,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 0.4 - Remove performance-negative placeholder behavior
 - [ ] Phase 1 - Application Foundation and Lifecycle
   - [x] Subphase 1.1 - Build the composition root
-  - [ ] Subphase 1.2 - Implement installation and upgrade routines
+  - [x] Subphase 1.2 - Implement installation and upgrade routines
   - [ ] Subphase 1.3 - Implement activation, deactivation, and uninstall policy
   - [ ] Subphase 1.4 - Implement logging foundation
 - [ ] Phase 2 - Settings, Environment, and Diagnostics Foundation
@@ -502,7 +503,134 @@ The acceptance criteria are demonstrated by the composition-root tests, hook reg
 
 ### Deferred Work
 
-- Installation and upgrade routines are deferred to Subphase 1.2.
+- Installation and upgrade routines were added in Subphase 1.2.
 - Activation/deactivation/uninstall policy remains deferred to Subphase 1.3.
 - Logging foundation remains deferred to Subphase 1.4.
 - Settings, admin screens, REST controllers, queues, image conversion, and frontend delivery remain deferred to later phases.
+
+## Subphase 1.2 - Implement Installation and Upgrade Routines
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Add installer services for idempotent option initialization and upgrades.
+- [x] Add the minimal settings defaults schema for `hwlio_settings`.
+- [x] Add a controlled `hwlio_logs` table schema and `dbDelta()` installer.
+- [x] Wire activation to the namespaced installer.
+- [x] Add a runtime version/schema upgrade check on `plugins_loaded` priority `1`.
+- [x] Add unit coverage for settings defaults, log table SQL, install/upgrade behavior, failure diagnostics, hook registration, and provider composition.
+
+### Files Added
+
+```text
+src/Infrastructure/DbDeltaLogTableInstaller.php
+src/Infrastructure/Installer.php
+src/Infrastructure/InstallerResult.php
+src/Infrastructure/LogTableInstallerInterface.php
+src/Infrastructure/OptionStoreInterface.php
+src/Infrastructure/UpgradeRunner.php
+src/Infrastructure/WordPressOptionStore.php
+src/Logging/LogTableSchema.php
+src/Settings/SettingsSchema.php
+tests/Unit/Infrastructure/FakeLogTableInstaller.php
+tests/Unit/Infrastructure/FakeOptionStore.php
+tests/Unit/Infrastructure/InstallerTest.php
+tests/Unit/Infrastructure/UpgradeRunnerTest.php
+tests/Unit/Logging/LogTableSchemaTest.php
+tests/Unit/Settings/SettingsSchemaTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+includes/class-hyperweb-lighthouse-image-optimizer-activator.php
+phpcs.xml.dist
+src/Plugin.php
+tests/Unit/PluginTest.php
+```
+
+### Files Removed
+
+```text
+None
+```
+
+### Options and Database Changes
+
+- `hwlio_settings` is initialized from `Settings\SettingsSchema::defaults()` and remains autoloaded.
+- `hwlio_version` stores the current plugin version.
+- `hwlio_db_version` stores the current database schema version.
+- `hwlio_activation_state` stores bounded setup diagnostics with autoload disabled.
+- `{$wpdb->prefix}hwlio_logs` is created through `dbDelta()` when WordPress database APIs are available.
+
+### Log Table Columns and Indexes
+
+```text
+id bigint(20) unsigned AUTO_INCREMENT
+created_at_gmt datetime
+level varchar(20)
+code varchar(64)
+message text
+attachment_id bigint(20) unsigned NULL
+job_id varchar(191) NULL
+context_json longtext NULL
+
+Indexes: created_at_gmt, level, attachment_id
+```
+
+### Runtime Changes
+
+- Activation now calls `HyperWeb\LighthouseImageOptimizer\Infrastructure\Installer::for_wordpress()->install()`.
+- The composition root now registers `UpgradeRunner` before `I18n`.
+- `UpgradeRunner` checks stored version/schema state on `plugins_loaded` priority `1` and reruns the installer only when needed.
+- Missing or unverifiable log-table creation is recorded as an activation-state warning and does not fatal or deactivate the plugin.
+- Invalid non-array settings are repaired back to defaults and recorded as an activation-state warning.
+
+### Hook Changes
+
+```text
+plugins_loaded priority 1  -> HyperWeb\LighthouseImageOptimizer\Infrastructure\UpgradeRunner::maybe_upgrade()
+plugins_loaded priority 10 -> HyperWeb\LighthouseImageOptimizer\Infrastructure\I18n::load_textdomain()
+```
+
+No media scans, image processing hooks, Action Scheduler jobs, REST routes, frontend delivery hooks, admin enqueue hooks, or asset hooks were introduced.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 20 tests and 216 assertions
+composer run quality: pass
+git diff --check: pass
+No plugin-owned PHP code calls Action Scheduler as_* APIs yet: pass
+No runtime plugin source registers placeholder asset hooks or jQuery usage: pass
+No media scan, queue, delivery, or conversion classes are active: pass
+```
+
+### Acceptance Criteria
+
+- [x] Activation initializes required options safely.
+- [x] Upgrades rerun idempotently when stored versions or schemas are stale.
+- [x] The initial log table schema is controlled and installed through `dbDelta()`.
+- [x] Log table creation failures are non-fatal and recorded in activation diagnostics.
+- [x] Existing settings values are preserved while missing defaults are filled.
+- [x] Invalid settings are repaired and recorded.
+- [ ] Supported WordPress activation creates the table without fatal errors.
+
+Supported-environment activation and database verification remain pending until this plugin is run inside a WordPress 6.5+ test installation.
+
+### Deferred Work
+
+- Full activation/deactivation/uninstall retention policy remains deferred to Subphase 1.3.
+- Log writing, retention cleanup, and diagnostics views remain deferred to Subphase 1.4 and later.
+- `hwlio_statistics_cache` remains deferred until a statistics service exists.
+- Settings validation/repository behavior remains deferred to Phase 2.1.
+- No Action Scheduler queue jobs, image conversion, media scans, REST endpoints, admin screens, frontend delivery, Elementor integration, or WooCommerce integration were added.
