@@ -1,11 +1,11 @@
 <?php
 /**
- * Tests for settings subphase scope boundaries.
+ * Tests for diagnostics scope boundaries.
  *
  * @package Hyperweb_Lighthouse_Image_Optimizer
  */
 
-namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Settings;
+namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Diagnostics;
 
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -13,32 +13,35 @@ use RecursiveIteratorIterator;
 use SplFileInfo;
 
 /**
- * Verifies Subphase 2.2 does not introduce later-phase behavior.
+ * Verifies Subphase 2.4 does not introduce later-phase behavior.
  */
-final class SettingsScopePolicyTest extends TestCase {
+final class DiagnosticsScopePolicyTest extends TestCase {
 
 	/**
-	 * Test no settings UI, REST, queue, conversion, or delivery hooks are introduced.
+	 * Test no UI, REST, media, queue, metadata, or delivery behavior is introduced.
 	 *
 	 * @return void
 	 */
-	public function test_settings_api_registration_does_not_introduce_later_phase_behavior(): void {
+	public function test_diagnostics_framework_does_not_introduce_later_phase_behavior(): void {
 		$forbidden_patterns = array(
-			'settings field'            => '/\badd_settings_field\s*\(/',
-			'admin menu page'           => '/\badd_menu_page\s*\(/',
-			'admin submenu page'        => '/\badd_submenu_page\s*\(/',
-			'global admin asset hook'   => '/\badmin_enqueue_scripts\b/',
-			'stylesheet enqueue'        => '/\bwp_enqueue_style\s*\(/',
-			'script enqueue'            => '/\bwp_enqueue_script\s*\(/',
-			'REST route registration'   => '/\bregister_rest_route\s*\(/',
-			'REST API hook'             => '/\brest_api_init\b/',
-			'new-upload media hook'     => '/\bwp_generate_attachment_metadata\b/',
-			'frontend image hook'       => '/\bwp_get_attachment_image\b/',
-			'frontend content hook'     => '/\bwp_content_img_tag\b/',
-			'responsive srcset hook'    => '/\bwp_calculate_image_srcset\b/',
-			'optimization queue action' => '/\bhwlio_optimize_attachment_format\b/',
-			'async queue scheduling'    => '/\bas_enqueue_async_action\s*\(/',
-			'single queue scheduling'   => '/\bas_schedule_single_action\s*\(/',
+			'REST route registration'      => '/\bregister_rest_route\s*\(/',
+			'REST API hook'                => '/\brest_api_init\b/',
+			'admin menu page'              => '/\badd_menu_page\s*\(/',
+			'admin submenu page'           => '/\badd_submenu_page\s*\(/',
+			'global admin asset hook'      => '/\badmin_enqueue_scripts\b/',
+			'stylesheet enqueue'           => '/\bwp_enqueue_style\s*\(/',
+			'script enqueue'               => '/\bwp_enqueue_script\s*\(/',
+			'new-upload media hook'        => '/\bwp_generate_attachment_metadata\b/',
+			'attachment metadata write'    => '/\b(?:add|update|delete)_post_meta\s*\(/',
+			'attachment metadata update'   => '/\bwp_update_attachment_metadata\s*\(/',
+			'frontend image hook'          => '/\bwp_get_attachment_image\b/',
+			'frontend content hook'        => '/\bwp_content_img_tag\b/',
+			'responsive srcset hook'       => '/\bwp_calculate_image_srcset\b/',
+			'delivery loading hook'        => '/\bwp_get_loading_optimization_attributes\b/',
+			'optimization queue action'    => '/\bhwlio_optimize_attachment_format\b/',
+			'async queue scheduling'       => '/\bas_enqueue_async_action\s*\(/',
+			'single queue scheduling'      => '/\bas_schedule_single_action\s*\(/',
+			'automatic memory limit raise' => '/\bini_set\s*\(/',
 		);
 
 		foreach ( $this->runtime_source_files() as $file => $contents ) {
@@ -47,6 +50,14 @@ final class SettingsScopePolicyTest extends TestCase {
 					$pattern,
 					$contents,
 					sprintf( '%s found in %s.', $label, $file )
+				);
+			}
+
+			if ( 1 === preg_match( '/\bwp_get_image_editor\s*\(/', $contents ) ) {
+				self::assertSame(
+					'src/Diagnostics/WordPressSampleConversionProbe.php',
+					$file,
+					sprintf( 'wp_get_image_editor() is only allowed in the sample conversion probe, found in %s.', $file )
 				);
 			}
 		}
@@ -80,7 +91,7 @@ final class SettingsScopePolicyTest extends TestCase {
 				continue;
 			}
 
-			$sources[ str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) ] = $contents;
+			$sources[ str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) ) ] = $contents;
 		}
 
 		return $sources;

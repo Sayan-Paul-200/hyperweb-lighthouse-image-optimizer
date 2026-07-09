@@ -78,7 +78,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A schema-driven settings repository, sanitizer, result object, and typed settings accessors exist as of Subphase 2.1.
 - WordPress Settings API registration, save-time sanitization, admin validation feedback, and minimal format-support guarding exist as of Subphase 2.2.
 - A canonical environment capability layer for versions, image editor candidates, WebP/AVIF support, uploads status, runtime limits, and Action Scheduler readiness exists as of Subphase 2.3.
-- No visible settings UI, diagnostics result framework, queue abstraction, or image optimization services exist yet.
+- A structured diagnostics framework with user-safe result objects, environment checks, temporary write/rename checks, and sample conversion diagnostics exists as of Subphase 2.4.
+- No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, or production image optimization services exist yet.
 
 ## Phase Status
 
@@ -96,7 +97,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 2.1 - Settings schema and repository
   - [x] Subphase 2.2 - Settings API registration
   - [x] Subphase 2.3 - Environment and format support
-  - [ ] Subphase 2.4 - Diagnostics framework
+  - [x] Subphase 2.4 - Diagnostics framework
 - [ ] Phase 3 - Core Image Domain
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
 - [ ] Phase 5 - Action Scheduler Queue and Automatic Processing
@@ -1016,9 +1017,9 @@ WordPress runtime settings persistence remains pending until Settings API regist
 
 ### Deferred Work
 
-- No Settings API registration, admin settings screen, validation feedback UI, REST endpoint, diagnostics UI, environment support detection, queue behavior, image conversion, frontend delivery, Elementor integration, or WooCommerce integration was added.
-- WebP/AVIF server support checks remain deferred to Subphase 2.3.
-- Diagnostics framework remains deferred to Subphase 2.4.
+- No Settings API registration, admin settings screen, validation feedback UI, REST endpoint, diagnostics UI, environment support detection, queue behavior, image conversion, frontend delivery, Elementor integration, or WooCommerce integration was added in Subphase 2.1.
+- WebP/AVIF server support checks were implemented in Subphase 2.3.
+- The diagnostics framework was implemented in Subphase 2.4; diagnostics UI and REST exposure remain deferred.
 
 ## Subphase 2.2 - Settings API Registration
 
@@ -1126,8 +1127,8 @@ Single-site WordPress settings-save smoke testing remains pending until this plu
 ### Deferred Work
 
 - No visible settings page, admin menu, field renderer, or asset loading was added.
-- Full WebP/AVIF environment diagnostics, editor reporting, upload-directory checks, and Action Scheduler readiness diagnostics remain deferred to Subphase 2.3.
-- Diagnostics framework remains deferred to Subphase 2.4.
+- WebP/AVIF environment diagnostics, editor reporting, upload-directory checks, and Action Scheduler readiness diagnostics were implemented in Subphase 2.3.
+- The diagnostics framework was implemented in Subphase 2.4; diagnostics UI and REST exposure remain deferred.
 - No media scans, image conversion, queue jobs, REST endpoints, frontend delivery, Elementor integration, or WooCommerce integration was added.
 
 ## Subphase 2.3 - Environment and Format Support
@@ -1228,6 +1229,113 @@ Runtime smoke testing remains pending until this plugin is run inside a WordPres
 
 ### Deferred Work
 
-- Full structured diagnostic result objects, pass/warning/fail/info mapping, REST exposure, and user-safe diagnostic messages remain deferred to Subphase 2.4.
-- Temporary write/rename tests and sample conversion cleanup remain deferred to Subphase 2.4.
+- Structured diagnostic result objects, pass/warning/fail/info mapping, user-safe diagnostic messages, temporary write/rename tests, and sample conversion cleanup were deferred from Subphase 2.3 and implemented in Subphase 2.4.
+- REST exposure remains deferred to the later admin/REST phase.
 - No persistent options, database tables, metadata keys, scheduled actions, queue jobs, media scans, image conversion, frontend delivery, Elementor integration, or WooCommerce integration was added.
+
+## Subphase 2.4 - Diagnostics Framework
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Add structured diagnostic result objects with `pass`, `warning`, `fail`, and `info` statuses.
+- [x] Add REST/admin-ready array serialization without registering REST routes or rendering HTML.
+- [x] Sanitize diagnostic messages and details to redact secrets and absolute filesystem paths.
+- [x] Map environment reports into PHP, WordPress, editor, format-support, uploads, runtime, and Action Scheduler checks.
+- [x] Add temporary write/rename diagnostics with plugin-prefixed files and guaranteed cleanup attempts.
+- [x] Add sample WebP/AVIF conversion diagnostics using WordPress image editor APIs behind a focused probe.
+- [x] Keep diagnostics UI, REST endpoints, queue health execution, media scans, production conversion, metadata writes, scheduled actions, and delivery deferred.
+
+### Files Added
+
+```text
+src/Diagnostics/DiagnosticFilesystemInterface.php
+src/Diagnostics/DiagnosticReport.php
+src/Diagnostics/DiagnosticResult.php
+src/Diagnostics/DiagnosticSanitizer.php
+src/Diagnostics/DiagnosticStatus.php
+src/Diagnostics/EnvironmentDiagnostics.php
+src/Diagnostics/SampleConversionDiagnostic.php
+src/Diagnostics/SampleConversionProbeInterface.php
+src/Diagnostics/SampleConversionResult.php
+src/Diagnostics/TemporaryFileDiagnostic.php
+src/Diagnostics/WordPressDiagnosticFilesystem.php
+src/Diagnostics/WordPressSampleConversionProbe.php
+tests/Unit/Diagnostics/DiagnosticReportTest.php
+tests/Unit/Diagnostics/DiagnosticResultTest.php
+tests/Unit/Diagnostics/DiagnosticSanitizerTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Diagnostics/EnvironmentDiagnosticsTest.php
+tests/Unit/Diagnostics/FakeDiagnosticFilesystem.php
+tests/Unit/Diagnostics/FakeSampleConversionProbe.php
+tests/Unit/Diagnostics/SampleConversionDiagnosticTest.php
+tests/Unit/Diagnostics/TemporaryFileDiagnosticTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Diagnostics Services
+
+- `DiagnosticResult` and `DiagnosticReport` provide stable result IDs, statuses, codes, labels, messages, details, summaries, and `to_array()` output for future REST/admin consumers.
+- `DiagnosticSanitizer` redacts sensitive keys and absolute Unix/Windows filesystem paths from diagnostic messages and details.
+- `EnvironmentDiagnostics::for_wordpress()` creates callable PHP diagnostics without registering hooks.
+- `EnvironmentDiagnostics::run()` consumes `EnvironmentInspector`, settings, temporary-file diagnostics, and sample-conversion diagnostics.
+- `TemporaryFileDiagnostic` validates plugin-owned paths inside uploads before writing, renaming, or deleting.
+- `SampleConversionDiagnostic` writes a tiny plugin-owned PNG fixture, calls a conversion probe, validates output, and removes source/output files on success and failure.
+- `WordPressSampleConversionProbe` is the only new production class that calls `wp_get_image_editor()`, and only for the required sample conversion diagnostic.
+
+### Hooks, Settings, Metadata, and Database Changes
+
+```text
+New hooks: none
+New settings: none
+New options: none
+New tables: none
+New metadata keys: none
+New scheduled actions: none
+REST routes: none
+Admin menus/assets: none
+Frontend hooks/assets: none
+```
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 103 tests and 5530 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans confirm no REST routes, REST hooks, admin menus/assets, frontend delivery hooks, media upload hooks, attachment metadata writes, optimization queue actions, async/single optimization scheduling, or memory-limit mutation were introduced. `wp_get_image_editor()` appears only in `src/Diagnostics/WordPressSampleConversionProbe.php`.
+
+### Acceptance Criteria
+
+- [x] Diagnostics are callable from PHP and serialize to REST/admin-ready arrays without rendering HTML.
+- [x] Temporary files are removed on success and failure when cleanup succeeds.
+- [x] Cleanup failures are reported as structured diagnostics without exposing raw paths.
+- [x] Result messages and details are sanitized for secrets and absolute filesystem paths.
+- [x] Sample conversion uses WordPress image APIs behind a diagnostics-only probe.
+- [ ] Supported WordPress runtime sample-conversion smoke testing passes.
+
+Runtime smoke testing remains pending until this plugin is run inside a WordPress 6.5+ test installation with writable uploads and available image editors.
+
+### Deferred Work
+
+- Diagnostics UI, diagnostics REST endpoints, and admin rendering remain deferred to Phase 6.
+- Queue health, stale locks, conflict detection, persistent object cache interpretation, multisite policy warnings, and offload/CDN adapter diagnostics remain deferred until their owning services exist.
+- No persistent audit-results table, production image conversion, media scanning, attachment metadata writes, frontend delivery, Elementor integration, or WooCommerce integration was added.

@@ -27,7 +27,6 @@ final class LoggingScopePolicyTest extends TestCase {
 			'REST route registration'   => '/\bregister_rest_route\s*\(/',
 			'REST API hook'             => '/\brest_api_init\b/',
 			'new-upload media hook'     => '/\bwp_generate_attachment_metadata\b/',
-			'image editor conversion'   => '/\bwp_get_image_editor\s*\(/',
 			'frontend image hook'       => '/\bwp_get_attachment_image\b/',
 			'frontend content hook'     => '/\bwp_content_img_tag\b/',
 			'responsive srcset hook'    => '/\bwp_calculate_image_srcset\b/',

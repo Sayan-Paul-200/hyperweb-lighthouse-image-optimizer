@@ -19,6 +19,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added a schema-driven settings repository with sanitization, default merging, typed getters, and filtered defaults.
 - Added WordPress Settings API registration with schema-backed sanitization, admin validation feedback, and minimal format-support guarding.
 - Added a canonical environment capability layer for PHP/WordPress versions, image editor candidates, WebP/AVIF support, uploads status, runtime limits, and Action Scheduler readiness.
+- Added a structured diagnostics framework with user-safe results, environment checks, temporary write/rename checks, and bounded sample conversion diagnostics.
 
 ### Removed
 
@@ -28,4 +29,4 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 
 ### Notes
 
-- No image optimization, conversion, queueing, delivery, or admin workflow behavior has been implemented yet.
+- No production image optimization, queueing, delivery, or admin workflow behavior has been implemented yet.
