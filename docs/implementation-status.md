@@ -60,11 +60,13 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 ### Current Scaffold Assessment
 
 - The project is a WordPress Plugin Boilerplate scaffold, not a partially completed optimizer.
-- The plugin entry point, activation hook, deactivation hook, loader, i18n class, admin class, public class, uninstall guard, and GPL license are present.
+- The plugin entry point, activation hook, deactivation hook, admin class, public class, uninstall guard, and GPL license are present.
 - Activation and deactivation classes are placeholders.
 - The uninstall file contains only the standard WordPress uninstall guard.
 - The legacy admin and public classes are inert coordinator placeholders and do not enqueue assets.
 - Placeholder admin/frontend CSS, JavaScript, and display partials were removed in Subphase 0.4.
+- A namespaced composition root, hook registrar, hook-provider contract, and i18n provider exist as of Subphase 1.1.
+- The legacy runtime core class, legacy hook loader, and legacy i18n class were removed in Subphase 1.1.
 - The README is boilerplate and does not yet describe the product accurately.
 - The POT file exists but is empty.
 - Composer autoloading and development quality tooling exist as of Subphase 0.2.
@@ -79,6 +81,10 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 0.3 - Harden the bootstrap
   - [x] Subphase 0.4 - Remove performance-negative placeholder behavior
 - [ ] Phase 1 - Application Foundation and Lifecycle
+  - [x] Subphase 1.1 - Build the composition root
+  - [ ] Subphase 1.2 - Implement installation and upgrade routines
+  - [ ] Subphase 1.3 - Implement activation, deactivation, and uninstall policy
+  - [ ] Subphase 1.4 - Implement logging foundation
 - [ ] Phase 2 - Settings, Environment, and Diagnostics Foundation
 - [ ] Phase 3 - Core Image Domain
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
@@ -413,3 +419,90 @@ The acceptance criteria are demonstrated by source inspection and automated poli
 - Real admin screens, settings pages, Media Library controls, and REST controllers are deferred to later phases.
 - Frontend delivery behavior remains disabled and is deferred to Phase 7.
 - Full README replacement remains deferred to Subphase 14.8.
+
+## Subphase 1.1 - Build the Composition Root
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Promote `src/Plugin.php` into the namespaced application composition root.
+- [x] Define service construction and hook registration boundaries.
+- [x] Replace the legacy loader with an equivalent namespaced hook registrar.
+- [x] Ensure one shared registrar instance is used for provider hook registration.
+
+### Files Added
+
+```text
+src/Infrastructure/HookProviderInterface.php
+src/Infrastructure/HookRegistrar.php
+src/Infrastructure/I18n.php
+tests/Unit/Infrastructure/HookRegistrarTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+hyperweb-lighthouse-image-optimizer.php
+phpcs.xml.dist
+src/Plugin.php
+tests/Unit/PluginTest.php
+```
+
+### Files Removed
+
+```text
+includes/class-hyperweb-lighthouse-image-optimizer.php
+includes/class-hyperweb-lighthouse-image-optimizer-loader.php
+includes/class-hyperweb-lighthouse-image-optimizer-i18n.php
+```
+
+### Runtime Changes
+
+- The WordPress entry file now runs `HyperWeb\LighthouseImageOptimizer\Plugin::create()->run()` after Composer and Action Scheduler load.
+- `src/Plugin.php` constructs shared services and registers hook providers.
+- `HookRegistrar` collects action/filter definitions and registers them in one pass.
+- `I18n` is the only active hook provider and registers the existing `plugins_loaded` textdomain hook.
+- No admin services, delivery services, settings repositories, queues, or image services are constructed in this subphase.
+
+### Hook Changes
+
+```text
+plugins_loaded -> HyperWeb\LighthouseImageOptimizer\Infrastructure\I18n::load_textdomain()
+```
+
+No frontend hooks, admin enqueue hooks, delivery hooks, Action Scheduler jobs, REST routes, settings hooks, or image-processing hooks were introduced.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 11 tests and 105 assertions
+composer run quality: pass
+git diff --check: pass
+No runtime plugin source registers placeholder asset hooks or jQuery usage: pass
+No legacy runtime core instantiation remains: pass
+No delivery classes are present or active: pass
+```
+
+### Acceptance Criteria
+
+- [x] Core modules can be registered without circular dependencies.
+- [x] Admin-only classes are not unnecessarily instantiated on frontend requests.
+- [x] Delivery classes are not active while delivery is disabled.
+
+The acceptance criteria are demonstrated by the composition-root tests, hook registrar tests, source inspection, and policy scan in this plugin-only workspace. WordPress runtime activation remains pending until a WordPress 6.5+ test installation is available.
+
+### Deferred Work
+
+- Installation and upgrade routines are deferred to Subphase 1.2.
+- Activation/deactivation/uninstall policy remains deferred to Subphase 1.3.
+- Logging foundation remains deferred to Subphase 1.4.
+- Settings, admin screens, REST controllers, queues, image conversion, and frontend delivery remain deferred to later phases.

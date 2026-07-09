@@ -150,7 +150,7 @@ function hwlio_register_bootstrap_failure_notice( $failures ) {
 }
 
 /**
- * Load runtime dependencies required before the legacy plugin class runs.
+ * Load runtime dependencies required before the plugin runs.
  *
  * @return void
  */
@@ -204,18 +204,13 @@ if ( array() !== $hwlio_bootstrap_failures ) {
 hwlio_load_runtime_dependencies();
 
 /**
- * The core plugin class that registers the remaining bootstrap-safe hooks.
- */
-require HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_PATH . 'includes/class-hyperweb-lighthouse-image-optimizer.php';
-
-/**
  * Begins execution of the plugin.
  *
  * @since 0.1.0-alpha.3
  * @return void
  */
 function run_hyperweb_lighthouse_image_optimizer() {
-	$plugin = new Hyperweb_Lighthouse_Image_Optimizer();
+	$plugin = HyperWeb\LighthouseImageOptimizer\Plugin::create();
 	$plugin->run();
 }
 
