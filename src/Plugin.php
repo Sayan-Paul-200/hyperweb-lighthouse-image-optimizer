@@ -12,6 +12,7 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\I18n;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\Installer;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\UpgradeRunner;
+use HyperWeb\LighthouseImageOptimizer\Logging\LogMaintenance;
 
 /**
  * Builds shared services and registers plugin hooks.
@@ -82,6 +83,7 @@ final class Plugin {
 			$hooks,
 			array(
 				new UpgradeRunner( Installer::for_wordpress( $version, $db_version, $schema_version ) ),
+				LogMaintenance::for_wordpress(),
 				new I18n( self::SLUG, dirname( $basename ) . '/languages/' ),
 			)
 		);

@@ -74,7 +74,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - Action Scheduler 3.9.3 is bundled as an unmodified upstream subtree as of Subphase 0.3.
 - Minimal settings defaults, lifecycle installer services, activation diagnostics, and a log table schema exist as of Subphase 1.2.
 - Deactivation/uninstall lifecycle policy, safe derivative cleanup primitives, and bounded multisite uninstall orchestration exist as of Subphase 1.3.
-- No settings repository/UI, queue abstraction, log writer, diagnostics UI, or image optimization services exist yet.
+- A bounded logging foundation, database writer, sanitizer, and log-retention maintenance provider exist as of Subphase 1.4.
+- No settings repository/UI, queue abstraction, diagnostics UI, or image optimization services exist yet.
 
 ## Phase Status
 
@@ -87,7 +88,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 1.1 - Build the composition root
   - [x] Subphase 1.2 - Implement installation and upgrade routines
   - [x] Subphase 1.3 - Implement activation, deactivation, and uninstall policy
-  - [ ] Subphase 1.4 - Implement logging foundation
+  - [x] Subphase 1.4 - Implement logging foundation
 - [ ] Phase 2 - Settings, Environment, and Diagnostics Foundation
 - [ ] Phase 3 - Core Image Domain
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
@@ -103,6 +104,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - [ ] Phase 14 - Testing, Performance, Security, and Release
 
 Phase 0 implementation subphases are complete. The phase remains unchecked at the phase level until a supported WordPress 6.5+ activation smoke test is performed.
+Phase 1 implementation subphases are complete. The phase remains unchecked at the phase level until supported WordPress activation, deactivation, uninstall, Action Scheduler, and log-table smoke tests are performed.
 
 ## Subphase 0.1 - Create the Development Baseline
 
@@ -764,8 +766,136 @@ Supported-environment deactivation/uninstall smoke testing remains pending until
 
 ### Deferred Work
 
-- Scheduling actual recurring maintenance actions remains deferred to later queue/logging phases.
-- Log writing, retention cleanup, and diagnostics views remain deferred to Subphase 1.4 and later.
+- Scheduling actual recurring maintenance actions for non-logging maintenance remains deferred to later queue/diagnostics phases.
+- Diagnostics views remain deferred to later admin and REST phases.
 - Attachment deletion cleanup remains deferred to Subphase 4.5.
 - Full settings validation/repository behavior remains deferred to Phase 2.1.
 - No Action Scheduler queue jobs, image conversion, media scans, REST endpoints, admin screens, frontend delivery, Elementor integration, or WooCommerce integration were added.
+
+## Subphase 1.4 - Implement Logging Foundation
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Add logger contracts and a database-backed writer for the existing `hwlio_logs` table.
+- [x] Define supported levels and stable machine-readable code normalization.
+- [x] Redact sensitive context keys and likely absolute filesystem paths before storage.
+- [x] Bound log messages and context payloads before writing `context_json`.
+- [x] Add bounded log-retention cleanup based on `log_retention_days`.
+- [x] Schedule retention cleanup through Action Scheduler only after `action_scheduler_init`.
+- [x] Add unit and policy coverage for logging behavior and subphase scope.
+
+### Files Added
+
+```text
+src/Logging/ActionSchedulerRecurringActionScheduler.php
+src/Logging/DatabaseLogWriter.php
+src/Logging/LogCode.php
+src/Logging/LogDatabaseInterface.php
+src/Logging/LogEntry.php
+src/Logging/LogLevel.php
+src/Logging/LogMaintenance.php
+src/Logging/LogPruner.php
+src/Logging/LogPrunerInterface.php
+src/Logging/LogSanitizer.php
+src/Logging/LogWriterInterface.php
+src/Logging/Logger.php
+src/Logging/LoggerInterface.php
+src/Logging/NullLogDatabase.php
+src/Logging/RecurringActionSchedulerInterface.php
+src/Logging/WordPressLogDatabase.php
+tests/Unit/Logging/DatabaseLogWriterTest.php
+tests/Unit/Logging/FakeLogDatabase.php
+tests/Unit/Logging/FakeLogPruner.php
+tests/Unit/Logging/FakeLogWriter.php
+tests/Unit/Logging/FakeRecurringActionScheduler.php
+tests/Unit/Logging/LogCodeTest.php
+tests/Unit/Logging/LogLevelTest.php
+tests/Unit/Logging/LogMaintenanceTest.php
+tests/Unit/Logging/LogPrunerTest.php
+tests/Unit/Logging/LogSanitizerTest.php
+tests/Unit/Logging/LoggerTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Plugin.php
+tests/Unit/PluginTest.php
+```
+
+### Files Removed
+
+```text
+None
+```
+
+### Logging Services
+
+- `LoggerInterface` exposes `log()`, `debug()`, `info()`, `warning()`, and `error()`.
+- `Logger` normalizes, sanitizes, and writes entries while returning `false` instead of throwing on failures.
+- `LogLevel` supports `debug`, `info`, `warning`, and `error`; invalid levels normalize to `error`.
+- `LogCode` accepts lowercase machine-readable codes up to 64 characters; invalid codes normalize to `unknown`.
+- `LogSanitizer` redacts sensitive keys such as password, token, secret, cookie, nonce, authorization, and API key variants.
+- `LogSanitizer` redacts likely absolute Unix and Windows server paths from messages, context values, and job IDs.
+- `DatabaseLogWriter` writes sanitized entries to `{$wpdb->prefix}hwlio_logs` through a narrow database adapter.
+- `WordPressLogDatabase` validates table identifiers before inserts or retention deletes.
+- `NullLogDatabase` fails safely when WordPress database services are unavailable.
+
+### Hook Changes
+
+```text
+action_scheduler_init priority 10 -> HyperWeb\LighthouseImageOptimizer\Logging\LogMaintenance::ensure_scheduled()
+hwlio_cleanup_logs priority 10    -> HyperWeb\LighthouseImageOptimizer\Logging\LogMaintenance::run_retention_cleanup()
+```
+
+`Plugin::create()` now composes providers in this order:
+
+```text
+UpgradeRunner
+LogMaintenance
+I18n
+```
+
+### Retention Behavior
+
+- The canonical cleanup hook remains `hwlio_cleanup_logs`.
+- The Action Scheduler group remains `hwlio`.
+- `LogMaintenance` schedules one unique recurring cleanup action at a daily interval.
+- Scheduling happens only from `action_scheduler_init`; no Action Scheduler APIs are called during bootstrap composition.
+- `LogPruner` deletes logs older than `hwlio_settings['log_retention_days']`, defaulting to `30`.
+- Invalid retention settings fall back to `30`.
+- Each cleanup run deletes at most `500` rows.
+
+### Verification
+
+```text
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 50 tests and 1068 assertions
+```
+
+Additional scans are run as part of `LoggingScopePolicyTest` and confirm no REST routes, media conversion hooks, frontend delivery hooks, image editor conversion calls, optimization queue actions, or single/async Action Scheduler queue scheduling were introduced.
+
+### Acceptance Criteria
+
+- [x] Errors can be recorded without breaking the main operation.
+- [x] Retention removes old rows in bounded batches.
+- [x] Logs are sanitized before storage so absolute server paths are not persisted for later admin REST output.
+- [ ] Supported WordPress runtime logging and Action Scheduler smoke tests pass.
+
+Supported-environment logging, retention scheduling, and database-write smoke tests remain pending until this plugin is run inside a WordPress 6.5+ test installation.
+
+### Deferred Work
+
+- No admin log viewer, diagnostics REST endpoint, or log pagination was added.
+- No image conversion, media scans, queue abstraction, automatic upload optimization, frontend delivery, Elementor integration, or WooCommerce integration was added.
+- Full settings validation/repository behavior remains deferred to Phase 2.1.
+- Logging reads and admin diagnostics remain deferred to Subphase 6.8 and later diagnostics phases.

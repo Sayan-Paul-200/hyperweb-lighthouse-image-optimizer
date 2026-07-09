@@ -15,6 +15,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added a namespaced application composition root with a shared hook registrar and i18n provider.
 - Added lifecycle installer routines for default settings, version state, activation diagnostics, and the initial log table schema.
 - Added non-destructive deactivation cleanup and opt-in uninstall policy services with safe derivative path validation.
+- Added a bounded logging foundation with sanitization, database-backed writes, and Action Scheduler log-retention maintenance.
 
 ### Removed
 
