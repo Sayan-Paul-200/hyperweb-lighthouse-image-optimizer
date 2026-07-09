@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<ruleset name="HyperWeb Lighthouse Image Optimizer">
+	<description>PHP_CodeSniffer rules for HyperWeb Lighthouse Image Optimizer.</description>
+
+	<file>src</file>
+	<file>tests</file>
+
+	<arg name="basepath" value="."/>
+	<arg name="extensions" value="php"/>
+	<arg name="parallel" value="4"/>
+	<arg value="s"/>
+
+	<config name="testVersion" value="7.4-"/>
+
+	<exclude-pattern>vendor/*</exclude-pattern>
+	<exclude-pattern>node_modules/*</exclude-pattern>
+
+	<rule ref="WordPress-Core"/>
+	<rule ref="WordPress-Docs"/>
+	<rule ref="WordPress-Extra"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<rule ref="WordPress.Files.FileName">
+		<severity>0</severity>
+	</rule>
+</ruleset>

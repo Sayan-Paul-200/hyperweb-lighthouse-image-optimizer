@@ -67,13 +67,14 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - The public class globally enqueues placeholder frontend CSS and jQuery-dependent JavaScript.
 - The README is boilerplate and does not yet describe the product accurately.
 - The POT file exists but is empty.
-- No Composer autoloading, Action Scheduler library, settings model, queue, logging, diagnostics, tests, or image optimization services exist yet.
+- Composer autoloading and development quality tooling exist as of Subphase 0.2.
+- No Action Scheduler library, settings model, queue, logging, diagnostics, or image optimization services exist yet.
 
 ## Phase Status
 
 - [ ] Phase 0 - Repository Baseline and Scaffold Hardening
   - [x] Subphase 0.1 - Create the development baseline
-  - [ ] Subphase 0.2 - Add Composer and quality tooling
+  - [x] Subphase 0.2 - Add Composer and quality tooling
   - [ ] Subphase 0.3 - Harden the bootstrap
   - [ ] Subphase 0.4 - Remove performance-negative placeholder behavior
 - [ ] Phase 1 - Application Foundation and Lifecycle
@@ -93,7 +94,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 
 ## Subphase 0.1 - Create the Development Baseline
 
-**Status:** Complete  
+**Status:** Complete
 **Completed:** 2026-07-09
 
 ### Tasks
@@ -152,3 +153,87 @@ The activation smoke test remains pending until this plugin is run inside a Word
 ## Decision Log
 
 No ADRs have been required. Foundational decisions from the master plan remain unchanged.
+
+## Subphase 0.2 - Add Composer and Quality Tooling
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Add Composer PSR-4 autoloading for `src/`.
+- [x] Add development dependencies for PHPCS, WordPress Coding Standards, PHPCompatibilityWP, PHPUnit, PHPStan, and WordPress stubs.
+- [x] Add scripts for linting, coding standards, unit tests, static analysis, and aggregate quality checks.
+- [x] Generate and commit `composer.lock` for reproducible dependency resolution.
+- [x] Keep local `vendor/` ignored so dev-only packages are not committed.
+- [x] Add a minimal namespaced class and PHPUnit test proving Composer autoloading works.
+
+### Files Added
+
+```text
+composer.json
+composer.lock
+phpcs.xml.dist
+phpstan.neon.dist
+phpunit.xml.dist
+src/Plugin.php
+tests/Unit/PluginTest.php
+tools/lint-php.php
+```
+
+### Files Changed
+
+```text
+.gitattributes
+.gitignore
+CHANGELOG.md
+docs/implementation-status.md
+```
+
+### Files Removed
+
+```text
+None
+```
+
+### Tooling Added
+
+- Composer PSR-4 runtime namespace: `HyperWeb\LighthouseImageOptimizer\` mapped to `src/`.
+- Composer PSR-4 dev namespace: `HyperWeb\LighthouseImageOptimizer\Tests\` mapped to `tests/`.
+- Composer scripts: `lint`, `cs`, `stan`, `test`, and `quality`.
+- Static analyzer: PHPStan.
+- Unit test runner: PHPUnit 9.6.
+- Coding standards: PHPCS with WordPress Coding Standards and PHPCompatibilityWP.
+- WordPress stubs: `php-stubs/wordpress-stubs`.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer install: pass after approved network access
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 1 test and 1 assertion
+composer run quality: pass
+```
+
+### Acceptance Criteria
+
+- [x] A trivial namespaced class autoloads from the plugin.
+- [x] Quality commands run locally.
+- [x] No dev-only vendor packages are required by the production plugin source tree.
+
+### Artifact Policy
+
+- `composer.json` and `composer.lock` are committed.
+- `vendor/` is ignored and must not be committed during development.
+- Release packaging must later generate and include the required no-dev Composer runtime autoload files so production sites do not need to run Composer.
+
+### Deferred Work
+
+- The plugin entry file does not load `vendor/autoload.php` yet; bootstrap loading is deferred to Subphase 0.3.
+- Action Scheduler is not bundled yet; that is deferred to Subphase 0.3 and later queue phases.
+- WordPress activation smoke testing remains pending until a WordPress 6.5+ test installation is available.
+- Existing boilerplate admin/frontend asset hooks remain in place until Subphase 0.4.

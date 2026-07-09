@@ -44,3 +44,4 @@ release/
 
 # Composer runtime files may need to be committed for release packaging.
 # Do not ignore vendor/ globally without an explicit packaging decision.
+vendor/

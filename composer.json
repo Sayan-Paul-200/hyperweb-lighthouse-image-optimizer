@@ -1,0 +1,54 @@
+{
+  "name": "hyperweb/hyperweb-lighthouse-image-optimizer",
+  "description": "WordPress image-performance plugin scaffold for generating and delivering modern image formats safely.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Sayan Paul",
+      "homepage": "https://github.com/Sayan-Paul-200/"
+    }
+  ],
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.1",
+    "php-stubs/wordpress-stubs": "^6.5",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "phpstan/phpstan": "^1.12",
+    "phpunit/phpunit": "^9.6",
+    "squizlabs/php_codesniffer": "^3.10",
+    "wp-coding-standards/wpcs": "^3.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "HyperWeb\\LighthouseImageOptimizer\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "HyperWeb\\LighthouseImageOptimizer\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "lint": "@php tools/lint-php.php",
+    "cs": "phpcs",
+    "stan": "phpstan analyse",
+    "test": "phpunit",
+    "quality": [
+      "@lint",
+      "@cs",
+      "@stan",
+      "@test"
+    ]
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "sort-packages": true
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
