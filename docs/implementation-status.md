@@ -77,7 +77,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A bounded logging foundation, database writer, sanitizer, and log-retention maintenance provider exist as of Subphase 1.4.
 - A schema-driven settings repository, sanitizer, result object, and typed settings accessors exist as of Subphase 2.1.
 - WordPress Settings API registration, save-time sanitization, admin validation feedback, and minimal format-support guarding exist as of Subphase 2.2.
-- No visible settings UI, queue abstraction, diagnostics UI, or image optimization services exist yet.
+- A canonical environment capability layer for versions, image editor candidates, WebP/AVIF support, uploads status, runtime limits, and Action Scheduler readiness exists as of Subphase 2.3.
+- No visible settings UI, diagnostics result framework, queue abstraction, or image optimization services exist yet.
 
 ## Phase Status
 
@@ -94,7 +95,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - [ ] Phase 2 - Settings, Environment, and Diagnostics Foundation
   - [x] Subphase 2.1 - Settings schema and repository
   - [x] Subphase 2.2 - Settings API registration
-  - [ ] Subphase 2.3 - Environment and format support
+  - [x] Subphase 2.3 - Environment and format support
   - [ ] Subphase 2.4 - Diagnostics framework
 - [ ] Phase 3 - Core Image Domain
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
@@ -1128,3 +1129,105 @@ Single-site WordPress settings-save smoke testing remains pending until this plu
 - Full WebP/AVIF environment diagnostics, editor reporting, upload-directory checks, and Action Scheduler readiness diagnostics remain deferred to Subphase 2.3.
 - Diagnostics framework remains deferred to Subphase 2.4.
 - No media scans, image conversion, queue jobs, REST endpoints, frontend delivery, Elementor integration, or WooCommerce integration was added.
+
+## Subphase 2.3 - Environment and Format Support
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Add testable environment inspection services.
+- [x] Detect current PHP and WordPress versions against configured minimums.
+- [x] Detect active WordPress image editor candidates and class availability.
+- [x] Detect WebP and AVIF support independently through WordPress image APIs.
+- [x] Distinguish MIME recognition from image-editor encoding support.
+- [x] Inspect uploads base directory, upload errors, and writability without creating files.
+- [x] Parse memory limit and max execution time without raising limits.
+- [x] Detect Action Scheduler loaded and initialized state without scheduling or querying jobs.
+- [x] Replace the settings-local format checker with the canonical environment provider.
+- [x] Keep diagnostics UI, REST, temporary write/rename tests, sample conversion, queues, media scans, conversion, and delivery deferred.
+
+### Files Added
+
+```text
+src/Infrastructure/ActionSchedulerStatus.php
+src/Infrastructure/EnvironmentInspector.php
+src/Infrastructure/EnvironmentProbeInterface.php
+src/Infrastructure/EnvironmentReport.php
+src/Infrastructure/FormatSupportProviderInterface.php
+src/Infrastructure/FormatSupportResult.php
+src/Infrastructure/MemoryLimit.php
+src/Infrastructure/RuntimeConstraints.php
+src/Infrastructure/UploadsStatus.php
+src/Infrastructure/WordPressEnvironmentProbe.php
+tests/Unit/Infrastructure/EnvironmentInspectorTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Infrastructure/FakeEnvironmentProbe.php
+tests/Unit/Settings/FakeFormatSupportProvider.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Settings/SettingsApiRegistrar.php
+tests/Unit/Settings/SettingsApiRegistrarTest.php
+```
+
+### Files Removed
+
+```text
+src/Settings/FormatSupportCheckerInterface.php
+src/Settings/WordPressFormatSupportChecker.php
+tests/Unit/Settings/FakeFormatSupportChecker.php
+```
+
+### Environment Services
+
+- `EnvironmentInspector` builds an aggregate `EnvironmentReport` from a probe seam.
+- `WordPressEnvironmentProbe` wraps WordPress/PHP runtime reads for versions, image editors, MIME recognition, encode support, uploads, runtime limits, and Action Scheduler readiness.
+- `FormatSupportResult` status values are `supported`, `unsupported`, `misconfigured`, and `unknown`.
+- WebP and AVIF support are evaluated separately.
+- `UploadsStatus` reports `available`, `error`, `missing`, `not_writable`, or `unknown`.
+- `RuntimeConstraints` parses memory and execution limits without calling `ini_set()`.
+- `ActionSchedulerStatus` reports missing, loaded-not-initialized, ready, or unknown states without invoking scheduling APIs.
+
+### Settings Integration
+
+- `SettingsApiRegistrar` now depends on `FormatSupportProviderInterface`.
+- Production settings registration uses `EnvironmentInspector::for_wordpress()`.
+- `enabled_formats` blocks formats whose canonical support status is `unsupported` or `misconfigured`.
+- `unknown` support preserves Subphase 2.2 behavior and does not block saving.
+- `format_preference` remains ordering metadata only.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass, 244 files
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 80 tests and 3677 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Additional source scans confirm no `wp_get_image_editor()` calls, temporary-file conversion checks, REST routes, admin/frontend assets, media hooks, async/single queue scheduling, frontend delivery hooks, or automatic memory-limit raising were introduced.
+
+### Acceptance Criteria
+
+- [x] WebP and AVIF statuses are independent.
+- [x] A server without AVIF remains fully usable for WebP when WebP is supported.
+- [x] Missing support functions/extensions produce unknown or unsupported/misconfigured status without PHP warnings.
+- [ ] Supported WordPress runtime environment smoke testing passes.
+
+Runtime smoke testing remains pending until this plugin is run inside a WordPress 6.5+ test installation.
+
+### Deferred Work
+
+- Full structured diagnostic result objects, pass/warning/fail/info mapping, REST exposure, and user-safe diagnostic messages remain deferred to Subphase 2.4.
+- Temporary write/rename tests and sample conversion cleanup remain deferred to Subphase 2.4.
+- No persistent options, database tables, metadata keys, scheduled actions, queue jobs, media scans, image conversion, frontend delivery, Elementor integration, or WooCommerce integration was added.

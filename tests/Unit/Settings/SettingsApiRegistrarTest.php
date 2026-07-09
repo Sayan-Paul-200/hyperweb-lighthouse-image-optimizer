@@ -8,6 +8,7 @@
 namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Settings;
 
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\FormatSupportResult;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsApiRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsSanitizer;
@@ -83,10 +84,10 @@ final class SettingsApiRegistrarTest extends TestCase {
 		$settings_api = new FakeSettingsApi();
 		$registrar    = $this->registrar(
 			$settings_api,
-			new FakeFormatSupportChecker(
+			new FakeFormatSupportProvider(
 				array(
-					SettingsSchema::FORMAT_WEBP => true,
-					SettingsSchema::FORMAT_AVIF => true,
+					SettingsSchema::FORMAT_WEBP => FormatSupportResult::supported( 'webp', 'image/webp' ),
+					SettingsSchema::FORMAT_AVIF => FormatSupportResult::supported( 'avif', 'image/avif' ),
 				)
 			)
 		);
@@ -158,10 +159,16 @@ final class SettingsApiRegistrarTest extends TestCase {
 		$settings_api = new FakeSettingsApi();
 		$registrar    = $this->registrar(
 			$settings_api,
-			new FakeFormatSupportChecker(
+			new FakeFormatSupportProvider(
 				array(
-					SettingsSchema::FORMAT_WEBP => true,
-					SettingsSchema::FORMAT_AVIF => false,
+					SettingsSchema::FORMAT_WEBP => FormatSupportResult::supported( 'webp', 'image/webp' ),
+					SettingsSchema::FORMAT_AVIF => FormatSupportResult::unsupported(
+						'avif',
+						'image/avif',
+						true,
+						false,
+						'encoding_not_supported'
+					),
 				)
 			)
 		);
@@ -174,6 +181,71 @@ final class SettingsApiRegistrarTest extends TestCase {
 
 		self::assertSame( array( 'webp' ), $settings['enabled_formats'] );
 		self::assertContains( 'unsupported_enabled_formats', array_column( $settings_api->errors, 'code' ) );
+	}
+
+	/**
+	 * Test misconfigured formats are also blocked.
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_settings_removes_misconfigured_enabled_formats(): void {
+		$settings_api = new FakeSettingsApi();
+		$registrar    = $this->registrar(
+			$settings_api,
+			new FakeFormatSupportProvider(
+				array(
+					SettingsSchema::FORMAT_WEBP => FormatSupportResult::misconfigured(
+						'webp',
+						'image/webp',
+						true,
+						false,
+						'no_image_editor_available'
+					),
+					SettingsSchema::FORMAT_AVIF => FormatSupportResult::supported( 'avif', 'image/avif' ),
+				)
+			)
+		);
+
+		$settings = $registrar->sanitize_settings(
+			array(
+				'enabled_formats' => array( 'webp', 'avif' ),
+			)
+		);
+
+		self::assertSame( array( 'avif' ), $settings['enabled_formats'] );
+		self::assertContains( 'unsupported_enabled_formats', array_column( $settings_api->errors, 'code' ) );
+	}
+
+	/**
+	 * Test unknown support preserves existing 2.2 behavior and does not block.
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_settings_allows_unknown_enabled_format_support(): void {
+		$settings_api = new FakeSettingsApi();
+		$registrar    = $this->registrar(
+			$settings_api,
+			new FakeFormatSupportProvider(
+				array(
+					SettingsSchema::FORMAT_AVIF => FormatSupportResult::unknown(
+						'avif',
+						'image/avif',
+						null,
+						null,
+						'support_check_unavailable'
+					),
+				)
+			)
+		);
+
+		$settings = $registrar->sanitize_settings(
+			array(
+				'enabled_formats' => array( 'avif' ),
+			)
+		);
+
+		self::assertSame( array( 'avif' ), $settings['enabled_formats'] );
+		self::assertNotContains( 'unsupported_enabled_formats', array_column( $settings_api->errors, 'code' ) );
 	}
 
 	/**
@@ -193,10 +265,16 @@ final class SettingsApiRegistrarTest extends TestCase {
 		$settings_api = new FakeSettingsApi();
 		$registrar    = $this->registrar(
 			$settings_api,
-			new FakeFormatSupportChecker(
+			new FakeFormatSupportProvider(
 				array(
-					SettingsSchema::FORMAT_WEBP => false,
-					SettingsSchema::FORMAT_AVIF => true,
+					SettingsSchema::FORMAT_WEBP => FormatSupportResult::unsupported(
+						'webp',
+						'image/webp',
+						true,
+						false,
+						'encoding_not_supported'
+					),
+					SettingsSchema::FORMAT_AVIF => FormatSupportResult::supported( 'avif', 'image/avif' ),
 				)
 			),
 			$options
@@ -218,19 +296,19 @@ final class SettingsApiRegistrarTest extends TestCase {
 	/**
 	 * Build the registrar under test.
 	 *
-	 * @param FakeSettingsApi|null          $settings_api Settings API fake.
-	 * @param FakeFormatSupportChecker|null $format_support Format support fake.
-	 * @param FakeOptionStore|null          $options Option store.
+	 * @param FakeSettingsApi|null           $settings_api Settings API fake.
+	 * @param FakeFormatSupportProvider|null $format_support Format support fake.
+	 * @param FakeOptionStore|null           $options Option store.
 	 * @return SettingsApiRegistrar
 	 */
 	private function registrar(
 		?FakeSettingsApi $settings_api = null,
-		?FakeFormatSupportChecker $format_support = null,
+		?FakeFormatSupportProvider $format_support = null,
 		?FakeOptionStore $options = null
 	): SettingsApiRegistrar {
 		$options        = $options ?? new FakeOptionStore( array( SettingsRepository::OPTION_NAME => SettingsSchema::defaults() ) );
 		$settings_api   = $settings_api ?? new FakeSettingsApi();
-		$format_support = $format_support ?? new FakeFormatSupportChecker();
+		$format_support = $format_support ?? new FakeFormatSupportProvider();
 
 		return new SettingsApiRegistrar(
 			SettingsRepository::for_options( $options ),

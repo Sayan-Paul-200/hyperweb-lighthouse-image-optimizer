@@ -7,6 +7,8 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Settings;
 
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentInspector;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\FormatSupportProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 
@@ -43,7 +45,7 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 	/**
 	 * Format support checker.
 	 *
-	 * @var FormatSupportCheckerInterface
+	 * @var FormatSupportProviderInterface
 	 */
 	private $format_support;
 
@@ -64,24 +66,24 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 			SettingsRepository::for_wordpress(),
 			SettingsSanitizer::for_schema(),
 			new WordPressSettingsApi(),
-			new WordPressFormatSupportChecker()
+			EnvironmentInspector::for_wordpress()
 		);
 	}
 
 	/**
 	 * Create the registrar.
 	 *
-	 * @param SettingsRepositoryInterface   $repository Settings repository.
-	 * @param SettingsSanitizer             $sanitizer Settings sanitizer.
-	 * @param SettingsApiInterface          $settings_api Settings API adapter.
-	 * @param FormatSupportCheckerInterface $format_support Format support checker.
-	 * @param string                        $capability Required capability.
+	 * @param SettingsRepositoryInterface    $repository Settings repository.
+	 * @param SettingsSanitizer              $sanitizer Settings sanitizer.
+	 * @param SettingsApiInterface           $settings_api Settings API adapter.
+	 * @param FormatSupportProviderInterface $format_support Format support checker.
+	 * @param string                         $capability Required capability.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $repository,
 		SettingsSanitizer $sanitizer,
 		SettingsApiInterface $settings_api,
-		FormatSupportCheckerInterface $format_support,
+		FormatSupportProviderInterface $format_support,
 		string $capability = SettingsSchema::CAPABILITY_MANAGE_OPTIONS
 	) {
 		$this->repository     = $repository;
@@ -204,7 +206,7 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 		$unsupported = array();
 
 		foreach ( $enabled as $format ) {
-			if ( false === $this->format_support->supports( $format ) ) {
+			if ( $this->format_support->support_for( $format )->blocks_enablement() ) {
 				$unsupported[] = $format;
 				continue;
 			}
