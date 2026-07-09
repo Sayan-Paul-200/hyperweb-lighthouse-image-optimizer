@@ -68,14 +68,15 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - The README is boilerplate and does not yet describe the product accurately.
 - The POT file exists but is empty.
 - Composer autoloading and development quality tooling exist as of Subphase 0.2.
-- No Action Scheduler library, settings model, queue, logging, diagnostics, or image optimization services exist yet.
+- Action Scheduler 3.9.3 is bundled as an unmodified upstream subtree as of Subphase 0.3.
+- No settings model, queue abstraction, logging, diagnostics, or image optimization services exist yet.
 
 ## Phase Status
 
 - [ ] Phase 0 - Repository Baseline and Scaffold Hardening
   - [x] Subphase 0.1 - Create the development baseline
   - [x] Subphase 0.2 - Add Composer and quality tooling
-  - [ ] Subphase 0.3 - Harden the bootstrap
+  - [x] Subphase 0.3 - Harden the bootstrap
   - [ ] Subphase 0.4 - Remove performance-negative placeholder behavior
 - [ ] Phase 1 - Application Foundation and Lifecycle
 - [ ] Phase 2 - Settings, Environment, and Diagnostics Foundation
@@ -234,6 +235,95 @@ composer run quality: pass
 ### Deferred Work
 
 - The plugin entry file does not load `vendor/autoload.php` yet; bootstrap loading is deferred to Subphase 0.3.
-- Action Scheduler is not bundled yet; that is deferred to Subphase 0.3 and later queue phases.
+- Action Scheduler queue abstractions and workers are deferred to Phase 5.
 - WordPress activation smoke testing remains pending until a WordPress 6.5+ test installation is available.
 - Existing boilerplate admin/frontend asset hooks remain in place until Subphase 0.4.
+
+## Subphase 0.3 - Harden the Bootstrap
+
+**Status:** Complete
+**Completed:** 2026-07-09
+
+### Tasks
+
+- [x] Add constants for plugin file, path, URL, basename, version, DB version, schema version, minimum WordPress, and minimum PHP.
+- [x] Add plugin header requirements for WordPress 6.5 and PHP 7.4.
+- [x] Add graceful minimum-requirement handling for runtime and activation contexts.
+- [x] Load the Composer autoloader after PHP/version checks.
+- [x] Bundle and load Action Scheduler before `plugins_loaded` priority 0.
+- [x] Keep activation/deactivation registration in the entry file.
+- [x] Add pure requirement checks and unit coverage.
+
+### Files Added
+
+```text
+libraries/action-scheduler/
+src/Infrastructure/Requirements.php
+tests/Unit/Infrastructure/RequirementsTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+hyperweb-lighthouse-image-optimizer.php
+phpcs.xml.dist
+phpstan.neon.dist
+```
+
+### Files Removed
+
+```text
+None
+```
+
+### Bootstrap Changes
+
+- Plugin version moved from `1.0.0` to `0.1.0-alpha.3` to reflect the current pre-stable phase.
+- The entry file defines stable constants for versioning, paths, URL, basename, and platform requirements.
+- Unsupported PHP/WordPress versions, missing `vendor/autoload.php`, or missing Action Scheduler loader now produce a safe disabled state with an admin notice.
+- Activation with unmet bootstrap requirements deactivates the plugin and displays a clear failure message.
+- Composer autoload and `libraries/action-scheduler/action-scheduler.php` are loaded before the legacy plugin class runs.
+- No Action Scheduler scheduling APIs are called in this subphase.
+
+### Bundled Library
+
+```text
+Action Scheduler: 3.9.3
+Source: https://github.com/woocommerce/action-scheduler/tree/3.9.3
+Install method: git subtree
+Path: libraries/action-scheduler/
+```
+
+Action Scheduler 3.9.3 was selected instead of 4.0.0 because this plugin targets WordPress 6.5+, while Action Scheduler 4.0.0 requires WordPress 6.8+.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 5 tests and 14 assertions
+composer run quality: pass
+git diff --check: pass
+libraries/action-scheduler/action-scheduler.php exists: pass
+No plugin-owned PHP code calls Action Scheduler as_* APIs yet: pass
+vendor/ remains ignored and untracked: pass
+```
+
+### Acceptance Criteria
+
+- [x] Unsupported environments receive a clear admin-facing activation failure or safe disabled state.
+- [ ] Supported environments activate normally.
+- [x] No business logic executes in the entry file.
+
+Supported-environment activation remains pending until this plugin is run inside a WordPress 6.5+ test installation. Static and unit-level bootstrap checks passed in this plugin-only workspace.
+
+### Deferred Work
+
+- No settings, queue abstraction, conversion worker, diagnostics, REST endpoints, or image optimization behavior was added.
+- Action Scheduler APIs must not be used until `action_scheduler_init` or a later safe hook in later phases.
+- Global placeholder admin/frontend asset hooks remain in place until Subphase 0.4.

@@ -2,6 +2,7 @@
 <ruleset name="HyperWeb Lighthouse Image Optimizer">
 	<description>PHP_CodeSniffer rules for HyperWeb Lighthouse Image Optimizer.</description>
 
+	<file>hyperweb-lighthouse-image-optimizer.php</file>
 	<file>src</file>
 	<file>tests</file>
 
@@ -14,6 +15,7 @@
 
 	<exclude-pattern>vendor/*</exclude-pattern>
 	<exclude-pattern>node_modules/*</exclude-pattern>
+	<exclude-pattern>libraries/action-scheduler/*</exclude-pattern>
 
 	<rule ref="WordPress-Core"/>
 	<rule ref="WordPress-Docs"/>

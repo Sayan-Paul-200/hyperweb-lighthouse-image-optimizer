@@ -6,3 +6,5 @@ parameters:
   scanFiles:
     - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
   tmpDir: .phpstan/cache
+  excludePaths:
+    - libraries/action-scheduler
