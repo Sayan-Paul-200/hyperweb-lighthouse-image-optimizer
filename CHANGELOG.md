@@ -24,6 +24,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added source MIME and animation validation for read-only image eligibility checks.
 - Added deterministic uploads-safe destination resolution for future derivative sidecars.
 - Added a conversion result model and stable conversion error/skip taxonomy for future converter and worker phases.
+- Added a callable WordPress image-editor converter with deterministic temp output, output validation, minimum-savings enforcement, cleanup, and atomic sidecar moves.
 
 ### Removed
 
@@ -33,4 +34,4 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 
 ### Notes
 
-- No production image optimization, queueing, delivery, or admin workflow behavior has been implemented yet.
+- No runtime image optimization hooks, queueing, delivery, or admin workflow behavior has been implemented yet.

@@ -83,7 +83,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - Source MIME and animation validation primitives exist as of Subphase 3.2.
 - Deterministic uploads-safe destination path resolution exists as of Subphase 3.3.
 - Conversion result models, byte-savings calculations, and a stable conversion error/skip taxonomy exist as of Subphase 3.4.
-- No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, or production image optimization services exist yet.
+- A callable WordPress image-editor converter with bounded temp output, validation, cleanup, and atomic sidecar moves exists as of Subphase 3.5.
+- No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, runtime image optimization hooks, or frontend delivery exists yet.
 
 ## Phase Status
 
@@ -107,7 +108,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 3.2 - MIME and animation validation
   - [x] Subphase 3.3 - Destination resolver
   - [x] Subphase 3.4 - Conversion result model and error taxonomy
-  - [ ] Subphase 3.5 - Converter implementation
+  - [x] Subphase 3.5 - Converter implementation
   - [ ] Subphase 3.6 - Resource guard
   - [ ] Subphase 3.7 - Conversion policy
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
@@ -1720,3 +1721,110 @@ Runtime WordPress smoke testing is not required for this pure PHP model-only sub
 - Converter implementation remains deferred to Subphase 3.5.
 - Resource guard remains deferred to Subphase 3.6.
 - Conversion policy remains deferred to Subphase 3.7.
+
+## Subphase 3.5 - Converter Implementation
+
+**Status:** Complete
+**Completed:** 2026-07-10
+
+### Tasks
+
+- [x] Add a callable-only image converter service.
+- [x] Add conversion request, editor, filesystem, and clock boundaries.
+- [x] Use WordPress image editor APIs only behind the WordPress editor adapter.
+- [x] Write generated output only to the deterministic temporary path from `DestinationPath`.
+- [x] Validate source, temporary, and final paths before conversion, cleanup, and move operations.
+- [x] Validate generated output MIME, dimensions, and positive byte size before finalizing.
+- [x] Enforce minimum byte-savings percentage before moving output into place.
+- [x] Avoid overwriting existing final sidecars.
+- [x] Surface cleanup failures in sanitized result details.
+- [x] Keep settings reads, resource policy, metadata writes, queues, REST, UI, frontend delivery, Elementor, and WooCommerce deferred.
+
+### Files Added
+
+```text
+src/Image/ConversionClockInterface.php
+src/Image/ConversionEditorInterface.php
+src/Image/ConversionEditorResult.php
+src/Image/ConversionFilesystemInterface.php
+src/Image/ConversionRequest.php
+src/Image/ImageConverter.php
+src/Image/SystemConversionClock.php
+src/Image/WordPressConversionEditor.php
+src/Image/WordPressConversionFilesystem.php
+tests/Unit/Image/FakeConversionClock.php
+tests/Unit/Image/FakeConversionEditor.php
+tests/Unit/Image/FakeConversionFilesystem.php
+tests/Unit/Image/ImageConverterTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Image/ImageScopePolicyTest.php
+```
+
+### Converter Services
+
+- `ImageConverter::convert()` coordinates one source/target conversion attempt and returns a `ConversionResult`.
+- `ConversionRequest` carries a `SourceImage`, `DestinationPath`, quality, and minimum savings threshold; quality is clamped to `1-100`, and minimum savings is clamped to `0-100`.
+- `WordPressConversionEditor` is the only new image-domain class that calls `wp_get_image_editor()`.
+- `WordPressConversionFilesystem` is the only new image-domain class that calls native `rename()`, `wp_delete_file()`, or fallback `unlink()`.
+- `ImageConverter` validates source, destination, and temporary path relationships before read, delete, or move operations.
+- Existing final sidecars are treated as `destination_collision` and are not overwritten.
+- Pre-existing validated temporary sidecars are cleaned before conversion.
+- Temporary output is deleted on failed validation, failed savings threshold, editor failure when present, destination collision, and atomic move failure when possible.
+- Final output is validated after the atomic move before returning `optimized`.
+
+### Hooks, Settings, Metadata, and Database Changes
+
+```text
+New hooks: none
+New settings: none
+New options: none
+New tables: none
+New metadata keys: none
+Metadata writes: none
+Scheduled actions: none
+REST routes: none
+Admin menus/assets: none
+Frontend hooks/assets: none
+Runtime upload optimization hooks: none
+```
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 173 tests and 8735 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. `wp_get_image_editor()` appears in `src/Image/WordPressConversionEditor.php` only within `src/Image/`; native `rename()`, `wp_delete_file()`, and fallback `unlink()` appear in `src/Image/WordPressConversionFilesystem.php` only. `src/Image/` does not add REST routes, UI/assets, media hooks, metadata writes, optimization queue scheduling, direct GD/Imagick conversion functions, temp-file allocation, file copy/uploaded-file moves, memory-limit mutation, or frontend delivery hooks.
+
+### Acceptance Criteria
+
+- [x] Converter uses WordPress image APIs rather than direct GD/Imagick conversion calls.
+- [x] Original source files are never written, renamed, deleted, or overwritten.
+- [x] Existing final sidecars are not overwritten.
+- [x] Generated output is validated before finalization.
+- [x] Minimum byte-savings policy is enforced by request input.
+- [x] Cleanup failures are reported without exposing absolute paths.
+- [x] Converter remains callable-only and is not registered in runtime hooks.
+- [ ] WordPress runtime WebP/AVIF conversion smoke testing passes.
+
+Runtime conversion smoke testing remains pending until this plugin is run inside a WordPress 6.5+ test installation with writable uploads and WebP/AVIF-capable image editors.
+
+### Deferred Work
+
+- Resource guard and execution budget checks remain deferred to Subphase 3.6.
+- Conversion policy, settings-derived format selection, environment support gating, and exclusion handling remain deferred to Subphase 3.7.
+- Existing derivative reuse, fingerprinting, metadata persistence, attachment state, queues, upload hooks, REST endpoints, admin screens, frontend delivery, Elementor integration, and WooCommerce integration remain deferred to their owning phases.

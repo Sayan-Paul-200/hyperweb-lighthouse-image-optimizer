@@ -54,10 +54,13 @@ final class DiagnosticsScopePolicyTest extends TestCase {
 			}
 
 			if ( 1 === preg_match( '/\bwp_get_image_editor\s*\(/', $contents ) ) {
-				self::assertSame(
-					'src/Diagnostics/WordPressSampleConversionProbe.php',
+				self::assertContains(
 					$file,
-					sprintf( 'wp_get_image_editor() is only allowed in the sample conversion probe, found in %s.', $file )
+					array(
+						'src/Diagnostics/WordPressSampleConversionProbe.php',
+						'src/Image/WordPressConversionEditor.php',
+					),
+					sprintf( 'wp_get_image_editor() is only allowed in conversion probes/adapters, found in %s.', $file )
 				);
 			}
 		}

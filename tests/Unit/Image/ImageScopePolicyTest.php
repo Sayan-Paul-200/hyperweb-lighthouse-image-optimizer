@@ -13,7 +13,7 @@ use RecursiveIteratorIterator;
 use SplFileInfo;
 
 /**
- * Verifies the image domain remains read-only before conversion phases.
+ * Verifies the image domain does not introduce later runtime behavior.
  */
 final class ImageScopePolicyTest extends TestCase {
 
@@ -46,6 +46,7 @@ final class ImageScopePolicyTest extends TestCase {
 			'single queue scheduling'      => '/\bas_schedule_single_action\s*\(/',
 			'file write operation'         => '/\bfile_put_contents\s*\(/',
 			'file rename operation'        => '/\brename\s*\(/',
+			'WordPress file delete'        => '/\bwp_delete_file\s*\(/',
 			'file delete operation'        => '/\bunlink\s*\(/',
 			'temporary path allocation'    => '/\b(?:wp_tempnam|tempnam)\s*\(/',
 			'file copy operation'          => '/\bcopy\s*\(/',
@@ -53,8 +54,23 @@ final class ImageScopePolicyTest extends TestCase {
 			'automatic memory limit raise' => '/\bini_set\s*\(/',
 		);
 
+		$allowed_patterns = array(
+			'src/Image/WordPressConversionEditor.php'     => array(
+				'image editor conversion',
+			),
+			'src/Image/WordPressConversionFilesystem.php' => array(
+				'file rename operation',
+				'WordPress file delete',
+				'file delete operation',
+			),
+		);
+
 		foreach ( $this->image_source_files() as $file => $contents ) {
 			foreach ( $forbidden_patterns as $label => $pattern ) {
+				if ( isset( $allowed_patterns[ $file ] ) && in_array( $label, $allowed_patterns[ $file ], true ) ) {
+					continue;
+				}
+
 				self::assertDoesNotMatchRegularExpression(
 					$pattern,
 					$contents,
