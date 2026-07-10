@@ -29,6 +29,13 @@ final class FakeAttachmentMetaStore implements AttachmentMetaStoreInterface {
 	public $updates = array();
 
 	/**
+	 * Add operations.
+	 *
+	 * @var array<int,array<string,mixed>>
+	 */
+	public $adds = array();
+
+	/**
 	 * Delete operations.
 	 *
 	 * @var array<int,array<string,mixed>>
@@ -41,6 +48,13 @@ final class FakeAttachmentMetaStore implements AttachmentMetaStoreInterface {
 	 * @var bool
 	 */
 	public $fail_writes = false;
+
+	/**
+	 * Optional callback before exact-value delete.
+	 *
+	 * @var callable|null
+	 */
+	public $before_delete_value;
 
 	/**
 	 * Get meta.
@@ -85,6 +99,38 @@ final class FakeAttachmentMetaStore implements AttachmentMetaStoreInterface {
 	}
 
 	/**
+	 * Add unique meta.
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $key Meta key.
+	 * @param mixed  $value Value.
+	 * @return bool
+	 */
+	public function add_unique( int $attachment_id, string $key, $value ): bool {
+		$this->adds[] = array(
+			'attachment_id' => $attachment_id,
+			'key'           => $key,
+			'value'         => $value,
+		);
+
+		if ( $this->fail_writes ) {
+			return false;
+		}
+
+		if ( isset( $this->meta[ $attachment_id ] ) && array_key_exists( $key, $this->meta[ $attachment_id ] ) ) {
+			return false;
+		}
+
+		if ( ! isset( $this->meta[ $attachment_id ] ) ) {
+			$this->meta[ $attachment_id ] = array();
+		}
+
+		$this->meta[ $attachment_id ][ $key ] = $value;
+
+		return true;
+	}
+
+	/**
 	 * Delete meta.
 	 *
 	 * @param int    $attachment_id Attachment ID.
@@ -96,6 +142,38 @@ final class FakeAttachmentMetaStore implements AttachmentMetaStoreInterface {
 			'attachment_id' => $attachment_id,
 			'key'           => $key,
 		);
+
+		unset( $this->meta[ $attachment_id ][ $key ] );
+
+		return true;
+	}
+
+	/**
+	 * Delete matching meta.
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $key Meta key.
+	 * @param mixed  $value Value.
+	 * @return bool
+	 */
+	public function delete_value( int $attachment_id, string $key, $value ): bool {
+		$this->deletes[] = array(
+			'attachment_id' => $attachment_id,
+			'key'           => $key,
+			'value'         => $value,
+		);
+
+		if ( null !== $this->before_delete_value ) {
+			call_user_func( $this->before_delete_value, $attachment_id, $key, $value );
+		}
+
+		if (
+			! isset( $this->meta[ $attachment_id ] ) ||
+			! array_key_exists( $key, $this->meta[ $attachment_id ] ) ||
+			$this->meta[ $attachment_id ][ $key ] !== $value
+		) {
+			return false;
+		}
 
 		unset( $this->meta[ $attachment_id ][ $key ] );
 

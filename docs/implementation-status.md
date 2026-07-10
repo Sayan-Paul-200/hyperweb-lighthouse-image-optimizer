@@ -87,6 +87,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A pre-allocation resource guard exists as of Subphase 3.6.
 - Service-only attachment fingerprinting exists as of Subphase 4.1.
 - A derivative repository for plugin-owned `_hwlio_derivatives` manifests and `_hwlio_status` summaries exists as of Subphase 4.2.
+- Token-protected attachment locking, bounded stale-lock recovery, and token-safe lock diagnostics exist as of Subphase 4.3.
 - No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, runtime image optimization hooks, or frontend delivery exists yet.
 
 ## Phase Status
@@ -117,7 +118,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
   - [x] Subphase 4.1 - Attachment fingerprint
   - [x] Subphase 4.2 - Derivative repository
-  - [ ] Subphase 4.3 - Attachment locking
+  - [x] Subphase 4.3 - Attachment locking
   - [ ] Subphase 4.4 - Attachment processor
   - [ ] Subphase 4.5 - Cleanup on attachment deletion
 - [ ] Phase 5 - Action Scheduler Queue and Automatic Processing
@@ -2077,3 +2078,88 @@ Source scans: pass. Only `src/Attachment/WordPressAttachmentMetaStore.php` calls
 - Attachment processing orchestration, derivative reuse checks, queue payload execution, and statistics remain deferred to Subphase 4.4 and Phase 5.
 - Attachment deletion cleanup registration remains deferred to Subphase 4.5.
 - Filesystem existence, MIME, and dimension revalidation for derivative reuse remains deferred to processing and delivery phases.
+
+## Subphase 4.3 - Attachment Locking
+
+**Status:** Complete
+**Completed:** 2026-07-10
+
+### Tasks
+
+- [x] Add `_hwlio_lock` value object parsing, expiration checks, and token-safe serialization.
+- [x] Add `AttachmentLockManager` for unique acquisition, token-checked release, callback wrapping, and bounded stale recovery.
+- [x] Extend the attachment meta seam with unique add and exact-value delete operations.
+- [x] Add a WordPress-backed scanner for bounded attachment lock lookup.
+- [x] Add service-only lock diagnostics that return structured diagnostic results without exposing tokens.
+- [x] Keep plugin composition unchanged and avoid scheduling recurring stale-lock recovery in this subphase.
+
+### Files Added
+
+```text
+src/Attachment/AttachmentLock.php
+src/Attachment/AttachmentLockDiagnostics.php
+src/Attachment/AttachmentLockManager.php
+src/Attachment/AttachmentLockRecoveryResult.php
+src/Attachment/AttachmentLockResult.php
+src/Attachment/AttachmentLockScannerInterface.php
+src/Attachment/AttachmentLockTokenGeneratorInterface.php
+src/Attachment/RandomAttachmentLockTokenGenerator.php
+src/Attachment/WordPressAttachmentLockScanner.php
+tests/Unit/Attachment/AttachmentLockManagerTest.php
+tests/Unit/Attachment/FakeAttachmentLockScanner.php
+tests/Unit/Attachment/FixedAttachmentLockTokenGenerator.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Attachment/AttachmentMetaStoreInterface.php
+src/Attachment/WordPressAttachmentMetaStore.php
+tests/Unit/Attachment/FakeAttachmentMetaStore.php
+```
+
+### Lock Behavior
+
+- `_hwlio_lock` stores only `token`, `created_at`, and `expires_at`.
+- Default lock TTL is `600` seconds; invalid TTL values fall back to `600`.
+- Acquisition uses unique post-meta semantics so active workers cannot acquire the same attachment concurrently.
+- Active existing locks return `lock_unavailable` and are not deleted.
+- Expired or malformed locks are recovered by exact-value delete before one retry.
+- Release deletes only when the current stored token matches.
+- Missing lock release is idempotent and returns a warning result.
+- `run_locked()` releases in a `finally` path when callbacks complete or throw.
+- Public result and diagnostic serialization never exposes lock tokens.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 218 tests and 11097 assertions
+composer run quality: pass
+vendor/bin/phpunit tests/Unit/Attachment: pass, 35 tests and 831 assertions
+git diff --check: pass
+```
+
+Source scans: pass. WordPress post-meta APIs remain isolated to `src/Attachment/WordPressAttachmentMetaStore.php`. No code calls `wp_update_attachment_metadata()`, media hooks, Action Scheduler optimization scheduling, REST routes, admin/frontend assets, delivery hooks, converter APIs, or filesystem mutation APIs in the attachment locking layer.
+
+### Acceptance Criteria
+
+- [x] First-worker unique acquisition succeeds and a second active worker receives `lock_unavailable`.
+- [x] Stale and malformed locks can be recovered without manual database edits.
+- [x] Exact-value deletion protects newer locks during recovery races.
+- [x] Release succeeds only with the matching token and never deletes on token mismatch.
+- [x] Bounded stale recovery scans at most `100` attachment IDs.
+- [x] Lock diagnostics report clear, active, stale, and invalid states without tokens.
+
+### Deferred Work
+
+- Recurring scheduling of `hwlio_recover_stale_locks` remains deferred to Phase 5.5.
+- Attachment processing orchestration, derivative reuse checks, queue payload execution, and status transitions remain deferred to Subphase 4.4 and Phase 5.
+- Admin and REST exposure for lock diagnostics remains deferred to Phase 6.
+- Attachment deletion cleanup registration remains deferred to Subphase 4.5.

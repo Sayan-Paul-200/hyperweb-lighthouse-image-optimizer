@@ -28,6 +28,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added a pre-allocation resource guard that skips oversized converter requests before editor allocation.
 - Added service-only attachment fingerprinting for cheap source/metadata staleness checks and future queue payload validation.
 - Added the derivative repository for schema-versioned `_hwlio_derivatives` manifests and `_hwlio_status` summaries.
+- Added token-protected attachment locking with bounded stale-lock recovery and token-safe diagnostics.
 
 ### Removed
 

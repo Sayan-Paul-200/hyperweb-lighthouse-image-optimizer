@@ -45,6 +45,18 @@ final class WordPressAttachmentMetaStore implements AttachmentMetaStoreInterface
 	}
 
 	/**
+	 * Add a unique attachment meta value.
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $key Meta key.
+	 * @param mixed  $value Meta value.
+	 * @return bool
+	 */
+	public function add_unique( int $attachment_id, string $key, $value ): bool {
+		return false !== \add_post_meta( max( 0, $attachment_id ), $key, $value, true );
+	}
+
+	/**
 	 * Delete an attachment meta value.
 	 *
 	 * @param int    $attachment_id Attachment ID.
@@ -53,5 +65,17 @@ final class WordPressAttachmentMetaStore implements AttachmentMetaStoreInterface
 	 */
 	public function delete( int $attachment_id, string $key ): bool {
 		return \delete_post_meta( max( 0, $attachment_id ), $key );
+	}
+
+	/**
+	 * Delete an attachment meta value only when the stored value matches.
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $key Meta key.
+	 * @param mixed  $value Meta value.
+	 * @return bool
+	 */
+	public function delete_value( int $attachment_id, string $key, $value ): bool {
+		return \delete_post_meta( max( 0, $attachment_id ), $key, $value );
 	}
 }
