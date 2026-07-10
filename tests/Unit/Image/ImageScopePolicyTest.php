@@ -13,7 +13,7 @@ use RecursiveIteratorIterator;
 use SplFileInfo;
 
 /**
- * Verifies Subphase 3.1 remains read-only source collection.
+ * Verifies the image domain remains read-only before conversion phases.
  */
 final class ImageScopePolicyTest extends TestCase {
 
@@ -22,7 +22,7 @@ final class ImageScopePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function test_source_collection_does_not_introduce_later_phase_behavior(): void {
+	public function test_image_domain_does_not_introduce_later_phase_behavior(): void {
 		$forbidden_patterns = array(
 			'REST route registration'      => '/\bregister_rest_route\s*\(/',
 			'REST API hook'                => '/\brest_api_init\b/',
@@ -35,6 +35,8 @@ final class ImageScopePolicyTest extends TestCase {
 			'attachment metadata write'    => '/\b(?:add|update|delete)_post_meta\s*\(/',
 			'attachment metadata update'   => '/\bwp_update_attachment_metadata\s*\(/',
 			'image editor conversion'      => '/\bwp_get_image_editor\s*\(/',
+			'webp conversion function'     => '/\bimagewebp\s*\(/',
+			'avif conversion function'     => '/\bimageavif\s*\(/',
 			'frontend image hook'          => '/\bwp_get_attachment_image\b/',
 			'frontend content hook'        => '/\bwp_content_img_tag\b/',
 			'responsive srcset hook'       => '/\bwp_calculate_image_srcset\b/',

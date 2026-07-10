@@ -80,6 +80,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A canonical environment capability layer for versions, image editor candidates, WebP/AVIF support, uploads status, runtime limits, and Action Scheduler readiness exists as of Subphase 2.3.
 - A structured diagnostics framework with user-safe result objects, environment checks, temporary write/rename checks, and sample conversion diagnostics exists as of Subphase 2.4.
 - Read-only source image value objects and a collector for attachment full, subsize, and original-image sources exist as of Subphase 3.1.
+- Source MIME and animation validation primitives exist as of Subphase 3.2.
 - No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, or production image optimization services exist yet.
 
 ## Phase Status
@@ -101,7 +102,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 2.4 - Diagnostics framework
 - [ ] Phase 3 - Core Image Domain
   - [x] Subphase 3.1 - Source image value objects and collector
-  - [ ] Subphase 3.2 - MIME and animation validation
+  - [x] Subphase 3.2 - MIME and animation validation
   - [ ] Subphase 3.3 - Destination resolver
   - [ ] Subphase 3.4 - Conversion result model and error taxonomy
   - [ ] Subphase 3.5 - Converter implementation
@@ -1440,7 +1441,99 @@ Runtime smoke testing remains pending until this plugin is run inside a WordPres
 
 ### Deferred Work
 
-- MIME allowlist validation and animated GIF/WebP detection remain deferred to Subphase 3.2.
+- MIME allowlist validation and animated GIF/WebP detection were implemented in Subphase 3.2.
 - Destination path resolution, temporary output paths, and sidecar naming remain deferred to Subphase 3.3.
 - Conversion result taxonomy, converter implementation, resource guard, and conversion policy remain deferred to later Phase 3 subphases.
 - No production image conversion, media hooks, queue jobs, REST endpoints, admin UI, frontend delivery, Elementor integration, or WooCommerce integration was added.
+
+## Subphase 3.2 - MIME and Animation Validation
+
+**Status:** Complete
+**Completed:** 2026-07-10
+
+### Tasks
+
+- [x] Add read-only source MIME and animation validation services.
+- [x] Re-detect source MIME from file contents through the file probe instead of trusting filenames or metadata.
+- [x] Centralize the initial source MIME policy for JPEG, PNG, and non-animated WebP.
+- [x] Detect animated GIF and animated WebP safely enough to skip them before conversion phases.
+- [x] Reject corrupt, unknown, unsupported, or MIME-mismatched sources with typed result codes.
+- [x] Keep destination resolution, conversion, metadata writes, queues, REST, UI, and delivery deferred.
+
+### Files Added
+
+```text
+src/Image/AnimationDetectorInterface.php
+src/Image/AnimationStatus.php
+src/Image/FileAnimationDetector.php
+src/Image/SourceImageValidationCollection.php
+src/Image/SourceImageValidationResult.php
+src/Image/SourceImageValidator.php
+src/Image/SourceMimePolicy.php
+tests/Unit/Image/FakeAnimationDetector.php
+tests/Unit/Image/FileAnimationDetectorTest.php
+tests/Unit/Image/SourceImageValidatorTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+tests/Unit/Image/ImageScopePolicyTest.php
+```
+
+### Image Validation Domain
+
+- `SourceImageValidator` validates one `SourceImage` or a `SourceImageCollection` without registering hooks.
+- `SourceMimePolicy` accepts `image/jpeg`, `image/png`, and non-animated `image/webp` as initial source candidates.
+- JPEG and PNG validation results expose future target formats `webp` and `avif`; WebP exposes only `avif`.
+- `FileAnimationDetector` parses GIF image descriptor blocks and RIFF/WebP chunks for animation signals.
+- Validation results use stable codes: `eligible`, `skipped_unsupported_source_mime`, `skipped_animated_image`, `source_invalid_mime`, `source_corrupt`, `source_animation_unknown`, `source_missing`, and `source_unreadable`.
+- Validation serialization omits absolute source paths.
+
+### Hooks, Settings, Metadata, and Database Changes
+
+```text
+New hooks: none
+New settings: none
+New options: none
+New tables: none
+New metadata keys: none
+Metadata writes: none
+Scheduled actions: none
+REST routes: none
+Admin menus/assets: none
+Frontend hooks/assets: none
+```
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 132 tests and 6846 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans confirm `src/Image/` does not call `wp_get_image_editor()`, does not write attachment metadata, does not register hooks/routes, does not enqueue assets, does not schedule queue jobs, and does not introduce frontend delivery behavior.
+
+### Acceptance Criteria
+
+- [x] Renamed non-image sources are rejected when real MIME cannot be detected.
+- [x] Animated GIF and WebP sources are skipped with `skipped_animated_image`.
+- [x] SVG and AVIF sources are not eligible for raster conversion.
+- [x] Corrupt supported raster sources are rejected with `source_corrupt`.
+- [x] MIME changes between collection and validation are rejected with `source_invalid_mime`.
+- [ ] WordPress runtime validation smoke testing passes.
+
+Runtime smoke testing remains pending until this plugin is run inside a WordPress 6.5+ test installation with representative attachment files.
+
+### Deferred Work
+
+- Destination path resolution, temporary output paths, and deterministic sidecar names remain deferred to Subphase 3.3.
+- Conversion result taxonomy, converter implementation, resource guard, conversion policy, attachment metadata writes, queues, REST endpoints, admin UI, frontend delivery, Elementor integration, and WooCommerce integration remain deferred.
