@@ -84,6 +84,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - Deterministic uploads-safe destination path resolution exists as of Subphase 3.3.
 - Conversion result models, byte-savings calculations, and a stable conversion error/skip taxonomy exist as of Subphase 3.4.
 - A callable WordPress image-editor converter with bounded temp output, validation, cleanup, and atomic sidecar moves exists as of Subphase 3.5.
+- A pre-allocation resource guard exists as of Subphase 3.6.
+- Service-only attachment fingerprinting exists as of Subphase 4.1.
 - No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, runtime image optimization hooks, or frontend delivery exists yet.
 
 ## Phase Status
@@ -112,6 +114,11 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 3.6 - Resource guard
   - [ ] Subphase 3.7 - Conversion policy
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
+  - [x] Subphase 4.1 - Attachment fingerprint
+  - [ ] Subphase 4.2 - Derivative repository
+  - [ ] Subphase 4.3 - Attachment locking
+  - [ ] Subphase 4.4 - Attachment processor
+  - [ ] Subphase 4.5 - Cleanup on attachment deletion
 - [ ] Phase 5 - Action Scheduler Queue and Automatic Processing
 - [ ] Phase 6 - Admin Screens, REST API, and Bulk Processing
 - [ ] Phase 7 - Frontend Modern-Format Delivery
@@ -1899,3 +1906,80 @@ Source scans: pass. `ResourceGuard` calculates constraints without changing runt
 - Settings-derived resource policy decisions and per-job orchestration remain deferred to Subphase 3.7 (Conversion Policy) and Phase 4/5 attachment processing.
 - The `hwlio_max_pixel_count` filter is used only by the WordPress factory path.
 - Elementor/WooCommerce specific guards, queue integration, and REST validation remain deferred to later phases.
+
+## Subphase 4.1 - Attachment Fingerprint
+
+**Status:** Complete
+**Completed:** 2026-07-10
+
+### Tasks
+
+- [x] Add an attachment-domain fingerprint namespace.
+- [x] Build cheap attachment fingerprints from `SourceImageCollection` data only.
+- [x] Include full source path, byte size, modified time, normalized source metadata, and collection issues in fingerprint decisions.
+- [x] Produce a 20-character queue-safe signature without hashing full image contents.
+- [x] Compare queued signatures and stored master-plan-compatible fingerprint arrays against current state.
+- [x] Return stable comparison codes for matches, missing/invalid fingerprints, source changes, and metadata hash changes.
+- [x] Keep the implementation callable-only with no post meta writes, hooks, queues, REST routes, admin UI, conversion calls, or frontend delivery.
+
+### Files Added
+
+```text
+src/Attachment/AttachmentFingerprint.php
+src/Attachment/AttachmentFingerprintBuilder.php
+src/Attachment/AttachmentFingerprintCode.php
+src/Attachment/AttachmentFingerprintComparison.php
+tests/Unit/Attachment/AttachmentFingerprintTest.php
+tests/Unit/Attachment/AttachmentScopePolicyTest.php
+```
+
+### Fingerprint Fields
+
+- `relative_file`: current full source uploads-relative path.
+- `file_size`: current full source byte size.
+- `modified_time`: current full source modified time.
+- `metadata_hash`: SHA-256 hash of normalized source records and collection issue summaries.
+- `signature`: 20-character SHA-256 prefix for future queue payloads.
+
+### Comparison Codes
+
+```text
+fingerprint_match
+fingerprint_missing
+fingerprint_invalid
+fingerprint_mismatch
+source_path_changed
+source_bytes_changed
+source_modified_time_changed
+metadata_hash_changed
+```
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 196 tests and 9348 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. `src/Attachment/` does not call WordPress metadata APIs, media hooks, REST APIs, admin/frontend asset APIs, queue scheduling APIs, conversion APIs, or file write/rename/delete functions.
+
+### Acceptance Criteria
+
+- [x] Replacing the attached file path invalidates the stored fingerprint.
+- [x] Source byte and modified-time changes invalidate the stored fingerprint.
+- [x] Regenerated subsizes and source collection issues change the metadata hash.
+- [x] Unchanged attachments compare as matches and can be idempotently skipped by future phases.
+- [x] Public serialization omits absolute paths.
+
+### Deferred Work
+
+- `_hwlio_derivatives` persistence, merge behavior, status summary meta, and stored-path validation remain deferred to Subphase 4.2.
+- Attachment locks, stale lock recovery, and lock diagnostics remain deferred to Subphase 4.3.
+- Attachment processing orchestration, derivative reuse checks, queue payload execution, and statistics remain deferred to Subphase 4.4 and Phase 5.
+- Attachment deletion cleanup registration remains deferred to Subphase 4.5.
