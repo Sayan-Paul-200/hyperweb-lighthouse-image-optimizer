@@ -25,6 +25,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added deterministic uploads-safe destination resolution for future derivative sidecars.
 - Added a conversion result model and stable conversion error/skip taxonomy for future converter and worker phases.
 - Added a callable WordPress image-editor converter with deterministic temp output, output validation, minimum-savings enforcement, cleanup, and atomic sidecar moves.
+- Added a pre-allocation resource guard that skips oversized converter requests before editor allocation.
 
 ### Removed
 

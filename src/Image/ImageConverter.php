@@ -7,6 +7,8 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Image;
 
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\MemoryLimit;
+
 /**
  * Converts a validated source image into one deterministic sidecar derivative.
  */
@@ -34,20 +36,30 @@ final class ImageConverter {
 	private $clock;
 
 	/**
+	 * Resource guard.
+	 *
+	 * @var ResourceGuard|null
+	 */
+	private $resource_guard;
+
+	/**
 	 * Create converter.
 	 *
 	 * @param ConversionEditorInterface     $editor Editor adapter.
 	 * @param ConversionFilesystemInterface $filesystem Filesystem adapter.
 	 * @param ConversionClockInterface|null $clock Clock.
+	 * @param ResourceGuard|null            $resource_guard Resource guard.
 	 */
 	public function __construct(
 		ConversionEditorInterface $editor,
 		ConversionFilesystemInterface $filesystem,
-		?ConversionClockInterface $clock = null
+		?ConversionClockInterface $clock = null,
+		?ResourceGuard $resource_guard = null
 	) {
-		$this->editor     = $editor;
-		$this->filesystem = $filesystem;
-		$this->clock      = $clock instanceof ConversionClockInterface ? $clock : new SystemConversionClock();
+		$this->editor         = $editor;
+		$this->filesystem     = $filesystem;
+		$this->clock          = $clock instanceof ConversionClockInterface ? $clock : new SystemConversionClock();
+		$this->resource_guard = $resource_guard;
 	}
 
 	/**
@@ -59,7 +71,8 @@ final class ImageConverter {
 		return new self(
 			new WordPressConversionEditor(),
 			new WordPressConversionFilesystem(),
-			new SystemConversionClock()
+			new SystemConversionClock(),
+			ResourceGuard::for_wordpress( MemoryLimit::from_raw( (string) ini_get( 'memory_limit' ) ) )
 		);
 	}
 
@@ -170,6 +183,20 @@ final class ImageConverter {
 				array(
 					'cleanup_failed' => true,
 				)
+			);
+		}
+
+		$resource_result = $this->check_resources( $source );
+		if ( null !== $resource_result ) {
+			return ConversionResult::skipped(
+				$source,
+				$destination->target_format(),
+				$destination->target_mime(),
+				ConversionResultCode::SKIPPED_RESOURCE_LIMIT,
+				$resource_result->message(),
+				new ConversionSavings( $source_bytes, null, $request->minimum_savings_percent() ),
+				$destination,
+				$resource_result->to_array()
 			);
 		}
 
@@ -292,6 +319,22 @@ final class ImageConverter {
 			$output,
 			new ConversionSavings( $source_bytes, $output->bytes(), $request->minimum_savings_percent() )
 		);
+	}
+
+	/**
+	 * Check source resources before editor allocation.
+	 *
+	 * @param SourceImage $source Source image.
+	 * @return ResourceGuardResult|null
+	 */
+	private function check_resources( SourceImage $source ): ?ResourceGuardResult {
+		if ( ! $this->resource_guard instanceof ResourceGuard ) {
+			return null;
+		}
+
+		$result = $this->resource_guard->check( $source );
+
+		return $result->is_denied() ? $result : null;
 	}
 
 	/**

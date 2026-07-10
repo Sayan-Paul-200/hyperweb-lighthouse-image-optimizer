@@ -13,9 +13,11 @@ use HyperWeb\LighthouseImageOptimizer\Image\ConversionResult;
 use HyperWeb\LighthouseImageOptimizer\Image\ConversionResultCode;
 use HyperWeb\LighthouseImageOptimizer\Image\DestinationPath;
 use HyperWeb\LighthouseImageOptimizer\Image\ImageConverter;
+use HyperWeb\LighthouseImageOptimizer\Image\ResourceGuard;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImage;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceMimePolicy;
 use HyperWeb\LighthouseImageOptimizer\Image\WordPressConversionEditor;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\MemoryLimit;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
@@ -407,25 +409,54 @@ final class ImageConverterTest extends TestCase {
 	}
 
 	/**
+	 * Test resource guard skips before editor allocation.
+	 *
+	 * @return void
+	 */
+	public function test_resource_guard_skips_before_editor_allocation(): void {
+		$filesystem = $this->filesystem_with_source( 'image/jpeg', 3000, 3000 );
+		$editor     = new FakeConversionEditor( $filesystem );
+		$guard      = new ResourceGuard( MemoryLimit::from_raw( '64M' ), 40000000 );
+		$source     = $this->source( 'image/jpeg', 3000, 3000 );
+
+		$result = $this->converter( $filesystem, $editor, $guard )->convert(
+			new ConversionRequest( $source, $this->destination(), 82, 5.0 )
+		);
+
+		self::assertTrue( $result->is_skipped() );
+		self::assertSame( ConversionResultCode::SKIPPED_RESOURCE_LIMIT, $result->code() );
+		self::assertSame( 'memory_estimate_exceeded', $result->details()['reason'] );
+		self::assertSame( 0, $editor->save_calls );
+		self::assertFalse( $filesystem->exists( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.tmp' ) );
+	}
+
+	/**
 	 * Build converter.
 	 *
 	 * @param FakeConversionFilesystem $filesystem Filesystem.
 	 * @param FakeConversionEditor     $editor Editor.
+	 * @param ResourceGuard|null       $resource_guard Resource guard.
 	 * @return ImageConverter
 	 */
-	private function converter( FakeConversionFilesystem $filesystem, FakeConversionEditor $editor ): ImageConverter {
-		return new ImageConverter( $editor, $filesystem, new FakeConversionClock() );
+	private function converter(
+		FakeConversionFilesystem $filesystem,
+		FakeConversionEditor $editor,
+		?ResourceGuard $resource_guard = null
+	): ImageConverter {
+		return new ImageConverter( $editor, $filesystem, new FakeConversionClock(), $resource_guard );
 	}
 
 	/**
 	 * Build filesystem with source.
 	 *
 	 * @param string $mime_type Source MIME.
+	 * @param int    $width Width.
+	 * @param int    $height Height.
 	 * @return FakeConversionFilesystem
 	 */
-	private function filesystem_with_source( string $mime_type = 'image/jpeg' ): FakeConversionFilesystem {
+	private function filesystem_with_source( string $mime_type = 'image/jpeg', int $width = 100, int $height = 100 ): FakeConversionFilesystem {
 		$filesystem = new FakeConversionFilesystem();
-		$filesystem->add_file( self::UPLOADS . '/2026/07/hero.jpg', 1000, $mime_type, 100, 100 );
+		$filesystem->add_file( self::UPLOADS . '/2026/07/hero.jpg', 1000, $mime_type, $width, $height );
 
 		return $filesystem;
 	}
@@ -434,9 +465,11 @@ final class ImageConverterTest extends TestCase {
 	 * Build source image.
 	 *
 	 * @param string $mime_type MIME type.
+	 * @param int    $width Width.
+	 * @param int    $height Height.
 	 * @return SourceImage
 	 */
-	private function source( string $mime_type = 'image/jpeg' ): SourceImage {
+	private function source( string $mime_type = 'image/jpeg', int $width = 100, int $height = 100 ): SourceImage {
 		return new SourceImage(
 			123,
 			'full',
@@ -444,8 +477,8 @@ final class ImageConverterTest extends TestCase {
 			'2026/07/hero.jpg',
 			self::UPLOADS . '/2026/07/hero.jpg',
 			$mime_type,
-			100,
-			100,
+			$width,
+			$height,
 			1000,
 			1783526400
 		);

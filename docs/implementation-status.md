@@ -109,7 +109,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 3.3 - Destination resolver
   - [x] Subphase 3.4 - Conversion result model and error taxonomy
   - [x] Subphase 3.5 - Converter implementation
-  - [ ] Subphase 3.6 - Resource guard
+  - [x] Subphase 3.6 - Resource guard
   - [ ] Subphase 3.7 - Conversion policy
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
 - [ ] Phase 5 - Action Scheduler Queue and Automatic Processing
@@ -1828,3 +1828,74 @@ Runtime conversion smoke testing remains pending until this plugin is run inside
 - Resource guard and execution budget checks remain deferred to Subphase 3.6.
 - Conversion policy, settings-derived format selection, environment support gating, and exclusion handling remain deferred to Subphase 3.7.
 - Existing derivative reuse, fingerprinting, metadata persistence, attachment state, queues, upload hooks, REST endpoints, admin screens, frontend delivery, Elementor integration, and WooCommerce integration remain deferred to their owning phases.
+
+## Subphase 3.6 - Resource Guard
+
+**Status:** Complete
+**Completed:** 2026-07-10
+
+### Tasks
+
+- [x] Add a pure-domain pre-allocation resource guard.
+- [x] Calculate image pixel count using `SourceImage` width and height.
+- [x] Enforce a default maximum pixel count.
+- [x] Estimate required memory using dimensions, channels, and working overhead multipliers.
+- [x] Enforce a safety margin against the available memory limit without relying on runtime limit mutation.
+- [x] Return detailed outcomes via an immutable `ResourceGuardResult`.
+- [x] Apply the guard in `ImageConverter` before editor allocation.
+- [x] Implement comprehensive pixel and memory estimate unit testing.
+
+### Files Added
+
+```text
+src/Image/ResourceGuard.php
+src/Image/ResourceGuardResult.php
+tests/Unit/Image/ResourceGuardTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Image/ImageConverter.php
+tests/Unit/Image/ImageConverterTest.php
+```
+
+### Resource Thresholds
+
+- **Max Pixel Count:** 40,000,000 (filterable via `hwlio_max_pixel_count` when using the WordPress factory).
+- **Assumed Channels:** 4 (RGBA).
+- **Overhead Multiplier:** 1.8 (Provides buffer for base memory + destination memory).
+- **Safety Margin:** 0.8 (Requires the estimate to fit within 80% of the available PHP limit).
+- `ImageConverter::for_wordpress()` reads the effective PHP `memory_limit`, builds a `ResourceGuard`, and checks it before editor allocation.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 183 tests and 8947 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. `ResourceGuard` calculates constraints without changing runtime limits. `ImageConverter` applies the guard before `WordPressConversionEditor` can call `wp_get_image_editor()`. No code calls `ini_set()`, direct GD/Imagick conversion functions, temp allocation, metadata writes, REST routes, UI/assets, Action Scheduler optimization scheduling, or frontend delivery hooks.
+
+### Acceptance Criteria
+
+- [x] Image processing memory requirement is estimated effectively.
+- [x] Exceeding the maximum allowed pixel count gracefully fails the check.
+- [x] Exceeding the available safety memory boundary gracefully fails the check.
+- [x] Detailed error codes and machine-readable reasons allow skipping processes safely.
+- [x] Oversized fixtures are skipped before editor allocation.
+- [x] Unit test boundary checks handle unknown or unlimited configuration properly.
+
+### Deferred Work
+
+- Settings-derived resource policy decisions and per-job orchestration remain deferred to Subphase 3.7 (Conversion Policy) and Phase 4/5 attachment processing.
+- The `hwlio_max_pixel_count` filter is used only by the WordPress factory path.
+- Elementor/WooCommerce specific guards, queue integration, and REST validation remain deferred to later phases.
