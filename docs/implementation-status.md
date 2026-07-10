@@ -82,6 +82,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - Read-only source image value objects and a collector for attachment full, subsize, and original-image sources exist as of Subphase 3.1.
 - Source MIME and animation validation primitives exist as of Subphase 3.2.
 - Deterministic uploads-safe destination path resolution exists as of Subphase 3.3.
+- Conversion result models, byte-savings calculations, and a stable conversion error/skip taxonomy exist as of Subphase 3.4.
 - No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, or production image optimization services exist yet.
 
 ## Phase Status
@@ -105,7 +106,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 3.1 - Source image value objects and collector
   - [x] Subphase 3.2 - MIME and animation validation
   - [x] Subphase 3.3 - Destination resolver
-  - [ ] Subphase 3.4 - Conversion result model and error taxonomy
+  - [x] Subphase 3.4 - Conversion result model and error taxonomy
   - [ ] Subphase 3.5 - Converter implementation
   - [ ] Subphase 3.6 - Resource guard
   - [ ] Subphase 3.7 - Conversion policy
@@ -1626,4 +1627,96 @@ Runtime smoke testing remains pending until this plugin is run inside a WordPres
 ### Deferred Work
 
 - Destination writability checks, temporary file creation, cleanup, atomic rename, existing derivative reuse, and replacement behavior remain deferred.
-- Conversion result taxonomy, converter implementation, resource guard, conversion policy, attachment metadata writes, queues, REST endpoints, admin UI, frontend delivery, Elementor integration, and WooCommerce integration remain deferred.
+- Conversion result taxonomy was implemented in Subphase 3.4.
+- Converter implementation, resource guard, conversion policy, attachment metadata writes, queues, REST endpoints, admin UI, frontend delivery, Elementor integration, and WooCommerce integration remain deferred.
+
+## Subphase 3.4 - Conversion Result Model and Error Taxonomy
+
+**Status:** Complete
+**Completed:** 2026-07-10
+
+### Tasks
+
+- [x] Add pure conversion result model objects.
+- [x] Define per-source/per-target result states: `success`, `skipped`, and `failed`.
+- [x] Define stable success, skip, and failure codes for future converter and worker phases.
+- [x] Add final derivative output metadata and byte-savings calculations.
+- [x] Add bounded result-detail sanitization with path and sensitive-key redaction.
+- [x] Keep conversion, file writes, metadata writes, queues, REST, UI, settings, delivery, Elementor, and WooCommerce deferred.
+
+### Files Added
+
+```text
+src/Image/ConversionOutput.php
+src/Image/ConversionResult.php
+src/Image/ConversionResultCode.php
+src/Image/ConversionResultCollection.php
+src/Image/ConversionResultSanitizer.php
+src/Image/ConversionSavings.php
+tests/Unit/Image/ConversionResultTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+```
+
+### Conversion Result Domain
+
+- `ConversionResult` represents one source/target outcome and serializes source, destination, output, savings, status, code, target format, target MIME, message, and sanitized details.
+- `ConversionResultCode` defines stable success codes `optimized` and `already_current`, skip codes including `skipped_not_smaller` and `skipped_resource_limit`, and failure codes including editor, conversion, output-validation, atomic-move, metadata, lock, queue, permission, and payload failures.
+- `ConversionOutput` stores final derivative facts only: uploads-relative file path, MIME, width, height, bytes, quality, and generated timestamp.
+- `ConversionSavings` computes source bytes, optional output bytes, savings bytes, savings percent, optional minimum savings percent, and optional minimum-threshold result.
+- `ConversionResultSanitizer` redacts absolute paths and sensitive detail keys, replaces unsupported object/resource values, bounds nested detail payloads, and marks truncated details.
+- `ConversionResultCollection` partitions success/skipped/failed results and provides summary counts.
+
+### Hooks, Settings, Metadata, and Database Changes
+
+```text
+New hooks: none
+New settings: none
+New options: none
+New tables: none
+New metadata keys: none
+Metadata writes: none
+Scheduled actions: none
+REST routes: none
+Admin menus/assets: none
+Frontend hooks/assets: none
+File writes/renames/deletes: none
+```
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 155 tests and 7857 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. `src/Image/` does not call conversion APIs, write/rename/delete files, allocate temporary files, write attachment metadata, register hooks/routes, enqueue assets, schedule queue jobs, or introduce frontend delivery behavior. Broader route/asset/queue scans only matched policy-test regex definitions.
+
+### Acceptance Criteria
+
+- [x] Callers can branch on stable result status and codes without parsing log strings.
+- [x] Success, skipped, and failed conversion outcomes are modeled.
+- [x] Output metadata and byte savings serialize safely.
+- [x] Absolute paths, sensitive keys, raw objects, resources, and error-like objects are not serialized.
+- [x] Result collection summary counts are available for future job status reporting.
+- [x] Full automated verification passed.
+
+Runtime WordPress smoke testing is not required for this pure PHP model-only subphase.
+
+### Deferred Work
+
+- No image editor loading, conversion, resource guard, conversion policy, temporary file creation, cleanup, atomic rename, attachment metadata persistence, queues, REST endpoints, admin UI, frontend delivery, Elementor integration, or WooCommerce integration was added.
+- Converter implementation remains deferred to Subphase 3.5.
+- Resource guard remains deferred to Subphase 3.6.
+- Conversion policy remains deferred to Subphase 3.7.

@@ -23,6 +23,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added read-only source image value objects and a collector for normalized attachment full, subsize, and original-image sources.
 - Added source MIME and animation validation for read-only image eligibility checks.
 - Added deterministic uploads-safe destination resolution for future derivative sidecars.
+- Added a conversion result model and stable conversion error/skip taxonomy for future converter and worker phases.
 
 ### Removed
 
