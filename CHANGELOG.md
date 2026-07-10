@@ -22,6 +22,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added a structured diagnostics framework with user-safe results, environment checks, temporary write/rename checks, and bounded sample conversion diagnostics.
 - Added read-only source image value objects and a collector for normalized attachment full, subsize, and original-image sources.
 - Added source MIME and animation validation for read-only image eligibility checks.
+- Added deterministic uploads-safe destination resolution for future derivative sidecars.
 
 ### Removed
 

@@ -44,7 +44,12 @@ final class ImageScopePolicyTest extends TestCase {
 			'optimization queue action'    => '/\bhwlio_optimize_attachment_format\b/',
 			'async queue scheduling'       => '/\bas_enqueue_async_action\s*\(/',
 			'single queue scheduling'      => '/\bas_schedule_single_action\s*\(/',
-			'destination resolver class'   => '/\bclass\s+DestinationResolver\b/',
+			'file write operation'         => '/\bfile_put_contents\s*\(/',
+			'file rename operation'        => '/\brename\s*\(/',
+			'file delete operation'        => '/\bunlink\s*\(/',
+			'temporary path allocation'    => '/\b(?:wp_tempnam|tempnam)\s*\(/',
+			'file copy operation'          => '/\bcopy\s*\(/',
+			'uploaded file move operation' => '/\bmove_uploaded_file\s*\(/',
 			'automatic memory limit raise' => '/\bini_set\s*\(/',
 		);
 

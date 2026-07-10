@@ -81,6 +81,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A structured diagnostics framework with user-safe result objects, environment checks, temporary write/rename checks, and sample conversion diagnostics exists as of Subphase 2.4.
 - Read-only source image value objects and a collector for attachment full, subsize, and original-image sources exist as of Subphase 3.1.
 - Source MIME and animation validation primitives exist as of Subphase 3.2.
+- Deterministic uploads-safe destination path resolution exists as of Subphase 3.3.
 - No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, or production image optimization services exist yet.
 
 ## Phase Status
@@ -103,7 +104,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - [ ] Phase 3 - Core Image Domain
   - [x] Subphase 3.1 - Source image value objects and collector
   - [x] Subphase 3.2 - MIME and animation validation
-  - [ ] Subphase 3.3 - Destination resolver
+  - [x] Subphase 3.3 - Destination resolver
   - [ ] Subphase 3.4 - Conversion result model and error taxonomy
   - [ ] Subphase 3.5 - Converter implementation
   - [ ] Subphase 3.6 - Resource guard
@@ -1535,5 +1536,94 @@ Runtime smoke testing remains pending until this plugin is run inside a WordPres
 
 ### Deferred Work
 
-- Destination path resolution, temporary output paths, and deterministic sidecar names remain deferred to Subphase 3.3.
+- Destination path resolution, temporary output paths, and deterministic sidecar names were implemented in Subphase 3.3.
+- Conversion result taxonomy, converter implementation, resource guard, conversion policy, attachment metadata writes, queues, REST endpoints, admin UI, frontend delivery, Elementor integration, and WooCommerce integration remain deferred.
+
+## Subphase 3.3 - Destination Resolver
+
+**Status:** Complete
+**Completed:** 2026-07-10
+
+### Tasks
+
+- [x] Add callable-only destination resolver services.
+- [x] Generate deterministic sidecar paths by appending `.hwlio.{format}` to the source filename.
+- [x] Preserve uploads subdirectories and original source extensions.
+- [x] Generate deterministic temporary paths in the destination directory using `{destination}.tmp`.
+- [x] Validate source, destination, temporary, and existing realpaths against the uploads base.
+- [x] Keep file writes, renames, deletes, conversion, metadata writes, queues, REST, UI, and delivery deferred.
+
+### Files Added
+
+```text
+src/Image/DestinationPath.php
+src/Image/DestinationResolutionResult.php
+src/Image/DestinationResolver.php
+tests/Unit/Image/DestinationResolverTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+tests/Unit/Image/ImageScopePolicyTest.php
+```
+
+### Destination Domain
+
+- `DestinationResolver` resolves paths only and is not composed into plugin hooks.
+- Supported target formats are `webp` and `avif`.
+- Target MIME mapping is `webp => image/webp` and `avif => image/avif`.
+- Sidecar examples: `2026/07/hero.jpg.hwlio.webp` and `2026/07/logo.png.hwlio.avif`.
+- Temporary path example: `2026/07/hero.jpg.hwlio.webp.tmp`.
+- `DestinationPath::to_array()` omits absolute final and temporary paths.
+- `DestinationResolutionResult` returns stable codes including `resolved`, `invalid_target_format`, `uploads_unavailable`, `unsafe_source_path`, `source_outside_uploads`, `destination_outside_uploads`, `temporary_outside_uploads`, `destination_collision`, `temporary_collision`, `destination_realpath_outside_uploads`, and `temporary_realpath_outside_uploads`.
+
+### Hooks, Settings, Metadata, and Database Changes
+
+```text
+New hooks: none
+New settings: none
+New options: none
+New tables: none
+New metadata keys: none
+Metadata writes: none
+Scheduled actions: none
+REST routes: none
+Admin menus/assets: none
+Frontend hooks/assets: none
+File writes/renames/deletes: none
+```
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 143 tests and 7218 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. `src/Image/` does not call conversion APIs, write/rename/delete files, allocate temporary files, write attachment metadata, register hooks/routes, enqueue assets, schedule queue jobs, or introduce frontend delivery behavior. Broader route/asset/queue scans only matched policy-test regex definitions.
+
+### Acceptance Criteria
+
+- [x] `logo.jpg` and `logo.png` produce different sidecars.
+- [x] Every destination and temporary path remains inside uploads.
+- [x] Repeated resolution returns the same result.
+- [x] Full, subsize, and original sources preserve uploads subdirectories.
+- [x] Unsafe, outside-uploads, and outside-realpath candidates are rejected.
+- [x] Public serialization omits absolute paths.
+- [ ] WordPress runtime destination resolution smoke testing remains pending in this plugin-only workspace.
+
+Runtime smoke testing remains pending until this plugin is run inside a WordPress 6.5+ test installation with representative attachment files.
+
+### Deferred Work
+
+- Destination writability checks, temporary file creation, cleanup, atomic rename, existing derivative reuse, and replacement behavior remain deferred.
 - Conversion result taxonomy, converter implementation, resource guard, conversion policy, attachment metadata writes, queues, REST endpoints, admin UI, frontend delivery, Elementor integration, and WooCommerce integration remain deferred.
