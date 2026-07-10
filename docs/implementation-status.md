@@ -86,6 +86,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A callable WordPress image-editor converter with bounded temp output, validation, cleanup, and atomic sidecar moves exists as of Subphase 3.5.
 - A pre-allocation resource guard exists as of Subphase 3.6.
 - Service-only attachment fingerprinting exists as of Subphase 4.1.
+- A derivative repository for plugin-owned `_hwlio_derivatives` manifests and `_hwlio_status` summaries exists as of Subphase 4.2.
 - No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, runtime image optimization hooks, or frontend delivery exists yet.
 
 ## Phase Status
@@ -115,7 +116,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [ ] Subphase 3.7 - Conversion policy
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
   - [x] Subphase 4.1 - Attachment fingerprint
-  - [ ] Subphase 4.2 - Derivative repository
+  - [x] Subphase 4.2 - Derivative repository
   - [ ] Subphase 4.3 - Attachment locking
   - [ ] Subphase 4.4 - Attachment processor
   - [ ] Subphase 4.5 - Cleanup on attachment deletion
@@ -1983,3 +1984,96 @@ Source scans: pass. `src/Attachment/` does not call WordPress metadata APIs, med
 - Attachment locks, stale lock recovery, and lock diagnostics remain deferred to Subphase 4.3.
 - Attachment processing orchestration, derivative reuse checks, queue payload execution, and statistics remain deferred to Subphase 4.4 and Phase 5.
 - Attachment deletion cleanup registration remains deferred to Subphase 4.5.
+
+## Subphase 4.2 - Derivative Repository
+
+**Status:** Complete
+**Completed:** 2026-07-10
+
+### Tasks
+
+- [x] Add a testable attachment meta store seam.
+- [x] Add `DerivativeRepository` for `_hwlio_derivatives` reads, writes, merges, and deletion.
+- [x] Add schema-versioned `DerivativeManifest` parsing and sanitization.
+- [x] Add `AttachmentStatus` for `_hwlio_status` summaries.
+- [x] Merge partial successful conversion results without losing existing ready formats or sizes.
+- [x] Refuse to overwrite a stored manifest when its fingerprint no longer matches current source state.
+- [x] Ignore unsafe or invalid stored metadata instead of trusting it.
+- [x] Keep WordPress post-meta API calls isolated to `WordPressAttachmentMetaStore`.
+
+### Files Added
+
+```text
+src/Attachment/AttachmentClockInterface.php
+src/Attachment/AttachmentMetaStoreInterface.php
+src/Attachment/AttachmentStatus.php
+src/Attachment/DerivativeManifest.php
+src/Attachment/DerivativeManifestSanitizer.php
+src/Attachment/DerivativeRepository.php
+src/Attachment/DerivativeRepositoryResult.php
+src/Attachment/SystemAttachmentClock.php
+src/Attachment/WordPressAttachmentMetaStore.php
+tests/Unit/Attachment/DerivativeRepositoryTest.php
+tests/Unit/Attachment/FakeAttachmentMetaStore.php
+tests/Unit/Attachment/FixedAttachmentClock.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Infrastructure/WordPressDerivativeManifestProvider.php
+tests/Unit/Attachment/AttachmentScopePolicyTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+```
+
+### Repository API
+
+```text
+DerivativeRepository::for_wordpress()
+DerivativeRepository::read( attachment_id )
+DerivativeRepository::save_results( attachment_id, fingerprint, results, state )
+DerivativeRepository::save_status( attachment_id, status )
+DerivativeRepository::delete( attachment_id )
+```
+
+### Manifest and Status Behavior
+
+- `_hwlio_derivatives` stores schema version `1`, attachment fingerprint, `updated_at`, source records, and ready WebP/AVIF format records.
+- `_hwlio_status` stores normalized state, ready formats, `updated_at`, error code, and excluded flag.
+- Only successful `ConversionResult` outputs are stored as ready derivatives.
+- Skipped and failed results do not create derivative entries; they may update status and error code.
+- Existing valid manifest entries are preserved across partial continuation writes.
+- Same size/format retries replace that entry idempotently.
+- Stored manifests with mismatched fingerprints are preserved and not overwritten.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 208 tests and 10224 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. Only `src/Attachment/WordPressAttachmentMetaStore.php` calls `get_post_meta()`, `update_post_meta()`, or `delete_post_meta()`. No code calls `wp_update_attachment_metadata()`, media hooks, Action Scheduler optimization scheduling, REST routes, admin/frontend assets, delivery hooks, or filesystem mutation APIs in the attachment repository layer.
+
+### Acceptance Criteria
+
+- [x] Partial continuation writes can add AVIF after WebP without losing WebP.
+- [x] Later subsize writes preserve existing full-size entries.
+- [x] Invalid metadata is ignored and diagnosed rather than trusted.
+- [x] Core `_wp_attachment_metadata` is never written.
+- [x] `_hwlio_derivatives` remains the only authoritative derivative deletion manifest.
+
+### Deferred Work
+
+- Attachment locks, stale lock recovery, and lock diagnostics remain deferred to Subphase 4.3.
+- Attachment processing orchestration, derivative reuse checks, queue payload execution, and statistics remain deferred to Subphase 4.4 and Phase 5.
+- Attachment deletion cleanup registration remains deferred to Subphase 4.5.
+- Filesystem existence, MIME, and dimension revalidation for derivative reuse remains deferred to processing and delivery phases.

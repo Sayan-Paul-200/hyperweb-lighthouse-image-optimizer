@@ -44,8 +44,18 @@ final class DiagnosticsScopePolicyTest extends TestCase {
 			'automatic memory limit raise' => '/\bini_set\s*\(/',
 		);
 
+		$allowed_patterns = array(
+			'src/Attachment/WordPressAttachmentMetaStore.php' => array(
+				'attachment metadata write',
+			),
+		);
+
 		foreach ( $this->runtime_source_files() as $file => $contents ) {
 			foreach ( $forbidden_patterns as $label => $pattern ) {
+				if ( isset( $allowed_patterns[ $file ] ) && in_array( $label, $allowed_patterns[ $file ], true ) ) {
+					continue;
+				}
+
 				self::assertDoesNotMatchRegularExpression(
 					$pattern,
 					$contents,
