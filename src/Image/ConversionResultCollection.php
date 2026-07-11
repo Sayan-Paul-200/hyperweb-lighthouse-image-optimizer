@@ -45,6 +45,19 @@ final class ConversionResultCollection {
 	}
 
 	/**
+	 * Return a copy with one result appended.
+	 *
+	 * @param ConversionResult $result Result.
+	 * @return self
+	 */
+	public function with_added( ConversionResult $result ): self {
+		$results   = $this->results;
+		$results[] = $result;
+
+		return new self( $results );
+	}
+
+	/**
 	 * Get successful results.
 	 *
 	 * @return ConversionResult[]

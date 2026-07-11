@@ -85,9 +85,11 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - Conversion result models, byte-savings calculations, and a stable conversion error/skip taxonomy exist as of Subphase 3.4.
 - A callable WordPress image-editor converter with bounded temp output, validation, cleanup, and atomic sidecar moves exists as of Subphase 3.5.
 - A pre-allocation resource guard exists as of Subphase 3.6.
+- A pure-domain conversion policy service exists as of Subphase 3.7.
 - Service-only attachment fingerprinting exists as of Subphase 4.1.
 - A derivative repository for plugin-owned `_hwlio_derivatives` manifests and `_hwlio_status` summaries exists as of Subphase 4.2.
 - Token-protected attachment locking, bounded stale-lock recovery, and token-safe lock diagnostics exist as of Subphase 4.3.
+- A callable attachment processor for one-format, cursor-aware conversion batches exists as of Subphase 4.4.
 - No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, runtime image optimization hooks, or frontend delivery exists yet.
 
 ## Phase Status
@@ -114,12 +116,12 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 3.4 - Conversion result model and error taxonomy
   - [x] Subphase 3.5 - Converter implementation
   - [x] Subphase 3.6 - Resource guard
-  - [ ] Subphase 3.7 - Conversion policy
+  - [x] Subphase 3.7 - Conversion policy
 - [ ] Phase 4 - Attachment State, Metadata, and Cleanup
   - [x] Subphase 4.1 - Attachment fingerprint
   - [x] Subphase 4.2 - Derivative repository
   - [x] Subphase 4.3 - Attachment locking
-  - [ ] Subphase 4.4 - Attachment processor
+  - [x] Subphase 4.4 - Attachment processor
   - [ ] Subphase 4.5 - Cleanup on attachment deletion
 - [ ] Phase 5 - Action Scheduler Queue and Automatic Processing
 - [ ] Phase 6 - Admin Screens, REST API, and Bulk Processing
@@ -2163,3 +2165,159 @@ Source scans: pass. WordPress post-meta APIs remain isolated to `src/Attachment/
 - Attachment processing orchestration, derivative reuse checks, queue payload execution, and status transitions remain deferred to Subphase 4.4 and Phase 5.
 - Admin and REST exposure for lock diagnostics remains deferred to Phase 6.
 - Attachment deletion cleanup registration remains deferred to Subphase 4.5.
+
+## Subphase 3.7 - Conversion Policy
+
+**Status:** Complete
+**Completed:** 2026-07-10
+
+### Tasks
+
+- [x] Add a pure-domain conversion policy decision service.
+- [x] Evaluate gates sequentially: format validity, exclusion, settings enablement, server support, source MIME eligibility, source MIME→target compatibility, pre-existing validation result, resource guard, and existing derivative reuse.
+- [x] Map non-eligible validation results to stable `ConversionResultCode` taxonomy codes.
+- [x] Check fingerprint freshness before skipping on existing derivative reuse.
+- [x] Support force mode that bypasses only derivative reuse checks.
+- [x] Add an immutable context value object for attachment-level policy inputs.
+- [x] Add an immutable result value object for policy decision outputs.
+- [x] Keep the implementation callable-only with no post meta writes, hooks, queues, REST routes, admin UI, or frontend delivery.
+
+### Files Added
+
+```text
+src/Image/ConversionPolicy.php
+src/Image/ConversionPolicyContext.php
+src/Image/ConversionPolicyResult.php
+tests/Unit/Image/ConversionPolicyTest.php
+tests/Unit/Image/FakeSettingsRepository.php
+tests/Unit/Image/FakeFormatSupportProvider.php
+```
+
+### Policy Gates
+
+```text
+Gate 1: Invalid target format         → invalid_target_format
+Gate 2: Attachment-level exclusion     → skipped_excluded
+Gate 3: Format not enabled in settings → skipped_target_not_enabled
+Gate 4: Server encoding not supported  → skipped_target_not_supported
+Gate 5: Source MIME not supported       → skipped_unsupported_source_mime
+Gate 6: Source MIME → target mismatch  → skipped_unsupported_source_mime
+Gate 7: Validation result non-eligible → mapped code from validation
+Gate 8: Resource guard denied          → skipped_resource_limit
+Gate 9: Existing derivative reuse      → already_current (skipped in force mode)
+Pass:   All gates cleared              → eligible
+```
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 256 tests and 11434 assertions
+composer run quality: pass
+```
+
+Source scans: pass. `ConversionPolicy` reads settings, format support, resource guard, and MIME policy via injected interfaces only. No code calls WordPress metadata APIs, media hooks, Action Scheduler optimization scheduling, REST routes, admin/frontend assets, delivery hooks, converter APIs, or filesystem mutation APIs in the conversion policy layer.
+
+### Acceptance Criteria
+
+- [x] Policy correctly gates on each individual criterion.
+- [x] Existing valid derivative with matching fingerprint skips conversion.
+- [x] Force mode bypasses reuse and existing-derivative checks.
+- [x] Force mode does not bypass exclusion.
+- [x] Excluded attachments return `skipped_excluded`.
+- [x] Unsupported formats return `skipped_target_not_supported`.
+- [x] Disabled formats return `skipped_target_not_enabled`.
+- [x] Resource guard failures return `skipped_resource_limit`.
+- [x] All results use stable machine-readable codes from the established taxonomy.
+- [x] No runtime hooks, queue scheduling, or metadata writes are introduced.
+
+### Deferred Work
+
+- Attachment processing orchestration, per-job gate application, derivative reuse filesystem checks, queue payload execution, and status transitions remain deferred to Subphase 4.4 and Phase 5.
+- Developer path exclusion filters remain deferred to Phase 5 worker integration.
+- Admin and REST exposure for policy results remains deferred to Phase 6.
+- Elementor/WooCommerce-specific policy extensions remain deferred to Phase 8.
+
+## Subphase 4.4 - Attachment Processor
+
+**Status:** Complete
+**Completed:** 2026-07-11
+
+### Tasks
+
+- [x] Add `AttachmentProcessor` to orchestrate source collection, fingerprinting, repository reads, validation, conversion policy, destination resolution, conversion, and repository persistence.
+- [x] Add `AttachmentProcessResult` as the job-level summary result.
+- [x] Process one target format per run through `process_format()`.
+- [x] Add cursor and completion metadata so future workers can resume bounded batches.
+- [x] Preserve `process()` as a convenience wrapper that uses the first enabled format.
+- [x] Persist successful partial results through `DerivativeRepository::save_results()`.
+- [x] Mark no-source and fingerprint-failure exits through `_hwlio_status`.
+- [x] Release attachment locks after success, handled skips, and unexpected exceptions.
+- [x] Fire stable lifecycle actions when WordPress hooks are loaded.
+
+### Files Added
+
+```text
+src/Attachment/AttachmentProcessResult.php
+src/Attachment/AttachmentProcessor.php
+tests/Unit/Attachment/AttachmentProcessResultTest.php
+tests/Unit/Attachment/AttachmentProcessorTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Image/ConversionResultCollection.php
+```
+
+### Processor Behavior
+
+- `AttachmentProcessor::process_format()` processes one attachment and one target format.
+- The result reports target format, start cursor, next cursor, completion state, conversion-result summary, codes, and messages.
+- Existing current derivatives are represented as `already_current` success results when manifest data can be mapped safely.
+- Destination-resolution failures are mapped to failure or outside-uploads skip results instead of collapsing to `skipped_unknown`.
+- Partial batches are saved as `partial`; all-success completed batches become `optimized`; completed all-skip/all-failure batches become `skipped` or `failed`.
+- The processor is callable-only; it does not register media hooks, queue jobs, REST routes, admin UI, frontend delivery, or scheduled maintenance.
+
+### Corrections Made During Review
+
+- Fixed processor tests that targeted a nonexistent `get_full_source()` provider method.
+- Updated lock fixtures to use the canonical `_hwlio_lock` field names: `token`, `created_at`, and `expires_at`.
+- Added the missing immutable `ConversionResultCollection::with_added()` helper used by the processor.
+- Added one positive processor orchestration test that converts WebP only and verifies lock release and manifest persistence.
+- Changed the processor from all-enabled-format processing to one-format processing with cursor metadata.
+
+### Verification
+
+```text
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 265 tests and 11653 assertions
+vendor/bin/phpunit tests/Unit/Attachment/AttachmentProcessorTest.php tests/Unit/Attachment/AttachmentProcessResultTest.php: pass, 5 tests and 20 assertions
+vendor/bin/phpunit tests/Unit/Image/ConversionPolicyTest.php tests/Unit/Image/ConversionResultTest.php: pass, 38 tests and 73 assertions
+```
+
+Source scans: pass. No code calls core attachment metadata writes, media hooks, Action Scheduler optimization scheduling, REST routes, admin/frontend assets, delivery hooks, direct conversion functions, or filesystem mutation APIs outside the existing converter/filesystem seams.
+
+### Acceptance Criteria
+
+- [x] One attachment can process predictably through collection, validation, policy, destination resolution, conversion, and repository persistence.
+- [x] One target format is processed per run.
+- [x] Batch cursor and completion metadata make later worker resumption possible.
+- [x] Successful conversion results are saved without discarding previous manifest entries.
+- [x] Lock release is attempted after handled and unexpected exits.
+- [x] Failures and skips produce stable machine-readable codes.
+
+### Deferred Work
+
+- Action Scheduler queue payload execution remains deferred to Phase 5.
+- New-upload hooks and automatic processing remain deferred to Phase 5.
+- Admin, REST, and bulk-processing exposure remain deferred to Phase 6.
+- Attachment deletion cleanup registration remains deferred to Subphase 4.5.
+- Runtime WordPress smoke testing remains pending in this plugin-only workspace.

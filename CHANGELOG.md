@@ -29,6 +29,8 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added service-only attachment fingerprinting for cheap source/metadata staleness checks and future queue payload validation.
 - Added the derivative repository for schema-versioned `_hwlio_derivatives` manifests and `_hwlio_status` summaries.
 - Added token-protected attachment locking with bounded stale-lock recovery and token-safe diagnostics.
+- Added a pure-domain conversion policy service with sequential gate evaluation for format enablement, server support, MIME policy, validation state, resource limits, derivative reuse, and exclusion.
+- Added a callable attachment processor that orchestrates one-format conversion batches with locking, cursor reporting, repository persistence, and lifecycle action emission.
 
 ### Removed
 
