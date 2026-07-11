@@ -94,6 +94,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - An optimization-focused queue abstraction for Action Scheduler exists as of Subphase 5.1.
 - A runtime optimization worker with lock orchestration, queued fingerprint freshness checks, continuation scheduling, retry scheduling, and queue-driven status transitions exists as of Subphase 5.2.
 - A runtime new-upload integration for asynchronous post-metadata queueing and lightweight status updates exists as of Subphase 5.3.
+- Attachment regeneration and edit reconciliation for stale optimized metadata updates exists as of Subphase 5.4.
 - No visible settings UI, diagnostics UI, REST diagnostics endpoint, or frontend delivery exists yet.
 
 ## Phase Status
@@ -131,6 +132,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 5.1 - Queue abstraction
   - [x] Subphase 5.2 - Optimization worker
   - [x] Subphase 5.3 - New-upload integration
+  - [x] Subphase 5.4 - Regeneration and edit reconciliation
 - [ ] Phase 6 - Admin Screens, REST API, and Bulk Processing
 - [ ] Phase 7 - Frontend Modern-Format Delivery
 - [ ] Phase 8 - Loading Optimization and Layout Stability
@@ -2573,9 +2575,101 @@ Source scans: pass. The new-upload hook is confined to `src/Queue/NewUploadInteg
 
 ### Deferred Work
 
-- Regeneration and edit reconciliation remain deferred to Subphase 5.4.
 - Maintenance scheduling remains deferred to Subphase 5.5.
 - Media Library refresh consumers, post-upload controls, and REST exposure remain deferred to Phase 6.
+- Runtime WordPress smoke testing remains pending in this plugin-only workspace.
+
+## Subphase 5.4 - Regeneration and Edit Reconciliation
+
+**Status:** Complete
+**Completed:** 2026-07-11
+
+### Tasks
+
+- [x] Extend `NewUploadIntegration` update-context handling to detect stale optimized derivatives.
+- [x] Add a dedicated reconciliation queue payload and queue-adapter path.
+- [x] Add `ReconciliationWorker` as a runtime Action Scheduler hook provider.
+- [x] Add repository-level `begin_reconciliation()` behavior to replace the active manifest with an empty current-fingerprint manifest.
+- [x] Add replace-safe conversion support for reconcile rebuilds.
+- [x] Delete obsolete sidecars conservatively only after new manifest state exists.
+- [x] Keep REST, admin UI, maintenance scheduling, media scans, and frontend delivery deferred.
+
+### Files Added
+
+```text
+src/Queue/ReconciliationJob.php
+src/Queue/ReconciliationWorker.php
+tests/Unit/Queue/ReconciliationJobTest.php
+tests/Unit/Queue/ReconciliationWorkerTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Attachment/AttachmentProcessor.php
+src/Attachment/DerivativeRepository.php
+src/Attachment/DerivativeRepositoryResult.php
+src/Image/ConversionRequest.php
+src/Image/ImageConverter.php
+src/Logging/LogCode.php
+src/Plugin.php
+src/Queue/ActionSchedulerQueue.php
+src/Queue/NewUploadIntegration.php
+src/Queue/QueueInterface.php
+tests/Unit/Attachment/DerivativeRepositoryTest.php
+tests/Unit/Image/FakeConversionFilesystem.php
+tests/Unit/Image/ImageConverterTest.php
+tests/Unit/PluginTest.php
+tests/Unit/Queue/ActionSchedulerQueueTest.php
+tests/Unit/Queue/FakeQueue.php
+tests/Unit/Queue/NewUploadIntegrationTest.php
+tests/Unit/Queue/QueueScopePolicyTest.php
+```
+
+### Reconciliation Behavior
+
+- `NewUploadIntegration` now treats `wp_generate_attachment_metadata` `update` events as stale-state detection opportunities while still always returning WordPress metadata unchanged.
+- Stale detection is limited to attachments that already have ready derivatives and a stored fingerprint that differs from the current collected source state.
+- A dedicated `ReconciliationJob` carries only `attachment_id`, a 20-character current fingerprint signature, and a sanitized reason.
+- `ReconciliationWorker` owns reconciliation lock orchestration, stale queued-fingerprint refresh, manifest reset, forced per-format reprocessing, final attachment-state aggregation, and obsolete-sidecar cleanup.
+- `DerivativeRepository::begin_reconciliation()` replaces `_hwlio_derivatives` with an empty schema-v1 manifest for the current fingerprint before fresh results are persisted.
+- `ConversionRequest` now exposes `replace_existing`, and `ImageConverter` uses that only for force/reconcile-style requests so plugin-owned sidecars can be replaced through validated temp output, same-directory backup moves, and rollback attempts.
+- Obsolete sidecars are removed only after the new manifest is authoritative; cleanup warnings do not restore the old manifest.
+
+### Verification
+
+```text
+php -l src/Queue/ReconciliationWorker.php: pass
+php -l src/Queue/ActionSchedulerQueue.php: pass
+php -l src/Image/ImageConverter.php: pass
+php -l src/Queue/NewUploadIntegration.php: pass
+php -l tests/Unit/Queue/ReconciliationWorkerTest.php: pass
+vendor/bin/phpunit tests/Unit/Queue/NewUploadIntegrationTest.php: pass
+vendor/bin/phpunit tests/Unit/Queue/ReconciliationWorkerTest.php: pass
+vendor/bin/phpunit tests/Unit/Attachment/DerivativeRepositoryTest.php: pass
+vendor/bin/phpunit tests/Unit/Queue/ActionSchedulerQueueTest.php: pass
+vendor/bin/phpunit tests/Unit/PluginTest.php: pass
+vendor/bin/phpunit tests/Unit/Queue/ReconciliationJobTest.php: pass
+vendor/bin/phpunit tests/Unit/Image/ImageConverterTest.php: pass
+composer run test: pass, 339 tests and 13390 assertions
+```
+
+### Acceptance Criteria
+
+- [x] Metadata `update` events detect stale optimized derivative state without mutating the returned WordPress metadata array.
+- [x] Stale optimized attachments can queue a dedicated reconciliation action when automation is enabled and the attachment is not excluded.
+- [x] Reconciliation replaces active derivative metadata with a current-fingerprint empty manifest before persisting new results.
+- [x] Reconcile rebuilds can replace existing plugin-owned sidecars safely without touching originals.
+- [x] Obsolete manifest-listed sidecars are pruned conservatively only after new manifest state exists.
+- [x] No REST routes, admin UI, maintenance scheduling, bulk scans, or `_wp_attachment_metadata` writes were introduced.
+
+### Deferred Work
+
+- Recurring maintenance scheduling remains deferred to Subphase 5.5.
+- Media Library refresh listeners, admin UI, and REST exposure remain deferred to Phase 6.
+- Frontend modern-format delivery remains deferred to Phase 7.
 - Runtime WordPress smoke testing remains pending in this plugin-only workspace.
 
 ## Subphase 5.2 - Optimization Worker

@@ -218,19 +218,7 @@ final class NewUploadIntegration implements HookProviderInterface {
 		}
 
 		if ( 'update' === $context ) {
-			$this->logger->info(
-				LogCode::NEW_UPLOAD_IGNORED,
-				'New-upload automation ignored an attachment metadata update context.',
-				array(
-					'attachment_id' => $attachment_id,
-					'context'       => $context,
-				),
-				$attachment_id
-			);
-
-			$this->dispatch_refresh( $attachment_id, $context, $this->current_status( $attachment_id ), $this->refresh_payload() );
-
-			return $metadata;
+			return $this->handle_update_context( $metadata, $attachment_id, $context );
 		}
 
 		if ( 'create' !== $context ) {
@@ -467,6 +455,175 @@ final class NewUploadIntegration implements HookProviderInterface {
 	 */
 	private function current_status( int $attachment_id ): AttachmentStatus {
 		return $this->repository->read( $attachment_id )->status();
+	}
+
+	/**
+	 * Handle attachment metadata updates for stale derivative reconciliation.
+	 *
+	 * @param array<string,mixed> $metadata Attachment metadata.
+	 * @param int                 $attachment_id Attachment ID.
+	 * @param string              $context Metadata generation context.
+	 * @return array<string,mixed>
+	 */
+	private function handle_update_context( array $metadata, int $attachment_id, string $context ): array {
+		$read           = $this->repository->read( $attachment_id );
+		$current_status = $read->status();
+		$manifest       = $read->manifest();
+
+		if ( ! $manifest->has_derivatives() || ! $manifest->fingerprint() instanceof AttachmentFingerprint ) {
+			$this->logger->info(
+				LogCode::NEW_UPLOAD_IGNORED,
+				'New-upload automation found no derivative manifest to reconcile for this metadata update.',
+				array(
+					'attachment_id' => $attachment_id,
+					'context'       => $context,
+				),
+				$attachment_id
+			);
+
+			$this->dispatch_refresh( $attachment_id, $context, $current_status, $this->refresh_payload() );
+
+			return $metadata;
+		}
+
+		$collection  = $this->collector->collect( $attachment_id );
+		$comparison  = $this->fingerprinter->compare_stored( $manifest->fingerprint()->to_array(), $collection );
+		$fingerprint = $comparison->current_fingerprint();
+
+		if ( ! $comparison->is_stale() || ! $fingerprint instanceof AttachmentFingerprint ) {
+			$this->logger->info(
+				LogCode::NEW_UPLOAD_IGNORED,
+				'New-upload automation found no stale derivative state for this metadata update.',
+				array(
+					'attachment_id'   => $attachment_id,
+					'context'         => $context,
+					'comparison_code' => $comparison->code(),
+					'status'          => $comparison->status(),
+				),
+				$attachment_id
+			);
+
+			$this->dispatch_refresh( $attachment_id, $context, $current_status, $this->refresh_payload() );
+
+			return $metadata;
+		}
+
+		$excluded = $this->exclusions->is_excluded( $attachment_id );
+		$status   = $this->save_status(
+			$attachment_id,
+			AttachmentStatus::STATE_STALE,
+			null,
+			$excluded,
+			$current_status
+		);
+
+		$this->logger->info(
+			LogCode::RECONCILE_STALE_DETECTED,
+			'New-upload automation detected stale derivative state after attachment metadata changed.',
+			array(
+				'attachment_id'   => $attachment_id,
+				'context'         => $context,
+				'comparison_code' => $comparison->code(),
+				'status'          => $comparison->status(),
+			),
+			$attachment_id
+		);
+
+		if ( ! $this->settings->automatic_optimization_enabled() ) {
+			$this->logger->info(
+				LogCode::NEW_UPLOAD_AUTOMATION_DISABLED,
+				'Automatic optimization is disabled; stale derivatives were not reconciled automatically.',
+				array(
+					'attachment_id'   => $attachment_id,
+					'context'         => $context,
+					'comparison_code' => $comparison->code(),
+				),
+				$attachment_id
+			);
+
+			$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
+
+			return $metadata;
+		}
+
+		if ( $excluded ) {
+			$this->logger->info(
+				LogCode::NEW_UPLOAD_EXCLUDED,
+				'Excluded attachment remained stale after metadata changed and was not reconciled automatically.',
+				array(
+					'attachment_id'   => $attachment_id,
+					'context'         => $context,
+					'comparison_code' => $comparison->code(),
+				),
+				$attachment_id
+			);
+
+			$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
+
+			return $metadata;
+		}
+
+		$queue_status = $this->queue->enqueue_reconciliation(
+			new ReconciliationJob(
+				$attachment_id,
+				$fingerprint->signature(),
+				'metadata_update'
+			)
+		);
+
+		$result_code = $this->primary_code( $queue_status );
+
+		if ( ! $queue_status->is_successful() ) {
+			$status = $this->save_status(
+				$attachment_id,
+				AttachmentStatus::STATE_STALE,
+				$result_code,
+				false,
+				$current_status
+			);
+
+			$this->logger->warning(
+				LogCode::RECONCILE_QUEUE_FAILED,
+				'Stale attachment derivatives could not be queued for reconciliation.',
+				array(
+					'attachment_id'   => $attachment_id,
+					'context'         => $context,
+					'comparison_code' => $comparison->code(),
+					'queue_codes'     => $queue_status->codes(),
+				),
+				$attachment_id
+			);
+
+			$this->dispatch_refresh(
+				$attachment_id,
+				$context,
+				$status,
+				$this->refresh_payload( array(), array(), array( 'reconcile' => $result_code ) )
+			);
+
+			return $metadata;
+		}
+
+		$this->logger->info(
+			LogCode::RECONCILE_QUEUED,
+			'Stale attachment derivatives were queued for reconciliation.',
+			array(
+				'attachment_id'   => $attachment_id,
+				'context'         => $context,
+				'comparison_code' => $comparison->code(),
+				'queue_codes'     => $queue_status->codes(),
+			),
+			$attachment_id
+		);
+
+		$this->dispatch_refresh(
+			$attachment_id,
+			$context,
+			$status,
+			$this->refresh_payload( array(), array(), array( 'reconcile' => $result_code ) )
+		);
+
+		return $metadata;
 	}
 
 	/**

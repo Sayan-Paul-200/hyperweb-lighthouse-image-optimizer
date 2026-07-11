@@ -27,4 +27,13 @@ interface QueueInterface {
 	 * @return QueueStatus
 	 */
 	public function enqueue_optimization( OptimizationJob $job, int $delay_seconds = 0 ): QueueStatus;
+
+	/**
+	 * Enqueue one reconciliation job.
+	 *
+	 * @param ReconciliationJob $job Reconciliation job.
+	 * @param int               $delay_seconds Relative delay before execution.
+	 * @return QueueStatus
+	 */
+	public function enqueue_reconciliation( ReconciliationJob $job, int $delay_seconds = 0 ): QueueStatus;
 }

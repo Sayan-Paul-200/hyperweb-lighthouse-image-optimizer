@@ -17,6 +17,7 @@ final class DerivativeRepositoryResult {
 	public const CODE_SAVED                    = 'manifest_saved';
 	public const CODE_STATUS_SAVED             = 'status_saved';
 	public const CODE_DELETED                  = 'metadata_deleted';
+	public const CODE_RECONCILIATION_STARTED   = 'reconciliation_started';
 	public const CODE_INVALID_METADATA_IGNORED = 'invalid_metadata_ignored';
 	public const CODE_INVALID_STATUS_REPAIRED  = 'invalid_status_repaired';
 	public const CODE_FINGERPRINT_MISMATCH     = 'fingerprint_mismatch';

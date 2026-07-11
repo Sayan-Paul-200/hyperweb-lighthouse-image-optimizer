@@ -35,6 +35,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added an optimization-focused Action Scheduler queue abstraction with deterministic job payloads, duplicate detection, and a fakeable queue seam.
 - Added a runtime optimization worker with positional payload reconstruction, attachment locking, queued-fingerprint freshness checks, continuation scheduling, bounded retries, and queue-driven status/log orchestration.
 - Added non-blocking new-upload integration that watches generated attachment metadata, respects exclusion and automatic-optimization settings, queues enabled formats asynchronously, and fires an internal attachment-status refresh hook.
+- Added attachment regeneration and edit reconciliation with stale-derivative detection on metadata updates, dedicated reconcile queue/worker flows, manifest reset semantics, safe sidecar replacement, and conservative obsolete-sidecar cleanup.
 
 ### Removed
 
@@ -44,4 +45,4 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 
 ### Notes
 
-- Regeneration/reconciliation queueing, frontend delivery, and admin workflow screens remain deferred.
+- Maintenance scheduling, frontend delivery, and admin workflow screens remain deferred.

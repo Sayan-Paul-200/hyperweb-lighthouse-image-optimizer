@@ -10,6 +10,7 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Queue;
 use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationJob;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueInterface;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueStatus;
+use HyperWeb\LighthouseImageOptimizer\Queue\ReconciliationJob;
 
 /**
  * Records queued optimization jobs in tests.
@@ -29,6 +30,13 @@ final class FakeQueue implements QueueInterface {
 	 * @var array<int,array<string,mixed>>
 	 */
 	public $jobs = array();
+
+	/**
+	 * Enqueued reconciliation jobs.
+	 *
+	 * @var array<int,array<string,mixed>>
+	 */
+	public $reconciliation_jobs = array();
 
 	/**
 	 * Result to return.
@@ -71,6 +79,30 @@ final class FakeQueue implements QueueInterface {
 	 */
 	public function enqueue_optimization( OptimizationJob $job, int $delay_seconds = 0 ): QueueStatus {
 		$this->jobs[] = array(
+			'job'           => $job,
+			'delay_seconds' => $delay_seconds,
+		);
+
+		if ( array() !== $this->results ) {
+			$result = array_shift( $this->results );
+
+			if ( $result instanceof QueueStatus ) {
+				return $result;
+			}
+		}
+
+		return $this->result;
+	}
+
+	/**
+	 * Record one reconciliation job enqueue.
+	 *
+	 * @param ReconciliationJob $job Reconciliation job.
+	 * @param int               $delay_seconds Relative delay before execution.
+	 * @return QueueStatus
+	 */
+	public function enqueue_reconciliation( ReconciliationJob $job, int $delay_seconds = 0 ): QueueStatus {
+		$this->reconciliation_jobs[] = array(
 			'job'           => $job,
 			'delay_seconds' => $delay_seconds,
 		);

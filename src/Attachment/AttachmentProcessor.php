@@ -350,7 +350,8 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 					$source,
 					$resolution->destination(),
 					$this->get_quality_for( $target_format ),
-					(float) $this->settings->minimum_savings_percent()
+					(float) $this->settings->minimum_savings_percent(),
+					$force
 				);
 
 				$results = $results->with_added( $this->converter->convert( $request ) );

@@ -16,6 +16,7 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\UpgradeRunner;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogMaintenance;
 use HyperWeb\LighthouseImageOptimizer\Queue\NewUploadIntegration;
 use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationWorker;
+use HyperWeb\LighthouseImageOptimizer\Queue\ReconciliationWorker;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsApiRegistrar;
 
 /**
@@ -91,6 +92,7 @@ final class Plugin {
 				LogMaintenance::for_wordpress(),
 				AttachmentCleanup::for_wordpress(),
 				NewUploadIntegration::for_wordpress(),
+				ReconciliationWorker::for_wordpress(),
 				OptimizationWorker::for_wordpress(),
 				new I18n( self::SLUG, dirname( $basename ) . '/languages/' ),
 			)

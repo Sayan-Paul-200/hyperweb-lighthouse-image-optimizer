@@ -203,6 +203,39 @@ final class DerivativeRepository {
 	}
 
 	/**
+	 * Begin reconciliation by replacing the active manifest with an empty manifest for the current fingerprint.
+	 *
+	 * @param int                   $attachment_id Attachment ID.
+	 * @param AttachmentFingerprint $fingerprint Current fingerprint.
+	 * @return DerivativeRepositoryResult
+	 */
+	public function begin_reconciliation( int $attachment_id, AttachmentFingerprint $fingerprint ): DerivativeRepositoryResult {
+		$attachment_id = max( 0, $attachment_id );
+		$read          = $this->read( $attachment_id );
+		$manifest      = DerivativeManifest::empty()->with_data( $fingerprint, $this->clock->now(), array() );
+		$codes         = $read->codes();
+		$messages      = $read->messages();
+
+		if ( ! $this->meta->update( $attachment_id, LifecyclePolicy::META_DERIVATIVES, $manifest->to_array() ) ) {
+			$codes[]    = DerivativeRepositoryResult::CODE_WRITE_FAILED;
+			$messages[] = 'Derivative metadata could not be reset for reconciliation.';
+
+			return new DerivativeRepositoryResult( false, true, $read->manifest(), $read->status(), $codes, $messages );
+		}
+
+		$codes[] = DerivativeRepositoryResult::CODE_RECONCILIATION_STARTED;
+
+		return new DerivativeRepositoryResult(
+			true,
+			$read->has_warnings(),
+			$manifest,
+			$read->status(),
+			$codes,
+			$messages
+		);
+	}
+
+	/**
 	 * Delete plugin-owned derivative metadata.
 	 *
 	 * @param int $attachment_id Attachment ID.

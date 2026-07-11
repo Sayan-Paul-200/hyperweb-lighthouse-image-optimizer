@@ -326,6 +326,51 @@ final class ImageConverterTest extends TestCase {
 	}
 
 	/**
+	 * Test replace mode safely replaces an existing destination.
+	 *
+	 * @return void
+	 */
+	public function test_replace_mode_safely_replaces_existing_destination(): void {
+		$filesystem = $this->filesystem_with_source();
+		$filesystem->add_file( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp', 500, 'image/webp', 100, 100 );
+		$editor = new FakeConversionEditor( $filesystem );
+		$editor->output( 300, 'image/webp', 100, 100 );
+
+		$result = $this->converter( $filesystem, $editor )->convert(
+			new ConversionRequest( $this->source(), $this->destination(), 82, 5.0, true )
+		);
+
+		self::assertTrue( $result->is_success() );
+		self::assertSame( 300, $filesystem->file_size( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp' ) );
+		self::assertFalse( $filesystem->exists( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.bak' ) );
+	}
+
+	/**
+	 * Test replace mode rolls back when the final move fails.
+	 *
+	 * @return void
+	 */
+	public function test_replace_mode_rolls_back_when_final_move_fails(): void {
+		$filesystem = $this->filesystem_with_source();
+		$filesystem->add_file( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp', 500, 'image/webp', 100, 100 );
+		$filesystem->fail_move_for(
+			self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.tmp',
+			self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp'
+		);
+		$editor = new FakeConversionEditor( $filesystem );
+		$editor->output( 300, 'image/webp', 100, 100 );
+
+		$result = $this->converter( $filesystem, $editor )->convert(
+			new ConversionRequest( $this->source(), $this->destination(), 82, 5.0, true )
+		);
+
+		self::assertTrue( $result->is_failed() );
+		self::assertSame( ConversionResultCode::ATOMIC_MOVE_FAILED, $result->code() );
+		self::assertSame( 500, $filesystem->file_size( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp' ) );
+		self::assertFalse( $filesystem->exists( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.bak' ) );
+	}
+
+	/**
 	 * Test stale temporary output is cleaned before conversion.
 	 *
 	 * @return void

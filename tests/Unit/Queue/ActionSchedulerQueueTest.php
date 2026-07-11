@@ -11,6 +11,7 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Queue\ActionSchedulerQueue;
 use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationJob;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueStatus;
+use HyperWeb\LighthouseImageOptimizer\Queue\ReconciliationJob;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -386,6 +387,71 @@ final class ActionSchedulerQueueTest extends TestCase {
 	}
 
 	/**
+	 * Test reconciliation enqueue uses the dedicated hook and dedupe identity.
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_reconciliation_uses_dedicated_hook(): void {
+		$async_calls = array();
+		$queue       = $this->queue_with(
+			true,
+			static function ( array $query ): array {
+				unset( $query );
+				return array();
+			},
+			static function ( string $hook, array $args, string $group, bool $unique, int $priority ) use ( &$async_calls ) {
+				$async_calls[] = array(
+					'hook'     => $hook,
+					'args'     => $args,
+					'group'    => $group,
+					'unique'   => $unique,
+					'priority' => $priority,
+				);
+				return 505;
+			}
+		);
+
+		$status = $queue->enqueue_reconciliation(
+			new ReconciliationJob( 5, str_repeat( 'a', 20 ), 'metadata_update' )
+		);
+
+		self::assertTrue( $status->is_successful() );
+		self::assertSame( LifecyclePolicy::ACTION_RECONCILE_ATTACHMENT, $async_calls[0]['hook'] );
+	}
+
+	/**
+	 * Test reconciliation duplicate detection ignores differing reasons.
+	 *
+	 * @return void
+	 */
+	public function test_reconciliation_duplicate_detection_ignores_reason(): void {
+		$queue = $this->queue_with(
+			true,
+			static function ( array $query ): array {
+				if ( LifecyclePolicy::ACTION_RECONCILE_ATTACHMENT !== $query['hook'] || 'pending' !== $query['status'] ) {
+					return array();
+				}
+
+				return array(
+					array(
+						'args' => array(
+							'attachment_id' => 88,
+							'fingerprint'   => str_repeat( 'b', 20 ),
+							'reason'        => 'source_changed',
+						),
+					),
+				);
+			}
+		);
+
+		$status = $queue->enqueue_reconciliation(
+			new ReconciliationJob( 88, str_repeat( 'b', 20 ), 'metadata_update' )
+		);
+
+		self::assertTrue( $status->has_code( QueueStatus::CODE_ALREADY_QUEUED ) );
+	}
+
+	/**
 	 * Create a queue adapter with overrideable seams.
 	 *
 	 * @param bool          $available Whether the queue is available.
@@ -405,6 +471,7 @@ final class ActionSchedulerQueueTest extends TestCase {
 		return new ActionSchedulerQueue(
 			LifecyclePolicy::ACTION_GROUP,
 			LifecyclePolicy::ACTION_OPTIMIZE_ATTACHMENT_FORMAT,
+			LifecyclePolicy::ACTION_RECONCILE_ATTACHMENT,
 			static function () use ( $available ): bool {
 				return $available;
 			},

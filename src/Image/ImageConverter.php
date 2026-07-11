@@ -113,6 +113,7 @@ final class ImageConverter {
 		$source_path      = (string) $paths['source_path'];
 		$destination_path = (string) $paths['destination_path'];
 		$temporary_path   = (string) $paths['temporary_path'];
+		$backup_path      = (string) $paths['backup_path'];
 		$uploads_base     = (string) $paths['uploads_base'];
 
 		if ( ! $this->filesystem->exists( $source_path ) ) {
@@ -143,22 +144,38 @@ final class ImageConverter {
 			);
 		}
 
-		$destination_collision = $this->check_existing_destination( $destination_path, $uploads_base );
-		if ( null !== $destination_collision ) {
-			$cleanup_failed = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
+		if ( $request->replace_existing() ) {
+			$replaceable_destination = $this->check_replaceable_destination( $destination, $uploads_base );
+			if ( null !== $replaceable_destination ) {
+				return $this->failed(
+					$source,
+					$destination,
+					$replaceable_destination,
+					'The existing destination derivative is not replaceable.',
+					null,
+					array(
+						'replace_existing' => true,
+					)
+				);
+			}
+		} else {
+			$destination_collision = $this->check_existing_destination( $destination_path, $uploads_base );
+			if ( null !== $destination_collision ) {
+				$cleanup_failed = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
 
-			return $this->failed(
-				$source,
-				$destination,
-				$destination_collision,
-				ConversionResultCode::DESTINATION_COLLISION === $destination_collision
-					? 'The destination derivative already exists and will not be overwritten.'
-					: 'The destination derivative resolves outside uploads.',
-				null,
-				array(
-					'cleanup_failed' => $cleanup_failed,
-				)
-			);
+				return $this->failed(
+					$source,
+					$destination,
+					$destination_collision,
+					ConversionResultCode::DESTINATION_COLLISION === $destination_collision
+						? 'The destination derivative already exists and will not be overwritten.'
+						: 'The destination derivative resolves outside uploads.',
+					null,
+					array(
+						'cleanup_failed' => $cleanup_failed,
+					)
+				);
+			}
 		}
 
 		$temporary_collision = $this->check_existing_temporary( $temporary_path, $uploads_base );
@@ -182,6 +199,20 @@ final class ImageConverter {
 				null,
 				array(
 					'cleanup_failed' => true,
+				)
+			);
+		}
+
+		if ( $request->replace_existing() && ! $this->cleanup_backup( $backup_path, $uploads_base ) ) {
+			return $this->failed(
+				$source,
+				$destination,
+				ConversionResultCode::ATOMIC_MOVE_FAILED,
+				'The destination backup derivative could not be prepared safely.',
+				null,
+				array(
+					'cleanup_failed'   => true,
+					'replace_existing' => true,
 				)
 			);
 		}
@@ -254,24 +285,66 @@ final class ImageConverter {
 			);
 		}
 
-		$destination_collision = $this->check_existing_destination( $destination_path, $uploads_base );
-		if ( null !== $destination_collision ) {
-			$cleanup_failed = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
+		$backup_in_use = false;
 
-			return $this->failed(
-				$source,
-				$destination,
-				$destination_collision,
-				'The destination derivative appeared before the final move.',
-				$savings,
-				array(
-					'cleanup_failed' => $cleanup_failed,
-				)
-			);
+		if ( $request->replace_existing() ) {
+			$replaceable_destination = $this->check_replaceable_destination( $destination, $uploads_base );
+			if ( null !== $replaceable_destination ) {
+				$cleanup_failed = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
+
+				return $this->failed(
+					$source,
+					$destination,
+					$replaceable_destination,
+					'The existing destination derivative is not replaceable.',
+					$savings,
+					array(
+						'cleanup_failed'   => $cleanup_failed,
+						'replace_existing' => true,
+					)
+				);
+			}
+
+			if ( $this->filesystem->exists( $destination_path ) ) {
+				if ( ! $this->filesystem->move( $destination_path, $backup_path ) ) {
+					$cleanup_failed = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
+
+					return $this->failed(
+						$source,
+						$destination,
+						ConversionResultCode::ATOMIC_MOVE_FAILED,
+						'The existing destination derivative could not be moved aside safely.',
+						$savings,
+						array(
+							'cleanup_failed'   => $cleanup_failed,
+							'replace_existing' => true,
+						)
+					);
+				}
+
+				$backup_in_use = true;
+			}
+		} else {
+			$destination_collision = $this->check_existing_destination( $destination_path, $uploads_base );
+			if ( null !== $destination_collision ) {
+				$cleanup_failed = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
+
+				return $this->failed(
+					$source,
+					$destination,
+					$destination_collision,
+					'The destination derivative appeared before the final move.',
+					$savings,
+					array(
+						'cleanup_failed' => $cleanup_failed,
+					)
+				);
+			}
 		}
 
 		if ( ! $this->filesystem->move( $temporary_path, $destination_path ) ) {
-			$cleanup_failed = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
+			$cleanup_failed  = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
+			$rollback_failed = $backup_in_use && ! $this->rollback_backup( $destination_path, $backup_path, $uploads_base );
 
 			return $this->failed(
 				$source,
@@ -280,15 +353,18 @@ final class ImageConverter {
 				'The temporary derivative could not be moved into place.',
 				$savings,
 				array(
-					'cleanup_failed' => $cleanup_failed,
+					'cleanup_failed'   => $cleanup_failed,
+					'rollback_failed'  => $rollback_failed,
+					'replace_existing' => $request->replace_existing(),
 				)
 			);
 		}
 
 		$final_output = $this->validate_output_file( $destination_path, $destination->target_mime(), $source );
 		if ( ! $final_output['valid'] ) {
-			$cleanup_failed = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
-			$cleanup_failed = ! $this->cleanup_final( $destination_path, $uploads_base ) || $cleanup_failed;
+			$cleanup_failed  = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
+			$cleanup_failed  = ! $this->cleanup_final( $destination_path, $uploads_base ) || $cleanup_failed;
+			$rollback_failed = $backup_in_use && ! $this->rollback_backup( $destination_path, $backup_path, $uploads_base );
 
 			return $this->failed(
 				$source,
@@ -297,8 +373,24 @@ final class ImageConverter {
 				(string) $final_output['message'],
 				$savings,
 				array(
-					'reason'         => $final_output['reason'],
-					'cleanup_failed' => $cleanup_failed,
+					'reason'           => $final_output['reason'],
+					'cleanup_failed'   => $cleanup_failed,
+					'rollback_failed'  => $rollback_failed,
+					'replace_existing' => $request->replace_existing(),
+				)
+			);
+		}
+
+		if ( $backup_in_use && ! $this->cleanup_backup( $backup_path, $uploads_base ) ) {
+			return $this->failed(
+				$source,
+				$destination,
+				ConversionResultCode::ATOMIC_MOVE_FAILED,
+				'The replaced destination backup could not be cleaned up after a successful conversion.',
+				$savings,
+				array(
+					'cleanup_failed'   => true,
+					'replace_existing' => true,
 				)
 			);
 		}
@@ -360,6 +452,7 @@ final class ImageConverter {
 		$source_path      = $this->normalize_path( $source->absolute_path() );
 		$destination_path = $this->normalize_path( $destination->absolute_path() );
 		$temporary_path   = $this->normalize_path( $destination->temporary_absolute_path() );
+		$backup_path      = $this->normalize_path( $destination->absolute_path() . '.bak' );
 
 		if ( ! $this->is_safe_absolute_path( $source_path ) ) {
 			return $this->invalid_paths( ConversionResultCode::UNSAFE_SOURCE_PATH, 'The source path is unsafe.', 'source_absolute_path' );
@@ -373,9 +466,14 @@ final class ImageConverter {
 			return $this->invalid_paths( ConversionResultCode::TEMPORARY_OUTSIDE_UPLOADS, 'The temporary path is unsafe.', 'temporary_absolute_path' );
 		}
 
+		if ( ! $this->is_safe_absolute_path( $backup_path ) ) {
+			return $this->invalid_paths( ConversionResultCode::DESTINATION_OUTSIDE_UPLOADS, 'The backup path is unsafe.', 'backup_absolute_path' );
+		}
+
 		$source_base      = $this->uploads_base_from_pair( $source_path, $source->relative_path() );
 		$destination_base = $this->uploads_base_from_pair( $destination_path, $destination->relative_path() );
 		$temporary_base   = $this->uploads_base_from_pair( $temporary_path, $destination->temporary_relative_path() );
+		$backup_base      = $this->uploads_base_from_pair( $backup_path, $destination->relative_path() . '.bak' );
 
 		if ( '' === $source_base ) {
 			return $this->invalid_paths( ConversionResultCode::UNSAFE_SOURCE_PATH, 'The source path does not match its uploads-relative path.', 'source_base' );
@@ -387,6 +485,10 @@ final class ImageConverter {
 
 		if ( '' === $temporary_base || ! $this->same_path( $source_base, $temporary_base ) ) {
 			return $this->invalid_paths( ConversionResultCode::TEMPORARY_OUTSIDE_UPLOADS, 'The temporary path is outside uploads.', 'temporary_base' );
+		}
+
+		if ( '' === $backup_base || ! $this->same_path( $source_base, $backup_base ) ) {
+			return $this->invalid_paths( ConversionResultCode::DESTINATION_OUTSIDE_UPLOADS, 'The backup path is outside uploads.', 'backup_base' );
 		}
 
 		$source_realpath = $this->filesystem->realpath( $source_path );
@@ -403,6 +505,7 @@ final class ImageConverter {
 			|| $this->same_path( $temporary_path, $destination_path )
 			|| $this->same_relative_path( $destination->temporary_relative_path(), $source->relative_path() )
 			|| $this->same_relative_path( $destination->temporary_relative_path(), $destination->relative_path() )
+			|| $this->same_path( $temporary_path, $backup_path )
 		) {
 			return $this->invalid_paths( ConversionResultCode::TEMPORARY_COLLISION, 'The temporary path collides with another conversion path.', 'temporary_collision' );
 		}
@@ -411,12 +514,22 @@ final class ImageConverter {
 			return $this->invalid_paths( ConversionResultCode::TEMPORARY_OUTSIDE_UPLOADS, 'The temporary path is not in the destination directory.', 'temporary_directory' );
 		}
 
+		if (
+			$this->same_path( $backup_path, $source_path )
+			|| $this->same_path( $backup_path, $destination_path )
+			|| $this->same_relative_path( $destination->relative_path() . '.bak', $source->relative_path() )
+			|| ! $this->same_path( dirname( $destination_path ), dirname( $backup_path ) )
+		) {
+			return $this->invalid_paths( ConversionResultCode::DESTINATION_COLLISION, 'The backup path collides with another conversion path.', 'backup_collision' );
+		}
+
 		return array(
 			'valid'            => true,
 			'uploads_base'     => $source_base,
 			'source_path'      => $source_path,
 			'destination_path' => $destination_path,
 			'temporary_path'   => $temporary_path,
+			'backup_path'      => $backup_path,
 		);
 	}
 
@@ -476,6 +589,32 @@ final class ImageConverter {
 
 		if ( ! $this->filesystem->is_file( $path ) ) {
 			return ConversionResultCode::TEMPORARY_COLLISION;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Determine whether an existing destination is replaceable in reconcile mode.
+	 *
+	 * @param DestinationPath $destination Destination path.
+	 * @param string          $uploads_base Uploads base.
+	 * @return string|null
+	 */
+	private function check_replaceable_destination( DestinationPath $destination, string $uploads_base ): ?string {
+		$path = $destination->absolute_path();
+
+		if ( ! $this->filesystem->exists( $path ) ) {
+			return null;
+		}
+
+		$realpath = $this->filesystem->realpath( $path );
+		if ( '' !== $realpath && ! $this->path_is_inside_base( $realpath, $uploads_base ) ) {
+			return ConversionResultCode::DESTINATION_REALPATH_OUTSIDE_UPLOADS;
+		}
+
+		if ( ! $this->filesystem->is_file( $path ) || ! $this->is_plugin_owned_destination( $destination ) ) {
+			return ConversionResultCode::DESTINATION_COLLISION;
 		}
 
 		return null;
@@ -546,6 +685,45 @@ final class ImageConverter {
 	 * @phpstan-impure
 	 */
 	private function cleanup_temporary( string $path, string $uploads_base ): bool {
+		return $this->cleanup_path( $path, $uploads_base );
+	}
+
+	/**
+	 * Delete final output after failed post-move validation.
+	 *
+	 * @param string $path Absolute final path.
+	 * @param string $uploads_base Uploads base.
+	 * @return bool
+	 *
+	 * @phpstan-impure
+	 */
+	private function cleanup_final( string $path, string $uploads_base ): bool {
+		return $this->cleanup_path( $path, $uploads_base );
+	}
+
+	/**
+	 * Delete a replacement backup when present.
+	 *
+	 * @param string $path Absolute backup path.
+	 * @param string $uploads_base Uploads base.
+	 * @return bool
+	 *
+	 * @phpstan-impure
+	 */
+	private function cleanup_backup( string $path, string $uploads_base ): bool {
+		return $this->cleanup_path( $path, $uploads_base );
+	}
+
+	/**
+	 * Delete a validated file path when present.
+	 *
+	 * @param string $path Absolute path.
+	 * @param string $uploads_base Uploads base.
+	 * @return bool
+	 *
+	 * @phpstan-impure
+	 */
+	private function cleanup_path( string $path, string $uploads_base ): bool {
 		if ( ! $this->filesystem->exists( $path ) ) {
 			return true;
 		}
@@ -559,25 +737,25 @@ final class ImageConverter {
 	}
 
 	/**
-	 * Delete final output after failed post-move validation.
+	 * Attempt to restore a moved-aside backup destination.
 	 *
-	 * @param string $path Absolute final path.
+	 * @param string $destination_path Absolute final path.
+	 * @param string $backup_path Absolute backup path.
 	 * @param string $uploads_base Uploads base.
 	 * @return bool
 	 *
 	 * @phpstan-impure
 	 */
-	private function cleanup_final( string $path, string $uploads_base ): bool {
-		if ( ! $this->filesystem->exists( $path ) ) {
-			return true;
-		}
-
-		$realpath = $this->filesystem->realpath( $path );
-		if ( '' !== $realpath && ! $this->path_is_inside_base( $realpath, $uploads_base ) ) {
+	private function rollback_backup( string $destination_path, string $backup_path, string $uploads_base ): bool {
+		if ( ! $this->filesystem->exists( $backup_path ) ) {
 			return false;
 		}
 
-		return $this->filesystem->delete( $path );
+		if ( $this->filesystem->exists( $destination_path ) && ! $this->cleanup_final( $destination_path, $uploads_base ) ) {
+			return false;
+		}
+
+		return $this->filesystem->move( $backup_path, $destination_path );
 	}
 
 	/**
@@ -625,6 +803,19 @@ final class ImageConverter {
 		}
 
 		return $details;
+	}
+
+	/**
+	 * Determine whether a destination path is plugin-owned and replaceable.
+	 *
+	 * @param DestinationPath $destination Destination path.
+	 * @return bool
+	 */
+	private function is_plugin_owned_destination( DestinationPath $destination ): bool {
+		return 1 === preg_match(
+			'/\.hwlio\.' . preg_quote( $destination->target_format(), '/' ) . '$/i',
+			$destination->relative_path()
+		);
 	}
 
 	/**

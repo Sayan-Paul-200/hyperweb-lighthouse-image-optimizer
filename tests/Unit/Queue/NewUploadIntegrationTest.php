@@ -199,7 +199,8 @@ final class NewUploadIntegrationTest extends TestCase {
 	 */
 	public function test_update_context_does_not_queue_or_overwrite_existing_state(): void {
 		$runtime = $this->build_runtime();
-		$runtime['store']->meta[123][ LifecyclePolicy::META_STATUS ] = array(
+		$runtime['store']->meta[123][ LifecyclePolicy::META_DERIVATIVES ] = $this->stored_manifest( $runtime['fingerprint']->metadata_hash() );
+		$runtime['store']->meta[123][ LifecyclePolicy::META_STATUS ]      = array(
 			'state'      => 'optimized',
 			'formats'    => array( 'webp', 'avif' ),
 			'updated_at' => 50,
@@ -210,10 +211,68 @@ final class NewUploadIntegrationTest extends TestCase {
 		$runtime['integration']->handle_generated_metadata( array( 'file' => '2026/07/hero.jpg' ), 123, 'update' );
 
 		self::assertCount( 0, $runtime['queue']->jobs );
+		self::assertCount( 0, $runtime['queue']->reconciliation_jobs );
 		self::assertSame( AttachmentStatus::STATE_OPTIMIZED, $runtime['store']->meta[123][ LifecyclePolicy::META_STATUS ]['state'] );
 		self::assertSame( LogCode::NEW_UPLOAD_IGNORED, $runtime['logger']->entries[0]['code'] );
 		self::assertCount( 1, $runtime['refreshes']->entries );
 		self::assertSame( 'update', $runtime['refreshes']->entries[0]['context'] );
+	}
+
+	/**
+	 * Test stale update queues reconciliation and marks stale state.
+	 *
+	 * @return void
+	 */
+	public function test_update_context_queues_reconciliation_for_stale_derivatives(): void {
+		$runtime = $this->build_runtime();
+		$runtime['store']->meta[123][ LifecyclePolicy::META_DERIVATIVES ] = $this->stored_manifest( str_repeat( 'b', 64 ) );
+		$runtime['store']->meta[123][ LifecyclePolicy::META_STATUS ]      = array(
+			'state'      => 'optimized',
+			'formats'    => array( 'webp' ),
+			'updated_at' => 50,
+			'error_code' => null,
+			'excluded'   => false,
+		);
+
+		$returned = $runtime['integration']->handle_generated_metadata( array( 'file' => '2026/07/hero.jpg' ), 123, 'update' );
+
+		self::assertSame( array( 'file' => '2026/07/hero.jpg' ), $returned );
+		self::assertCount( 1, $runtime['queue']->reconciliation_jobs );
+		self::assertSame( 'metadata_update', $runtime['queue']->reconciliation_jobs[0]['job']->reason() );
+		self::assertSame( AttachmentStatus::STATE_STALE, $runtime['store']->meta[123][ LifecyclePolicy::META_STATUS ]['state'] );
+		self::assertSame( LogCode::RECONCILE_STALE_DETECTED, $runtime['logger']->entries[0]['code'] );
+		self::assertSame( LogCode::RECONCILE_QUEUED, $runtime['logger']->entries[1]['code'] );
+	}
+
+	/**
+	 * Test stale update does not queue when automation is disabled.
+	 *
+	 * @return void
+	 */
+	public function test_stale_update_does_not_queue_when_automation_is_disabled(): void {
+		$runtime = $this->build_runtime(
+			array(),
+			null,
+			new FakeSettingsRepository(
+				array(
+					'automatic_optimization' => false,
+					'enabled_formats'        => array( 'webp', 'avif' ),
+				)
+			)
+		);
+		$runtime['store']->meta[123][ LifecyclePolicy::META_DERIVATIVES ] = $this->stored_manifest( str_repeat( 'b', 64 ) );
+		$runtime['store']->meta[123][ LifecyclePolicy::META_STATUS ]      = array(
+			'state'      => 'optimized',
+			'formats'    => array( 'webp' ),
+			'updated_at' => 50,
+			'error_code' => null,
+			'excluded'   => false,
+		);
+
+		$runtime['integration']->handle_generated_metadata( array( 'file' => '2026/07/hero.jpg' ), 123, 'update' );
+
+		self::assertCount( 0, $runtime['queue']->reconciliation_jobs );
+		self::assertSame( AttachmentStatus::STATE_STALE, $runtime['store']->meta[123][ LifecyclePolicy::META_STATUS ]['state'] );
 	}
 
 	/**
@@ -284,6 +343,10 @@ final class NewUploadIntegrationTest extends TestCase {
 			}
 		);
 
+		$fingerprint = ( new AttachmentFingerprintBuilder() )->build(
+			( new SourceCollector( $provider, $probe ) )->collect( 123 )
+		);
+
 		return array(
 			'integration' => $integration,
 			'queue'       => $queue,
@@ -292,6 +355,48 @@ final class NewUploadIntegrationTest extends TestCase {
 			'logger'      => $logger,
 			'refreshes'   => $refresh_state,
 			'repository'  => $repository,
+			'fingerprint' => $fingerprint,
+		);
+	}
+
+	/**
+	 * Build a stored manifest with one ready WebP derivative.
+	 *
+	 * @param string $metadata_hash Metadata hash.
+	 * @return array<string,mixed>
+	 */
+	private function stored_manifest( string $metadata_hash ): array {
+		return array(
+			'schema_version' => 1,
+			'fingerprint'    => array(
+				'relative_file' => '2026/07/hero.jpg',
+				'file_size'     => 1000,
+				'modified_time' => 1783526400,
+				'metadata_hash' => $metadata_hash,
+				'signature'     => substr( hash( 'sha256', '2026/07/hero.jpg|1000|1783526400|' . $metadata_hash ), 0, 20 ),
+			),
+			'updated_at'     => 1783526401,
+			'sizes'          => array(
+				'full' => array(
+					'source'  => array(
+						'file'   => '2026/07/hero.jpg',
+						'width'  => 2400,
+						'height' => 1600,
+						'mime'   => 'image/jpeg',
+						'bytes'  => 1000,
+					),
+					'formats' => array(
+						'webp' => array(
+							'file'         => '2026/07/hero.jpg.hwlio.webp',
+							'mime'         => 'image/webp',
+							'bytes'        => 300,
+							'quality'      => 82,
+							'status'       => 'ready',
+							'generated_at' => 1783526401,
+						),
+					),
+				),
+			),
 		);
 	}
 }

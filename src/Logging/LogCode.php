@@ -36,6 +36,12 @@ final class LogCode {
 	public const NEW_UPLOAD_AUTOMATION_DISABLED    = 'new_upload_automation_disabled';
 	public const NEW_UPLOAD_QUEUE_FAILED           = 'new_upload_queue_failed';
 	public const NEW_UPLOAD_IGNORED                = 'new_upload_ignored';
+	public const RECONCILE_STALE_DETECTED          = 'reconcile_stale_detected';
+	public const RECONCILE_QUEUED                  = 'reconcile_queued';
+	public const RECONCILE_QUEUE_FAILED            = 'reconcile_queue_failed';
+	public const RECONCILE_SKIPPED                 = 'reconcile_skipped';
+	public const RECONCILE_COMPLETED               = 'reconcile_completed';
+	public const RECONCILE_CLEANUP_WARNING         = 'reconcile_cleanup_warning';
 
 	/**
 	 * Normalize a code into the stable machine-readable shape.

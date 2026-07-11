@@ -32,6 +32,13 @@ final class ActionSchedulerQueue implements QueueInterface {
 	private $hook;
 
 	/**
+	 * Reconciliation hook.
+	 *
+	 * @var string
+	 */
+	private $reconciliation_hook;
+
+	/**
 	 * Readiness callback.
 	 *
 	 * @var callable
@@ -75,6 +82,7 @@ final class ActionSchedulerQueue implements QueueInterface {
 		return new self(
 			LifecyclePolicy::ACTION_GROUP,
 			LifecyclePolicy::ACTION_OPTIMIZE_ATTACHMENT_FORMAT,
+			LifecyclePolicy::ACTION_RECONCILE_ATTACHMENT,
 			static function (): bool {
 				return function_exists( 'as_get_scheduled_actions' )
 					&& function_exists( 'as_enqueue_async_action' )
@@ -95,6 +103,7 @@ final class ActionSchedulerQueue implements QueueInterface {
 	 *
 	 * @param string   $group Action group.
 	 * @param string   $hook Optimization hook.
+	 * @param string   $reconciliation_hook Reconciliation hook.
 	 * @param callable $is_ready Readiness callback.
 	 * @param callable $query_actions Query callback.
 	 * @param callable $enqueue_async Async enqueue callback.
@@ -104,19 +113,21 @@ final class ActionSchedulerQueue implements QueueInterface {
 	public function __construct(
 		string $group,
 		string $hook,
+		string $reconciliation_hook,
 		callable $is_ready,
 		callable $query_actions,
 		callable $enqueue_async,
 		callable $schedule_single,
 		callable $now
 	) {
-		$this->group           = $group;
-		$this->hook            = trim( $hook );
-		$this->is_ready        = $is_ready;
-		$this->query_actions   = $query_actions;
-		$this->enqueue_async   = $enqueue_async;
-		$this->schedule_single = $schedule_single;
-		$this->now             = $now;
+		$this->group               = $group;
+		$this->hook                = trim( $hook );
+		$this->reconciliation_hook = trim( $reconciliation_hook );
+		$this->is_ready            = $is_ready;
+		$this->query_actions       = $query_actions;
+		$this->enqueue_async       = $enqueue_async;
+		$this->schedule_single     = $schedule_single;
+		$this->now                 = $now;
 	}
 
 	/**
@@ -155,7 +166,7 @@ final class ActionSchedulerQueue implements QueueInterface {
 		}
 
 		try {
-			if ( $this->has_equivalent_action( $job ) ) {
+			if ( $this->has_equivalent_optimization_action( $job ) ) {
 				return QueueStatus::already_queued(
 					array( 'An equivalent optimization job is already queued or running.' )
 				);
@@ -169,37 +180,54 @@ final class ActionSchedulerQueue implements QueueInterface {
 		$delay_seconds = max( 0, $delay_seconds );
 		$payload       = $job->to_array();
 
-		try {
-			if ( 0 === $delay_seconds ) {
-				$action_id = call_user_func(
-					$this->enqueue_async,
-					$this->hook,
-					$payload,
-					$this->group,
-					true,
-					self::PRIORITY
-				);
+		return $this->enqueue_payload(
+			$this->hook,
+			$payload,
+			$delay_seconds,
+			'Optimization job was queued successfully.',
+			'Optimization job could not be queued.'
+		);
+	}
 
-				return $this->queued_result( $action_id, true, null );
-			}
-
-			$scheduled_timestamp = (int) call_user_func( $this->now ) + $delay_seconds;
-			$action_id           = call_user_func(
-				$this->schedule_single,
-				$scheduled_timestamp,
-				$this->hook,
-				$payload,
-				$this->group,
-				true,
-				self::PRIORITY
+	/**
+	 * Enqueue one reconciliation job.
+	 *
+	 * @param ReconciliationJob $job Reconciliation job.
+	 * @param int               $delay_seconds Relative delay before execution.
+	 * @return QueueStatus
+	 */
+	public function enqueue_reconciliation( ReconciliationJob $job, int $delay_seconds = 0 ): QueueStatus {
+		if ( ! $job->is_valid() ) {
+			return QueueStatus::invalid_job_payload(
+				array( 'Reconciliation queue payload is invalid.' )
 			);
+		}
 
-			return $this->queued_result( $action_id, false, $scheduled_timestamp );
+		if ( ! $this->available() ) {
+			return QueueStatus::queue_unavailable(
+				array( 'Action Scheduler is unavailable or not initialized.' )
+			);
+		}
+
+		try {
+			if ( $this->has_equivalent_reconciliation_action( $job ) ) {
+				return QueueStatus::already_queued(
+					array( 'An equivalent reconciliation job is already queued or running.' )
+				);
+			}
 		} catch ( \Throwable $throwable ) {
-			return QueueStatus::enqueue_failed(
+			return QueueStatus::queue_unavailable(
 				array( $throwable->getMessage() )
 			);
 		}
+
+		return $this->enqueue_payload(
+			$this->reconciliation_hook,
+			$job->to_array(),
+			max( 0, $delay_seconds ),
+			'Reconciliation job was queued successfully.',
+			'Reconciliation job could not be queued.'
+		);
 	}
 
 	/**
@@ -208,7 +236,41 @@ final class ActionSchedulerQueue implements QueueInterface {
 	 * @param OptimizationJob $job Optimization job.
 	 * @return bool
 	 */
-	private function has_equivalent_action( OptimizationJob $job ): bool {
+	private function has_equivalent_optimization_action( OptimizationJob $job ): bool {
+		return $this->has_equivalent_action(
+			$this->hook,
+			$job,
+			static function ( array $args ): ?OptimizationJob {
+				return OptimizationJob::from_array( $args );
+			}
+		);
+	}
+
+	/**
+	 * Determine whether an equivalent pending or running reconciliation action already exists.
+	 *
+	 * @param ReconciliationJob $job Reconciliation job.
+	 * @return bool
+	 */
+	private function has_equivalent_reconciliation_action( ReconciliationJob $job ): bool {
+		return $this->has_equivalent_action(
+			$this->reconciliation_hook,
+			$job,
+			static function ( array $args ): ?ReconciliationJob {
+				return ReconciliationJob::from_array( $args );
+			}
+		);
+	}
+
+	/**
+	 * Determine whether an equivalent pending or running action already exists.
+	 *
+	 * @param string   $hook Hook.
+	 * @param mixed    $job Job.
+	 * @param callable $from_array Payload parser.
+	 * @return bool
+	 */
+	private function has_equivalent_action( string $hook, $job, callable $from_array ): bool {
 		foreach ( array( 'pending', 'in-progress' ) as $status ) {
 			$offset = 0;
 
@@ -216,7 +278,7 @@ final class ActionSchedulerQueue implements QueueInterface {
 				$actions = call_user_func(
 					$this->query_actions,
 					array(
-						'hook'     => $this->hook,
+						'hook'     => $hook,
 						'group'    => $this->group,
 						'status'   => $status,
 						'per_page' => self::QUERY_BATCH_SIZE,
@@ -231,9 +293,9 @@ final class ActionSchedulerQueue implements QueueInterface {
 				}
 
 				foreach ( $actions as $action ) {
-					$existing = OptimizationJob::from_array( $this->action_args( $action ) );
+					$existing = call_user_func( $from_array, $this->action_args( $action ) );
 
-					if ( $existing instanceof OptimizationJob && $job->equivalent_to( $existing ) ) {
+					if ( is_object( $existing ) && method_exists( $job, 'equivalent_to' ) && $job->equivalent_to( $existing ) ) {
 						return true;
 					}
 				}
@@ -244,6 +306,56 @@ final class ActionSchedulerQueue implements QueueInterface {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Enqueue a payload through Action Scheduler.
+	 *
+	 * @param string              $hook Hook.
+	 * @param array<string,mixed> $payload Payload.
+	 * @param int                 $delay_seconds Delay in seconds.
+	 * @param string              $success_message Success message.
+	 * @param string              $failure_message Failure message.
+	 * @return QueueStatus
+	 */
+	private function enqueue_payload(
+		string $hook,
+		array $payload,
+		int $delay_seconds,
+		string $success_message,
+		string $failure_message
+	): QueueStatus {
+		try {
+			if ( 0 === $delay_seconds ) {
+				$action_id = call_user_func(
+					$this->enqueue_async,
+					$hook,
+					$payload,
+					$this->group,
+					true,
+					self::PRIORITY
+				);
+
+				return $this->queued_result( $action_id, true, null, $success_message, $failure_message );
+			}
+
+			$scheduled_timestamp = (int) call_user_func( $this->now ) + $delay_seconds;
+			$action_id           = call_user_func(
+				$this->schedule_single,
+				$scheduled_timestamp,
+				$hook,
+				$payload,
+				$this->group,
+				true,
+				self::PRIORITY
+			);
+
+			return $this->queued_result( $action_id, false, $scheduled_timestamp, $success_message, $failure_message );
+		} catch ( \Throwable $throwable ) {
+			return QueueStatus::enqueue_failed(
+				array( $throwable->getMessage() )
+			);
+		}
 	}
 
 	/**
@@ -272,20 +384,22 @@ final class ActionSchedulerQueue implements QueueInterface {
 	 * @param mixed    $action_id Action ID.
 	 * @param bool     $async Whether async scheduling was used.
 	 * @param int|null $scheduled_timestamp Scheduled timestamp.
+	 * @param string   $success_message Success message.
+	 * @param string   $failure_message Failure message.
 	 * @return QueueStatus
 	 */
-	private function queued_result( $action_id, bool $async, ?int $scheduled_timestamp ): QueueStatus {
+	private function queued_result( $action_id, bool $async, ?int $scheduled_timestamp, string $success_message, string $failure_message ): QueueStatus {
 		if ( is_numeric( $action_id ) && 0 < (int) $action_id ) {
 			return QueueStatus::queued(
 				(int) $action_id,
 				$async,
 				$scheduled_timestamp,
-				array( 'Optimization job was queued successfully.' )
+				array( $success_message )
 			);
 		}
 
 		return QueueStatus::enqueue_failed(
-			array( 'Optimization job could not be queued.' )
+			array( $failure_message )
 		);
 	}
 

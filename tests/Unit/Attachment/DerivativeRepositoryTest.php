@@ -327,6 +327,25 @@ final class DerivativeRepositoryTest extends TestCase {
 	}
 
 	/**
+	 * Test begin reconciliation resets the active manifest to the current fingerprint.
+	 *
+	 * @return void
+	 */
+	public function test_begin_reconciliation_resets_active_manifest_to_current_fingerprint(): void {
+		$store = new FakeAttachmentMetaStore();
+		$store->meta[123][ LifecyclePolicy::META_DERIVATIVES ] = $this->stored_manifest(
+			new AttachmentFingerprint( '2026/07/hero.jpg', 1000, 100, str_repeat( 'b', 64 ) )
+		);
+
+		$result = $this->repository( $store )->begin_reconciliation( 123, $this->fingerprint() );
+
+		self::assertTrue( $result->is_successful() );
+		self::assertTrue( $result->has_code( DerivativeRepositoryResult::CODE_RECONCILIATION_STARTED ) );
+		self::assertSame( $this->fingerprint()->to_array(), $store->meta[123][ LifecyclePolicy::META_DERIVATIVES ]['fingerprint'] );
+		self::assertSame( array(), $store->meta[123][ LifecyclePolicy::META_DERIVATIVES ]['sizes'] );
+	}
+
+	/**
 	 * Build repository.
 	 *
 	 * @param FakeAttachmentMetaStore $store Store.

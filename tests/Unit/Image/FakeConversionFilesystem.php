@@ -50,6 +50,13 @@ final class FakeConversionFilesystem implements ConversionFilesystemInterface {
 	public $move_should_fail = false;
 
 	/**
+	 * Specific move failures keyed by source=>destination.
+	 *
+	 * @var array<string,bool>
+	 */
+	public $move_failures = array();
+
+	/**
 	 * Add a file.
 	 *
 	 * @param string      $path Path.
@@ -222,7 +229,12 @@ final class FakeConversionFilesystem implements ConversionFilesystemInterface {
 			'destination' => $destination,
 		);
 
-		if ( $this->move_should_fail || ! isset( $this->files[ $source ] ) || isset( $this->files[ $destination ] ) ) {
+		if (
+			$this->move_should_fail
+			|| isset( $this->move_failures[ $source . '=>' . $destination ] )
+			|| ! isset( $this->files[ $source ] )
+			|| isset( $this->files[ $destination ] )
+		) {
 			return false;
 		}
 
@@ -231,6 +243,17 @@ final class FakeConversionFilesystem implements ConversionFilesystemInterface {
 		unset( $this->files[ $source ] );
 
 		return true;
+	}
+
+	/**
+	 * Mark a specific move as failing.
+	 *
+	 * @param string $source Source path.
+	 * @param string $destination Destination path.
+	 * @return void
+	 */
+	public function fail_move_for( string $source, string $destination ): void {
+		$this->move_failures[ $this->normalize( $source ) . '=>' . $this->normalize( $destination ) ] = true;
 	}
 
 	/**

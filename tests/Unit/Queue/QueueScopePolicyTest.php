@@ -56,6 +56,9 @@ final class QueueScopePolicyTest extends TestCase {
 			'src/Queue/OptimizationWorker.php'   => array(
 				'runtime hook registration',
 			),
+			'src/Queue/ReconciliationWorker.php' => array(
+				'runtime hook registration',
+			),
 		);
 
 		foreach ( $this->queue_source_files() as $file => $contents ) {
