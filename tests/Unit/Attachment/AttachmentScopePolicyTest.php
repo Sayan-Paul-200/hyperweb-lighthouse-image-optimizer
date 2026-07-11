@@ -57,6 +57,9 @@ final class AttachmentScopePolicyTest extends TestCase {
 		);
 
 		$allowed_patterns = array(
+			'src/Attachment/AttachmentCleanup.php' => array(
+				'runtime hook registration',
+			),
 			'src/Attachment/WordPressAttachmentMetaStore.php' => array(
 				'attachment metadata read',
 				'attachment metadata write',

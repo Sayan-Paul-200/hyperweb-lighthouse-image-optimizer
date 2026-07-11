@@ -17,22 +17,20 @@ use HyperWeb\LighthouseImageOptimizer\Image\ConversionResultCollection;
 use HyperWeb\LighthouseImageOptimizer\Image\ConversionSavings;
 use HyperWeb\LighthouseImageOptimizer\Image\DestinationResolver;
 use HyperWeb\LighthouseImageOptimizer\Image\ImageConverter;
+use HyperWeb\LighthouseImageOptimizer\Image\ResourceGuard;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImage;
+use HyperWeb\LighthouseImageOptimizer\Image\SourceImageCollection;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImageValidator;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentInspector;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\MemoryLimit;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
 /**
  * Orchestrates the end-to-end conversion process for a single attachment.
  */
-final class AttachmentProcessor {
-
-	/**
-	 * Lock manager.
-	 *
-	 * @var AttachmentLockManager
-	 */
-	private $locks;
+final class AttachmentProcessor implements AttachmentProcessorInterface {
 
 	/**
 	 * Source collector.
@@ -91,9 +89,32 @@ final class AttachmentProcessor {
 	private $resolver;
 
 	/**
+	 * Build the WordPress-backed processor.
+	 *
+	 * @return self
+	 */
+	public static function for_wordpress(): self {
+		$settings = SettingsRepository::for_wordpress();
+
+		return new self(
+			SourceCollector::for_wordpress(),
+			new AttachmentFingerprintBuilder(),
+			DerivativeRepository::for_wordpress(),
+			SourceImageValidator::for_wordpress(),
+			$settings,
+			new ConversionPolicy(
+				$settings,
+				EnvironmentInspector::for_wordpress(),
+				ResourceGuard::for_wordpress( MemoryLimit::from_raw( (string) ini_get( 'memory_limit' ) ) )
+			),
+			ImageConverter::for_wordpress(),
+			DestinationResolver::for_wordpress()
+		);
+	}
+
+	/**
 	 * Create processor.
 	 *
-	 * @param AttachmentLockManager        $locks Lock manager.
 	 * @param SourceCollector              $collector Source collector.
 	 * @param AttachmentFingerprintBuilder $fingerprinter Fingerprint builder.
 	 * @param DerivativeRepository         $repository Derivative repository.
@@ -104,7 +125,6 @@ final class AttachmentProcessor {
 	 * @param DestinationResolver          $resolver Destination resolver.
 	 */
 	public function __construct(
-		AttachmentLockManager $locks,
 		SourceCollector $collector,
 		AttachmentFingerprintBuilder $fingerprinter,
 		DerivativeRepository $repository,
@@ -114,7 +134,6 @@ final class AttachmentProcessor {
 		ImageConverter $converter,
 		DestinationResolver $resolver
 	) {
-		$this->locks         = $locks;
 		$this->collector     = $collector;
 		$this->fingerprinter = $fingerprinter;
 		$this->repository    = $repository;
@@ -126,7 +145,7 @@ final class AttachmentProcessor {
 	}
 
 	/**
-	 * Process a single attachment.
+	 * Process a single attachment using the first enabled format.
 	 *
 	 * @param int  $attachment_id Attachment ID.
 	 * @param bool $force Whether to bypass derivative reuse checks.
@@ -156,61 +175,75 @@ final class AttachmentProcessor {
 		int $time_budget_seconds = 0,
 		bool $force = false
 	): AttachmentProcessResult {
-		$attachment_id = max( 0, $attachment_id );
-		$target_format = strtolower( trim( $target_format ) );
-		$cursor        = max( 0, $cursor );
-		$acquired      = $this->locks->acquire( $attachment_id );
+		$collection  = $this->collector->collect( $attachment_id );
+		$fingerprint = array() === $collection->sources() ? null : $this->fingerprinter->build( $collection );
 
-		if ( ! $acquired->is_successful() ) {
-			return AttachmentProcessResult::locked();
-		}
+		return $this->process_request(
+			new AttachmentProcessRequest(
+				$attachment_id,
+				$target_format,
+				$cursor,
+				$time_budget_seconds,
+				$force,
+				$collection,
+				$fingerprint
+			)
+		);
+	}
 
-		$lock = $acquired->lock();
-
+	/**
+	 * Process one attachment-format request.
+	 *
+	 * @param AttachmentProcessRequest $request Processing request.
+	 * @return AttachmentProcessResult
+	 */
+	public function process_request( AttachmentProcessRequest $request ): AttachmentProcessResult {
 		try {
-			$this->lifecycle_action( 'hwlio_attachment_process_started', array( $attachment_id, $target_format, $cursor, $force ) );
+			$this->lifecycle_action(
+				'hwlio_attachment_process_started',
+				array(
+					$request->attachment_id(),
+					$request->target_format(),
+					$request->cursor(),
+					$request->force(),
+				)
+			);
 
-			$result = $this->do_process( $attachment_id, $target_format, $cursor, $time_budget_seconds, $force );
+			$result = $this->do_process( $request );
 
-			$this->lifecycle_action( 'hwlio_attachment_process_completed', array( $attachment_id, $result ) );
+			$this->lifecycle_action( 'hwlio_attachment_process_completed', array( $request->attachment_id(), $result ) );
 
 			return $result;
 		} catch ( \Throwable $e ) {
 			$result = AttachmentProcessResult::failure(
 				AttachmentProcessResult::CODE_UNEXPECTED_ERROR,
 				'An unexpected error occurred during processing: ' . $e->getMessage(),
-				$target_format,
-				$cursor,
-				$cursor
+				$request->target_format(),
+				$request->cursor(),
+				$request->cursor()
 			);
 
-			$this->lifecycle_action( 'hwlio_attachment_process_failed', array( $attachment_id, $result ) );
+			$this->lifecycle_action( 'hwlio_attachment_process_failed', array( $request->attachment_id(), $result ) );
 
 			return $result;
-		} finally {
-			if ( $lock instanceof AttachmentLock ) {
-				$this->locks->release( $attachment_id, $lock->token() );
-			}
 		}
 	}
 
 	/**
 	 * Perform the processing steps.
 	 *
-	 * @param int    $attachment_id Attachment ID.
-	 * @param string $target_format Target format.
-	 * @param int    $cursor Source cursor.
-	 * @param int    $time_budget_seconds Time budget in seconds.
-	 * @param bool   $force Force flag.
+	 * @param AttachmentProcessRequest $request Processing request.
 	 * @return AttachmentProcessResult
 	 */
-	private function do_process(
-		int $attachment_id,
-		string $target_format,
-		int $cursor,
-		int $time_budget_seconds,
-		bool $force
-	): AttachmentProcessResult {
+	private function do_process( AttachmentProcessRequest $request ): AttachmentProcessResult {
+		$attachment_id       = $request->attachment_id();
+		$target_format       = strtolower( trim( $request->target_format() ) );
+		$cursor              = max( 0, $request->cursor() );
+		$time_budget_seconds = max( 0, $request->time_budget_seconds() );
+		$force               = $request->force();
+		$collection          = $request->collection();
+		$fingerprint         = $request->fingerprint();
+
 		if ( '' === $target_format ) {
 			$this->repository->save_status(
 				$attachment_id,
@@ -225,8 +258,6 @@ final class AttachmentProcessor {
 				$cursor
 			);
 		}
-
-		$collection = $this->collector->collect( $attachment_id );
 
 		if ( array() === $collection->sources() ) {
 			$this->repository->save_status(
@@ -243,9 +274,7 @@ final class AttachmentProcessor {
 			);
 		}
 
-		$fingerprint = $this->fingerprinter->build( $collection );
-
-		if ( null === $fingerprint ) {
+		if ( ! $fingerprint instanceof AttachmentFingerprint ) {
 			$this->repository->save_status(
 				$attachment_id,
 				new AttachmentStatus( AttachmentStatus::STATE_FAILED, array(), 0, AttachmentProcessResult::CODE_FINGERPRINT_FAILED, false )
@@ -410,12 +439,11 @@ final class AttachmentProcessor {
 			return AttachmentStatus::STATE_PARTIAL;
 		}
 
-		// Check if any skips were due to genuine failure codes vs already_current.
 		$genuine_skips = array_filter(
 			$skipped,
 			function ( ConversionResult $result ) {
 				return ConversionResultCode::ALREADY_CURRENT !== $result->code()
-				&& ConversionResultCode::SKIPPED_ANIMATED_IMAGE !== $result->code();
+					&& ConversionResultCode::SKIPPED_ANIMATED_IMAGE !== $result->code();
 			}
 		);
 
@@ -463,8 +491,7 @@ final class AttachmentProcessor {
 	 * @return ConversionResult|null
 	 */
 	private function already_current_result( SourceImage $source, string $target_format, DerivativeManifest $manifest ): ?ConversionResult {
-		$resolution = $this->resolver->resolve( $source, $target_format );
-
+		$resolution  = $this->resolver->resolve( $source, $target_format );
 		$destination = $resolution->destination();
 
 		if ( ! $resolution->is_resolved() || null === $destination ) {

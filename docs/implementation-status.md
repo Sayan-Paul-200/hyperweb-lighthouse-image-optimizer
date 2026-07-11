@@ -90,7 +90,11 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A derivative repository for plugin-owned `_hwlio_derivatives` manifests and `_hwlio_status` summaries exists as of Subphase 4.2.
 - Token-protected attachment locking, bounded stale-lock recovery, and token-safe lock diagnostics exist as of Subphase 4.3.
 - A callable attachment processor for one-format, cursor-aware conversion batches exists as of Subphase 4.4.
-- No visible settings UI, diagnostics UI, REST diagnostics endpoint, queue abstraction, runtime image optimization hooks, or frontend delivery exists yet.
+- A runtime attachment cleanup provider for authoritative sidecar deletion, pending attachment-job cancellation, meta cleanup, and dry-run orphan reconciliation exists as of Subphase 4.5.
+- An optimization-focused queue abstraction for Action Scheduler exists as of Subphase 5.1.
+- A runtime optimization worker with lock orchestration, queued fingerprint freshness checks, continuation scheduling, retry scheduling, and queue-driven status transitions exists as of Subphase 5.2.
+- A runtime new-upload integration for asynchronous post-metadata queueing and lightweight status updates exists as of Subphase 5.3.
+- No visible settings UI, diagnostics UI, REST diagnostics endpoint, or frontend delivery exists yet.
 
 ## Phase Status
 
@@ -122,8 +126,11 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 4.2 - Derivative repository
   - [x] Subphase 4.3 - Attachment locking
   - [x] Subphase 4.4 - Attachment processor
-  - [ ] Subphase 4.5 - Cleanup on attachment deletion
+  - [x] Subphase 4.5 - Cleanup on attachment deletion
 - [ ] Phase 5 - Action Scheduler Queue and Automatic Processing
+  - [x] Subphase 5.1 - Queue abstraction
+  - [x] Subphase 5.2 - Optimization worker
+  - [x] Subphase 5.3 - New-upload integration
 - [ ] Phase 6 - Admin Screens, REST API, and Bulk Processing
 - [ ] Phase 7 - Frontend Modern-Format Delivery
 - [ ] Phase 8 - Loading Optimization and Layout Stability
@@ -2320,4 +2327,334 @@ Source scans: pass. No code calls core attachment metadata writes, media hooks, 
 - New-upload hooks and automatic processing remain deferred to Phase 5.
 - Admin, REST, and bulk-processing exposure remain deferred to Phase 6.
 - Attachment deletion cleanup registration remains deferred to Subphase 4.5.
+- Runtime WordPress smoke testing remains pending in this plugin-only workspace.
+
+## Subphase 4.5 - Cleanup on Attachment Deletion
+
+**Status:** Complete
+**Completed:** 2026-07-11
+
+### Tasks
+
+- [x] Add `AttachmentCleanup` as a runtime hook provider that registers only `delete_attachment`.
+- [x] Add an attachment-cleanup result model with stable codes, counts, warnings, and safe relative-path samples.
+- [x] Refactor uninstall derivative cleanup to reuse a shared manifest-scoped derivative file cleaner.
+- [x] Delete only authoritative manifest-listed ready derivative files and preserve all source/original paths.
+- [x] Add bounded pending attachment-job cancellation through an Action Scheduler seam.
+- [x] Remove plugin-owned attachment meta after file/job cleanup.
+- [x] Add dry-run orphan reconciliation based on deterministic sidecar candidates from collected sources and manifest source records.
+- [x] Keep cleanup callable-safe with no REST routes, admin/frontend assets, queue workers, broad uploads scans, or `_wp_attachment_metadata` writes.
+
+### Files Added
+
+```text
+src/Attachment/ActionSchedulerAttachmentJobCleaner.php
+src/Attachment/AttachmentCleanup.php
+src/Attachment/AttachmentCleanupResult.php
+src/Attachment/AttachmentJobCleanerInterface.php
+src/Attachment/DerivativeFileCleaner.php
+tests/Unit/Attachment/ActionSchedulerAttachmentJobCleanerTest.php
+tests/Unit/Attachment/AttachmentCleanupTest.php
+tests/Unit/Attachment/FakeAttachmentJobCleaner.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Infrastructure/DerivativeCleanup.php
+src/Infrastructure/LifecyclePolicy.php
+src/Plugin.php
+tests/Unit/Attachment/AttachmentScopePolicyTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/PluginTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Cleanup Behavior
+
+- `AttachmentCleanup` is composed into `Plugin::create()` and registers only the `delete_attachment` hook.
+- Runtime cleanup reads the sanitized authoritative manifest through `DerivativeRepository::read()` and deletes only ready derivative `file` entries.
+- Shared path validation is centralized in `DerivativeFileCleaner`, which is now reused by both uninstall cleanup and attachment deletion cleanup.
+- Pending attachment jobs are cancelled only for the target `attachment_id`, only for canonical plugin hooks, and only within the `hwlio` Action Scheduler group.
+- If Action Scheduler is unavailable or not initialized, cleanup records a warning and continues with file and meta cleanup.
+- Plugin-owned attachment meta cleanup removes `_hwlio_derivatives`, `_hwlio_status`, `_hwlio_excluded`, and `_hwlio_lock` idempotently.
+- Dry-run orphan reconciliation derives deterministic `{source}.hwlio.webp` and `{source}.hwlio.avif` candidates from collected sources plus manifest source records, reports only safe existing plugin-owned sidecars, and does not delete them.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 272 tests and 12147 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. Only `src/Attachment/WordPressAttachmentMetaStore.php` calls post-meta APIs. No code writes `_wp_attachment_metadata`, registers REST routes, enqueues admin/frontend assets, schedules optimization work, or performs broad uploads scanning for orphan detection.
+
+### Acceptance Criteria
+
+- [x] Attachment deletion removes only authoritative manifest-listed sidecars.
+- [x] Source/original files remain preserved even when metadata is tampered or incomplete.
+- [x] Partial sidecar-deletion failures do not block remaining cleanup or plugin-owned meta removal.
+- [x] Pending attachment-job cancellation targets only the matching `attachment_id`.
+- [x] Action Scheduler unavailability degrades to warnings without blocking file/meta cleanup.
+- [x] Dry-run orphan reconciliation reports deterministic untracked sidecars without deleting them.
+
+### Deferred Work
+
+- Action Scheduler queue payload execution and new-upload automatic processing remain deferred to Phase 5.
+- Bulk orphan reconciliation execution, UI exposure, and REST exposure remain deferred to Phase 6.
+- Broad uploads scanning and destructive orphan cleanup remain deferred to later cleanup/reporting phases.
+- Runtime WordPress smoke testing remains pending in this plugin-only workspace.
+
+## Subphase 5.1 - Queue Abstraction
+
+**Status:** Complete
+**Completed:** 2026-07-11
+
+### Tasks
+
+- [x] Add a service-only queue domain under `src/Queue/`.
+- [x] Add an immutable `OptimizationJob` payload model with deterministic identity fields.
+- [x] Add a `QueueStatus` result object with stable queue result codes.
+- [x] Add `QueueInterface` so future workers and upload integrations can depend on a fakeable seam.
+- [x] Implement `ActionSchedulerQueue` with readiness guards, bounded duplicate detection, and async/delayed enqueue paths.
+- [x] Extend `LifecyclePolicy` with explicit attachment job hook constants while preserving the existing hook list helper.
+- [x] Keep runtime provider composition unchanged and avoid worker, upload, REST, and status-mutation behavior.
+
+### Files Added
+
+```text
+src/Queue/ActionSchedulerQueue.php
+src/Queue/OptimizationJob.php
+src/Queue/QueueInterface.php
+src/Queue/QueueStatus.php
+tests/Unit/Queue/ActionSchedulerQueueTest.php
+tests/Unit/Queue/FakeQueue.php
+tests/Unit/Queue/OptimizationJobTest.php
+tests/Unit/Queue/QueueScopePolicyTest.php
+tests/Unit/Queue/QueueStatusTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Infrastructure/LifecyclePolicy.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Queue Behavior
+
+- `QueueInterface` currently exposes only `available()` and `enqueue_optimization()`.
+- `OptimizationJob` carries only safe scalar payload data: `attachment_id`, `format`, `cursor`, `force`, `reason`, and 20-character `fingerprint`.
+- Duplicate detection uses only `attachment_id`, `format`, `cursor`, `force`, and `fingerprint`; `reason` is preserved for observability but ignored for equivalence.
+- `ActionSchedulerQueue` requires Action Scheduler to be loaded and initialized before enqueueing.
+- Duplicate detection scans only `pending` and `in-progress` optimize actions in bounded pages of `25`.
+- Async queueing uses `as_enqueue_async_action()` when `delay_seconds <= 0`; delayed queueing uses `as_schedule_single_action()` with a relative timestamp.
+- Existing recurring-maintenance and cleanup-specific Action Scheduler seams remain separate in this subphase.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass, 297 tests and 12511 assertions
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. Queue scheduling globals are confined to `src/Queue/ActionSchedulerQueue.php`, while conversion and attachment-processing classes continue to avoid direct `as_*` calls.
+
+### Acceptance Criteria
+
+- [x] Domain services can depend on a fake queue implementation.
+- [x] No conversion-domain class directly calls global Action Scheduler scheduling functions.
+- [x] Optimization job payloads remain small, deterministic, and serializable.
+- [x] Equivalent pending or running jobs are detected without treating `reason` as part of dedupe identity.
+- [x] Queue unavailability and enqueue failures degrade to structured result objects instead of fatal errors.
+
+### Deferred Work
+
+- Reconciliation queueing and stale-derivative follow-up actions remain deferred to Subphases 5.4 and 5.5.
+- Runtime WordPress smoke testing remains pending in this plugin-only workspace.
+
+## Subphase 5.3 - New-Upload Integration
+
+**Status:** Complete
+**Completed:** 2026-07-11
+
+### Tasks
+
+- [x] Add `NewUploadIntegration` as a runtime provider listening to `wp_generate_attachment_metadata`.
+- [x] Always return WordPress attachment metadata unchanged.
+- [x] Queue enabled target formats only in `create` context when automatic optimization is enabled.
+- [x] Respect attachment-level exclusion before queueing.
+- [x] Add a dedicated attachment exclusion read seam around `_hwlio_excluded` with `_hwlio_status.excluded` fallback.
+- [x] Save lightweight `_hwlio_status` values of `queued`, `unprocessed`, or `excluded` as appropriate.
+- [x] Fire an internal attachment-status refresh hook for future Media Library integrations.
+- [x] Keep regeneration/reconciliation, REST, admin UI, and synchronous conversion deferred.
+
+### Files Added
+
+```text
+src/Attachment/AttachmentExclusionRepository.php
+src/Attachment/AttachmentExclusionRepositoryInterface.php
+src/Queue/NewUploadIntegration.php
+tests/Unit/Attachment/AttachmentExclusionRepositoryTest.php
+tests/Unit/Queue/NewUploadIntegrationTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Infrastructure/LifecyclePolicy.php
+src/Logging/LogCode.php
+src/Plugin.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/PluginTest.php
+tests/Unit/Queue/FakeQueue.php
+tests/Unit/Queue/QueueScopePolicyTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Upload Behavior
+
+- `NewUploadIntegration` registers only the `wp_generate_attachment_metadata` filter with all three current WordPress arguments.
+- `create` context reads `automatic_optimization`, checks attachment exclusion, collects sources once, builds one fingerprint, and queues one optimization job per enabled format using the canonical `new_upload` reason.
+- `queued` and `already_queued` both count as successful queue outcomes for lightweight `_hwlio_status = queued`.
+- If queueing cannot start for any format, the attachment remains `unprocessed`, the first queue failure code is recorded in `_hwlio_status.error_code`, and the upload still succeeds normally.
+- `update` context is intentionally non-queueing in 5.3 and fires only the internal `hwlio_attachment_status_refresh` action so 5.4 can own reconciliation behavior.
+- Attachment exclusion reads `_hwlio_excluded` as the source of truth and falls back to `_hwlio_status.excluded` when explicit exclusion meta is absent.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. The new-upload hook is confined to `src/Queue/NewUploadIntegration.php`, runtime hook registration remains isolated to queue providers, and no direct post-meta calls were introduced outside `WordPressAttachmentMetaStore`. No REST routes, admin/frontend assets, synchronous conversion, or `_wp_attachment_metadata` writes were added.
+
+### Acceptance Criteria
+
+- [x] Upload completion is not blocked by conversion work.
+- [x] Attachment metadata is always returned unchanged.
+- [x] Enabled formats are queued only after WordPress metadata generation in `create` context.
+- [x] Disabled automation leaves attachments available and marked `unprocessed`.
+- [x] Excluded attachments are not automatically queued and are marked `excluded`.
+- [x] Queue failures do not fail the upload flow.
+- [x] `update` context is handled safely without beginning reconciliation early.
+
+### Deferred Work
+
+- Regeneration and edit reconciliation remain deferred to Subphase 5.4.
+- Maintenance scheduling remains deferred to Subphase 5.5.
+- Media Library refresh consumers, post-upload controls, and REST exposure remain deferred to Phase 6.
+- Runtime WordPress smoke testing remains pending in this plugin-only workspace.
+
+## Subphase 5.2 - Optimization Worker
+
+**Status:** Complete
+**Completed:** 2026-07-11
+
+### Tasks
+
+- [x] Add `OptimizationWorker` as the runtime Action Scheduler hook provider for queued optimization jobs.
+- [x] Rebuild positional callback payloads into validated `OptimizationJob` objects.
+- [x] Move lock ownership out of `AttachmentProcessor` and into the worker.
+- [x] Add queued fingerprint freshness checks with stale-source requeue behavior.
+- [x] Add continuation scheduling for incomplete processor batches.
+- [x] Add bounded retry scheduling for lock collisions and retryable transient failures.
+- [x] Add queue-driven lightweight status transitions and structured worker logging.
+- [x] Keep upload hooks, REST, admin/frontend assets, and frontend delivery deferred.
+
+### Files Added
+
+```text
+src/Attachment/AttachmentProcessRequest.php
+src/Attachment/AttachmentProcessorInterface.php
+src/Queue/OptimizationRetryPolicy.php
+src/Queue/OptimizationWorker.php
+tests/Unit/Queue/FakeAttachmentProcessor.php
+tests/Unit/Queue/FakeLogger.php
+tests/Unit/Queue/OptimizationRetryPolicyTest.php
+tests/Unit/Queue/OptimizationWorkerTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Attachment/AttachmentProcessor.php
+src/Logging/LogCode.php
+src/Plugin.php
+tests/Unit/Attachment/AttachmentProcessorTest.php
+tests/Unit/PluginTest.php
+tests/Unit/Queue/OptimizationJobTest.php
+tests/Unit/Queue/QueueScopePolicyTest.php
+```
+
+### Worker Behavior
+
+- `OptimizationWorker` is composed into `Plugin::create()` and registers only `LifecyclePolicy::ACTION_OPTIMIZE_ATTACHMENT_FORMAT` with six positional callback arguments, matching Action Scheduler execution order.
+- `OptimizationJob::from_callback_args()` reconstructs worker payloads safely from positional callback args without depending on ad hoc arrays.
+- The worker now owns attachment lock acquisition and release, while `AttachmentProcessor` is request-driven and lock-free.
+- Before processing, the worker collects sources once, compares the queued fingerprint against current source state, and re-queues fresh work with reason `source_changed` when the queued fingerprint is stale.
+- Incomplete processor results enqueue a continuation from `next_cursor`; retryable transient failures enqueue bounded retries from the original cursor using `retry_1`, `retry_2`, and `retry_3` reasons with `60`, `120`, and `240` second delays.
+- Queue-driven status updates are lightweight and preserve ready formats plus the excluded flag; invalid payloads, lock collisions, stale fingerprints, retry scheduling, and completion outcomes are logged through stable worker log codes.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. Runtime hook registration is confined to `src/Queue/OptimizationWorker.php`, queue scheduling remains confined to queue-domain adapters, and no image-domain or attachment-domain class calls Action Scheduler globals directly. No upload hooks, REST routes, admin/frontend assets, or `_wp_attachment_metadata` writes were introduced.
+
+### Acceptance Criteria
+
+- [x] Worker hook registration exists only for the optimize hook.
+- [x] Positional Action Scheduler callback args are rebuilt into validated optimization jobs.
+- [x] The worker owns lock lifecycle, queued fingerprint freshness checks, continuation scheduling, retry scheduling, and queue-driven status overrides.
+- [x] `AttachmentProcessor` remains the pure request-driven processing service and no longer acquires locks internally.
+- [x] Invalid job payloads, stale fingerprints, lock collisions, partial batches, retryable failures, and completed outcomes degrade to structured status/log behavior instead of fatal errors.
+
+### Deferred Work
+
+- Reconcile scheduling and stale-lock recurring recovery remain deferred to Subphases 5.4 and 5.5.
+- Admin, REST, and bulk-processing exposure remain deferred to Phase 6.
 - Runtime WordPress smoke testing remains pending in this plugin-only workspace.

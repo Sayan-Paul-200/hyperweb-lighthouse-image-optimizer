@@ -31,6 +31,10 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added token-protected attachment locking with bounded stale-lock recovery and token-safe diagnostics.
 - Added a pure-domain conversion policy service with sequential gate evaluation for format enablement, server support, MIME policy, validation state, resource limits, derivative reuse, and exclusion.
 - Added a callable attachment processor that orchestrates one-format conversion batches with locking, cursor reporting, repository persistence, and lifecycle action emission.
+- Added attachment-deletion cleanup with authoritative manifest-scoped sidecar removal, pending attachment-job cancellation, plugin-owned attachment-meta cleanup, and dry-run orphan reconciliation reporting.
+- Added an optimization-focused Action Scheduler queue abstraction with deterministic job payloads, duplicate detection, and a fakeable queue seam.
+- Added a runtime optimization worker with positional payload reconstruction, attachment locking, queued-fingerprint freshness checks, continuation scheduling, bounded retries, and queue-driven status/log orchestration.
+- Added non-blocking new-upload integration that watches generated attachment metadata, respects exclusion and automatic-optimization settings, queues enabled formats asynchronously, and fires an internal attachment-status refresh hook.
 
 ### Removed
 
@@ -40,4 +44,4 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 
 ### Notes
 
-- No runtime image optimization hooks, queueing, delivery, or admin workflow behavior has been implemented yet.
+- Regeneration/reconciliation queueing, frontend delivery, and admin workflow screens remain deferred.

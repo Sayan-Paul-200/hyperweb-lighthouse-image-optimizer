@@ -40,9 +40,25 @@ final class SettingsScopePolicyTest extends TestCase {
 			'async queue scheduling'    => '/\bas_enqueue_async_action\s*\(/',
 			'single queue scheduling'   => '/\bas_schedule_single_action\s*\(/',
 		);
+		$allowed_patterns   = array(
+			'src/Infrastructure/LifecyclePolicy.php' => array(
+				'optimization queue action',
+			),
+			'src/Queue/ActionSchedulerQueue.php'     => array(
+				'async queue scheduling',
+				'single queue scheduling',
+			),
+			'src/Queue/NewUploadIntegration.php'     => array(
+				'new-upload media hook',
+			),
+		);
 
 		foreach ( $this->runtime_source_files() as $file => $contents ) {
 			foreach ( $forbidden_patterns as $label => $pattern ) {
+				if ( isset( $allowed_patterns[ $file ] ) && in_array( $label, $allowed_patterns[ $file ], true ) ) {
+					continue;
+				}
+
 				self::assertDoesNotMatchRegularExpression(
 					$pattern,
 					$contents,
@@ -80,7 +96,7 @@ final class SettingsScopePolicyTest extends TestCase {
 				continue;
 			}
 
-			$sources[ str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) ] = $contents;
+			$sources[ str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) ) ] = $contents;
 		}
 
 		return $sources;

@@ -12,7 +12,11 @@ namespace HyperWeb\LighthouseImageOptimizer\Infrastructure;
  */
 final class LifecyclePolicy {
 
-	public const ACTION_GROUP = 'hwlio';
+	public const ACTION_GROUP                      = 'hwlio';
+	public const ACTION_OPTIMIZE_ATTACHMENT_FORMAT = 'hwlio_optimize_attachment_format';
+	public const ACTION_CLEANUP_ATTACHMENT         = 'hwlio_cleanup_attachment';
+	public const ACTION_RECONCILE_ATTACHMENT       = 'hwlio_reconcile_attachment';
+	public const HOOK_ATTACHMENT_STATUS_REFRESH    = 'hwlio_attachment_status_refresh';
 
 	public const META_DERIVATIVES = '_hwlio_derivatives';
 	public const META_STATUS      = '_hwlio_status';
@@ -31,6 +35,19 @@ final class LifecyclePolicy {
 			'hwlio_cleanup_logs',
 			'hwlio_recover_stale_locks',
 			'hwlio_reconcile_statistics',
+		);
+	}
+
+	/**
+	 * Get plugin-owned attachment job hooks.
+	 *
+	 * @return string[]
+	 */
+	public static function attachment_job_hooks(): array {
+		return array(
+			self::ACTION_OPTIMIZE_ATTACHMENT_FORMAT,
+			self::ACTION_CLEANUP_ATTACHMENT,
+			self::ACTION_RECONCILE_ATTACHMENT,
 		);
 	}
 

@@ -7,12 +7,15 @@
 
 namespace HyperWeb\LighthouseImageOptimizer;
 
+use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentCleanup;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\I18n;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\Installer;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\UpgradeRunner;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogMaintenance;
+use HyperWeb\LighthouseImageOptimizer\Queue\NewUploadIntegration;
+use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationWorker;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsApiRegistrar;
 
 /**
@@ -86,6 +89,9 @@ final class Plugin {
 				new UpgradeRunner( Installer::for_wordpress( $version, $db_version, $schema_version ) ),
 				SettingsApiRegistrar::for_wordpress(),
 				LogMaintenance::for_wordpress(),
+				AttachmentCleanup::for_wordpress(),
+				NewUploadIntegration::for_wordpress(),
+				OptimizationWorker::for_wordpress(),
 				new I18n( self::SLUG, dirname( $basename ) . '/languages/' ),
 			)
 		);

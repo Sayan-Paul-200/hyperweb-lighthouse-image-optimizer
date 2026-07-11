@@ -7,12 +7,15 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit;
 
+use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentCleanup;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\I18n;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\UpgradeRunner;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogMaintenance;
 use HyperWeb\LighthouseImageOptimizer\Plugin;
+use HyperWeb\LighthouseImageOptimizer\Queue\NewUploadIntegration;
+use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationWorker;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsApiRegistrar;
 use PHPUnit\Framework\TestCase;
 
@@ -32,11 +35,14 @@ final class PluginTest extends TestCase {
 		self::assertSame( 'hyperweb-lighthouse-image-optimizer', $plugin->slug() );
 		self::assertSame( '0.1.0-alpha.3', $plugin->version() );
 		self::assertInstanceOf( HookRegistrar::class, $plugin->hooks() );
-		self::assertCount( 4, $plugin->providers() );
+		self::assertCount( 7, $plugin->providers() );
 		self::assertInstanceOf( UpgradeRunner::class, $plugin->providers()[0] );
 		self::assertInstanceOf( SettingsApiRegistrar::class, $plugin->providers()[1] );
 		self::assertInstanceOf( LogMaintenance::class, $plugin->providers()[2] );
-		self::assertInstanceOf( I18n::class, $plugin->providers()[3] );
+		self::assertInstanceOf( AttachmentCleanup::class, $plugin->providers()[3] );
+		self::assertInstanceOf( NewUploadIntegration::class, $plugin->providers()[4] );
+		self::assertInstanceOf( OptimizationWorker::class, $plugin->providers()[5] );
+		self::assertInstanceOf( I18n::class, $plugin->providers()[6] );
 	}
 
 	/**

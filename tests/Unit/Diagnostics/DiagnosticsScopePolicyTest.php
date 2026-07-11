@@ -45,6 +45,16 @@ final class DiagnosticsScopePolicyTest extends TestCase {
 		);
 
 		$allowed_patterns = array(
+			'src/Infrastructure/LifecyclePolicy.php' => array(
+				'optimization queue action',
+			),
+			'src/Queue/ActionSchedulerQueue.php'     => array(
+				'async queue scheduling',
+				'single queue scheduling',
+			),
+			'src/Queue/NewUploadIntegration.php'     => array(
+				'new-upload media hook',
+			),
 			'src/Attachment/WordPressAttachmentMetaStore.php' => array(
 				'attachment metadata write',
 			),
