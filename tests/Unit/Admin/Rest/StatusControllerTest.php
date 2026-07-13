@@ -14,6 +14,8 @@ use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusController;
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusRefreshService;
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusSummaryService;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentInspector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictDetector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictRuntimeInterface;
 use HyperWeb\LighthouseImageOptimizer\Logging\RecentFailureLogReader;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlService;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
@@ -156,7 +158,8 @@ final class StatusControllerTest extends TestCase {
 				$settings,
 				new DashboardEnvironmentSummaryService(
 					new EnvironmentInspector( new FakeEnvironmentProbe(), '7.4', '6.5' ),
-					$settings
+					$settings,
+					$this->detector()
 				),
 				new RecentFailureLogReader( new FakeLogReadDatabase(), 'wp_hwlio_logs' ),
 				new StatusRefreshService( $scheduler ),
@@ -172,6 +175,44 @@ final class StatusControllerTest extends TestCase {
 				)
 			),
 			new StatusRefreshService( $scheduler )
+		);
+	}
+
+	/**
+	 * Build an empty conflict detector.
+	 *
+	 * @return ConflictDetector
+	 */
+	private function detector(): ConflictDetector {
+		return new ConflictDetector(
+			new class() implements ConflictRuntimeInterface {
+				/**
+				 * Get active plugins.
+				 *
+				 * @return string[]
+				 */
+				public function active_plugin_basenames(): array {
+					return array();
+				}
+
+				/**
+				 * Get network-active plugins.
+				 *
+				 * @return string[]
+				 */
+				public function network_active_plugin_basenames(): array {
+					return array();
+				}
+
+				/**
+				 * Whether multisite is active.
+				 *
+				 * @return bool
+				 */
+				public function is_multisite(): bool {
+					return false;
+				}
+			}
 		);
 	}
 }

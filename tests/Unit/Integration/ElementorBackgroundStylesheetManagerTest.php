@@ -65,6 +65,29 @@ final class ElementorBackgroundStylesheetManagerTest extends TestCase {
 	}
 
 	/**
+	 * Test the manager does nothing when Elementor background delivery is disabled.
+	 *
+	 * @return void
+	 */
+	public function test_manager_does_nothing_when_background_delivery_is_disabled(): void {
+		$settings                  = new FakeSettingsRepository(
+			array(
+				'delivery_enabled'                      => true,
+				'elementor_background_delivery_enabled' => false,
+				'delivery_emergency_disabled'           => false,
+			)
+		);
+		$runtime                   = new FakeElementorBackgroundStylesheetRuntime();
+		$runtime->frontend_request = true;
+		$runtime->document_id      = 501;
+		$manager                   = $this->manager( $settings, null, $runtime );
+
+		$manager->enqueue_current_document_stylesheet();
+
+		self::assertSame( array(), $runtime->enqueued );
+	}
+
+	/**
 	 * Test the manager enqueues one companion stylesheet for an eligible current document.
 	 *
 	 * @return void

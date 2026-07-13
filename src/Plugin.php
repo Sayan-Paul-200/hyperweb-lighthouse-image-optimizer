@@ -58,6 +58,7 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\SystemAttachmentClock;
 use HyperWeb\LighthouseImageOptimizer\Attachment\WordPressAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\DerivativeHealthDiagnostics;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\EnvironmentDiagnostics;
+use HyperWeb\LighthouseImageOptimizer\Diagnostics\ConflictDiagnostics;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentImageSourceExtractor;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentSizeResolver;
 use HyperWeb\LighthouseImageOptimizer\Delivery\CriticalImageRegistry;
@@ -94,6 +95,7 @@ use HyperWeb\LighthouseImageOptimizer\Integration\ElementorCriticalBackgroundPre
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundStylesheetGenerator;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundStylesheetManager;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorWidgetMatcher;
+use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictDetector;
 use HyperWeb\LighthouseImageOptimizer\Integration\WordPressElementorHeroBackgroundPostMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Integration\WordPressElementorBackgroundStylesheetRuntime;
 use HyperWeb\LighthouseImageOptimizer\Integration\WordPressElementorBackgroundStylesheetStore;
@@ -255,7 +257,11 @@ final class Plugin {
 			$queue,
 			new StatisticsCacheReader( new WordPressOptionStore() ),
 			$settings,
-			new DashboardEnvironmentSummaryService( EnvironmentInspector::for_wordpress(), $settings ),
+			new DashboardEnvironmentSummaryService(
+				EnvironmentInspector::for_wordpress(),
+				$settings,
+				ConflictDetector::for_wordpress()
+			),
 			RecentFailureLogReader::for_wordpress(),
 			$status_refresh,
 			$queue_control
@@ -280,7 +286,7 @@ final class Plugin {
 		$elementor_runtime            = new WordPressElementorRuntime();
 		$elementor_matcher            = new ElementorWidgetMatcher( $elementor_runtime, $delivery_analyzer );
 		$elementor_css_runtime        = new WordPressElementorBackgroundStylesheetRuntime();
-		$loading_manager              = new LoadingAttributeManager( $critical_registry, $delivery_runtime, $delivery_analyzer );
+		$loading_manager              = new LoadingAttributeManager( $settings, $critical_registry, $delivery_runtime, $delivery_analyzer );
 		$uploads_runtime              = new WordPressUploadsRuntime();
 		$delivery_files               = new WordPressImageFileProbe();
 		$source_extractor             = new AttachmentImageSourceExtractor( $delivery_analyzer );
@@ -392,7 +398,8 @@ final class Plugin {
 							$rest_errors,
 							new CompositeDiagnosticsService(
 								EnvironmentDiagnostics::for_wordpress(),
-								DerivativeHealthDiagnostics::for_wordpress()
+								DerivativeHealthDiagnostics::for_wordpress(),
+								ConflictDiagnostics::for_wordpress()
 							)
 						),
 						new LogsController(

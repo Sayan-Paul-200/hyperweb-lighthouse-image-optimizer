@@ -7,6 +7,7 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Admin\Rest;
 
+use HyperWeb\LighthouseImageOptimizer\Diagnostics\ConflictDiagnostics;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\DerivativeHealthDiagnostics;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\DiagnosticReport;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\EnvironmentDiagnostics;
@@ -31,14 +32,27 @@ final class CompositeDiagnosticsService implements DiagnosticsServiceInterface {
 	private $derivatives;
 
 	/**
+	 * Conflict diagnostics.
+	 *
+	 * @var ConflictDiagnostics
+	 */
+	private $conflicts;
+
+	/**
 	 * Create service.
 	 *
 	 * @param EnvironmentDiagnostics      $environment Environment diagnostics.
 	 * @param DerivativeHealthDiagnostics $derivatives Derivative health diagnostics.
+	 * @param ConflictDiagnostics         $conflicts Conflict diagnostics.
 	 */
-	public function __construct( EnvironmentDiagnostics $environment, DerivativeHealthDiagnostics $derivatives ) {
+	public function __construct(
+		EnvironmentDiagnostics $environment,
+		DerivativeHealthDiagnostics $derivatives,
+		ConflictDiagnostics $conflicts
+	) {
 		$this->environment = $environment;
 		$this->derivatives = $derivatives;
+		$this->conflicts   = $conflicts;
 	}
 
 	/**
@@ -50,6 +64,7 @@ final class CompositeDiagnosticsService implements DiagnosticsServiceInterface {
 		return ( new DiagnosticReport(
 			array_merge(
 				$this->environment->run()->results(),
+				$this->conflicts->run(),
 				array( $this->derivatives->run() )
 			)
 		) )->to_array();

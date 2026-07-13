@@ -38,9 +38,11 @@ final class SettingsSchemaTest extends TestCase {
 		self::assertFalse( $defaults['setup_completed'] );
 		self::assertFalse( $defaults['automatic_optimization'] );
 		self::assertFalse( $defaults['delivery_enabled'] );
+		self::assertTrue( $defaults['loading_attribute_overrides_enabled'] );
 		self::assertFalse( $defaults['critical_logo_enabled'] );
 		self::assertFalse( $defaults['responsive_preload_enabled'] );
 		self::assertFalse( $defaults['critical_background_preload_enabled'] );
+		self::assertTrue( $defaults['elementor_background_delivery_enabled'] );
 		self::assertFalse( $defaults['delivery_emergency_disabled'] );
 		self::assertSame( array( 'webp' ), $defaults['enabled_formats'] );
 		self::assertSame( array( 'avif', 'webp' ), $defaults['format_preference'] );

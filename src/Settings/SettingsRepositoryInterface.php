@@ -79,6 +79,13 @@ interface SettingsRepositoryInterface {
 	public function delivery_enabled(): bool;
 
 	/**
+	 * Whether explicit loading-attribute overrides are enabled.
+	 *
+	 * @return bool
+	 */
+	public function loading_attribute_overrides_enabled(): bool;
+
+	/**
 	 * Whether the site custom logo should be treated as a critical image.
 	 *
 	 * @return bool
@@ -98,6 +105,13 @@ interface SettingsRepositoryInterface {
 	 * @return bool
 	 */
 	public function critical_background_preload_enabled(): bool;
+
+	/**
+	 * Whether Elementor background delivery is enabled.
+	 *
+	 * @return bool
+	 */
+	public function elementor_background_delivery_enabled(): bool;
 
 	/**
 	 * Whether the emergency frontend-delivery rollback switch is active.

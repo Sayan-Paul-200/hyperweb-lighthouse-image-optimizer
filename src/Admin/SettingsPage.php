@@ -54,8 +54,6 @@ final class SettingsPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	public function render(): void {
-		$checked = $this->settings->critical_logo_enabled();
-
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through local helpers.
 		echo '<form method="post" action="options.php" class="hwlio-settings-form">';
 
@@ -68,20 +66,49 @@ final class SettingsPage extends AbstractAdminPage {
 		echo '<p>' . $this->escape_html( $this->translate( 'Configure the initial critical-image controls used by the frontend delivery pipeline.' ) ) . '</p>';
 		echo '<p>';
 		echo '<label>';
-		echo '<input type="checkbox" name="hwlio_settings[critical_logo_enabled]" value="1"' . ( $checked ? ' checked' : '' ) . '>';
+		echo '<input type="checkbox" name="hwlio_settings[critical_logo_enabled]" value="1"' . ( $this->settings->critical_logo_enabled() ? ' checked' : '' ) . '>';
 		echo ' ' . $this->escape_html( $this->translate( 'Treat the site custom logo as a critical image' ) );
+		echo '</label>';
+		echo '</p>';
+		echo '</div>';
+
+		echo '<div class="card">';
+		echo '<h2>' . $this->escape_html( $this->translate( 'Compatibility' ) ) . '</h2>';
+		echo '<p>' . $this->escape_html( $this->translate( 'Disable only the plugin-owned modules that overlap with other image optimization, delivery, lazy-loading, CDN, or media offload plugins on this site.' ) ) . '</p>';
+		echo '<p>';
+		echo '<label>';
+		echo '<input type="checkbox" name="hwlio_settings[automatic_optimization]" value="1"' . ( $this->settings->automatic_optimization_enabled() ? ' checked' : '' ) . '>';
+		echo ' ' . $this->escape_html( $this->translate( 'Enable automatic optimization' ) );
+		echo '</label>';
+		echo '</p>';
+		echo '<p>';
+		echo '<label>';
+		echo '<input type="checkbox" name="hwlio_settings[delivery_enabled]" value="1"' . ( $this->settings->delivery_enabled() ? ' checked' : '' ) . '>';
+		echo ' ' . $this->escape_html( $this->translate( 'Enable frontend modern-format delivery' ) );
+		echo '</label>';
+		echo '</p>';
+		echo '<p>';
+		echo '<label>';
+		echo '<input type="checkbox" name="hwlio_settings[loading_attribute_overrides_enabled]" value="1"' . ( $this->settings->loading_attribute_overrides_enabled() ? ' checked' : '' ) . '>';
+		echo ' ' . $this->escape_html( $this->translate( 'Enable loading attribute overrides' ) );
 		echo '</label>';
 		echo '</p>';
 		echo '<p>';
 		echo '<label>';
 		echo '<input type="checkbox" name="hwlio_settings[responsive_preload_enabled]" value="1"' . ( $this->settings->responsive_preload_enabled() ? ' checked' : '' ) . '>';
-		echo ' ' . $this->escape_html( $this->translate( 'Enable responsive preload for explicit late-discovered critical images' ) );
+		echo ' ' . $this->escape_html( $this->translate( 'Enable responsive image preload' ) );
+		echo '</label>';
+		echo '</p>';
+		echo '<p>';
+		echo '<label>';
+		echo '<input type="checkbox" name="hwlio_settings[elementor_background_delivery_enabled]" value="1"' . ( $this->settings->elementor_background_delivery_enabled() ? ' checked' : '' ) . '>';
+		echo ' ' . $this->escape_html( $this->translate( 'Enable Elementor background delivery' ) );
 		echo '</label>';
 		echo '</p>';
 		echo '<p>';
 		echo '<label>';
 		echo '<input type="checkbox" name="hwlio_settings[critical_background_preload_enabled]" value="1"' . ( $this->settings->critical_background_preload_enabled() ? ' checked' : '' ) . '>';
-		echo ' ' . $this->escape_html( $this->translate( 'Enable responsive preload for one explicitly selected Elementor hero background' ) );
+		echo ' ' . $this->escape_html( $this->translate( 'Enable Elementor hero background preload' ) );
 		echo '</label>';
 		echo '</p>';
 

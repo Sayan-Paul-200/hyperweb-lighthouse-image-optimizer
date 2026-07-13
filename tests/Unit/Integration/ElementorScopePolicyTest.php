@@ -32,6 +32,12 @@ final class ElementorScopePolicyTest extends TestCase {
 		);
 		$allowed_files      = array(
 			'src/Plugin.php',
+			'src/Admin/SettingsPage.php',
+			'src/Settings/SettingsSchema.php',
+			'src/Settings/SettingsRepositoryInterface.php',
+			'src/Settings/SettingsRepository.php',
+			'src/Settings/StaticSettingsRepository.php',
+			'src/Integration/Conflict/ConflictDetector.php',
 			'src/Admin/PostEditor/ElementorHeroBackgroundMetaBox.php',
 			'src/Integration/ElementorBackgroundDiscovery.php',
 			'src/Integration/ElementorBackgroundBreakpointMap.php',

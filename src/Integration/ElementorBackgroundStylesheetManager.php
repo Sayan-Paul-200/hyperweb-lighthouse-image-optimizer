@@ -90,7 +90,11 @@ final class ElementorBackgroundStylesheetManager implements HookProviderInterfac
 	 * @return void
 	 */
 	public function enqueue_current_document_stylesheet(): void {
-		if ( ! $this->settings->delivery_enabled() || $this->settings->delivery_emergency_disabled() ) {
+		if (
+			! $this->settings->delivery_enabled()
+			|| ! $this->settings->elementor_background_delivery_enabled()
+			|| $this->settings->delivery_emergency_disabled()
+		) {
 			return;
 		}
 

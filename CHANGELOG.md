@@ -49,6 +49,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added a read-only Elementor background-discovery foundation for supported structured classic background controls, explicit desktop/tablet/mobile mappings, and conservative unsupported CSS URL reporting.
 - Added a plugin-owned Elementor companion stylesheet layer for structured attachment-backed backgrounds, with safe uploads-scoped artifact storage, viewport-aware responsive CSS generation, late frontend enqueueing, and rollback that leaves Elementor's own CSS untouched.
 - Added explicit Elementor hero-background selection and opt-in critical background preload, backed by a shared background delivery-plan builder and media-scoped modern preload tags for one selected supported target per request.
+- Added a read-only conflict detector with capability-first overlap warnings, compatibility module toggles, settings-backed runtime guards, and conflict diagnostics wired into the existing dashboard and diagnostics flows.
 
 ### Removed
 

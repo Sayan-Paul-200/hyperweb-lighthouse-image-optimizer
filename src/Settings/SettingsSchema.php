@@ -43,7 +43,7 @@ final class SettingsSchema {
 	 */
 	public static function definitions(): array {
 		return array(
-			'schema_version'                      => self::integer_definition(
+			'schema_version'                        => self::integer_definition(
 				self::SCHEMA_VERSION,
 				self::GROUP_INTERNAL,
 				'Settings schema version.',
@@ -51,133 +51,143 @@ final class SettingsSchema {
 				self::SCHEMA_VERSION,
 				true
 			),
-			'setup_completed'                     => self::boolean_definition(
+			'setup_completed'                       => self::boolean_definition(
 				false,
 				self::GROUP_INTERNAL,
 				'Whether initial setup has been completed.',
 				true
 			),
-			'automatic_optimization'              => self::boolean_definition(
+			'automatic_optimization'                => self::boolean_definition(
 				false,
 				self::GROUP_GENERAL,
 				'Automatically queue new uploads for optimization.'
 			),
-			'media_library_controls'              => self::boolean_definition(
+			'media_library_controls'                => self::boolean_definition(
 				true,
 				self::GROUP_GENERAL,
 				'Show per-attachment Media Library controls.'
 			),
-			'allow_attachment_exclusion'          => self::boolean_definition(
+			'allow_attachment_exclusion'            => self::boolean_definition(
 				true,
 				self::GROUP_ADVANCED,
 				'Allow administrators to exclude individual attachments.'
 			),
-			'delivery_enabled'                    => self::boolean_definition(
+			'delivery_enabled'                      => self::boolean_definition(
 				false,
 				self::GROUP_DELIVERY,
 				'Serve generated modern-image derivatives on the frontend.'
 			),
-			'critical_logo_enabled'               => self::boolean_definition(
+			'loading_attribute_overrides_enabled'   => self::boolean_definition(
+				true,
+				self::GROUP_DELIVERY,
+				'Apply explicit loading-attribute overrides for configured critical images.'
+			),
+			'critical_logo_enabled'                 => self::boolean_definition(
 				false,
 				self::GROUP_DELIVERY,
 				'Treat the site custom logo as a critical image.'
 			),
-			'responsive_preload_enabled'          => self::boolean_definition(
+			'responsive_preload_enabled'            => self::boolean_definition(
 				false,
 				self::GROUP_DELIVERY,
 				'Enable responsive preload for explicit late-discovered critical images.'
 			),
-			'critical_background_preload_enabled' => self::boolean_definition(
+			'critical_background_preload_enabled'   => self::boolean_definition(
 				false,
 				self::GROUP_DELIVERY,
 				'Enable responsive preload for one explicitly selected Elementor hero background.'
 			),
-			'delivery_emergency_disabled'         => self::boolean_definition(
+			'elementor_background_delivery_enabled' => self::boolean_definition(
+				true,
+				self::GROUP_DELIVERY,
+				'Serve plugin-owned modern background companion CSS for supported Elementor documents.'
+			),
+			'delivery_emergency_disabled'           => self::boolean_definition(
 				false,
 				self::GROUP_INTERNAL,
 				'Emergency rollback switch that disables frontend delivery without deleting derivatives.',
 				true
 			),
-			'enabled_formats'                     => self::format_list_definition(
+			'enabled_formats'                       => self::format_list_definition(
 				array( self::FORMAT_WEBP ),
 				self::GROUP_FORMATS,
 				'Modern image formats that may be generated.'
 			),
-			'format_preference'                   => self::format_list_definition(
+			'format_preference'                     => self::format_list_definition(
 				array( self::FORMAT_AVIF, self::FORMAT_WEBP ),
 				self::GROUP_FORMATS,
 				'Preferred modern image format order.'
 			),
-			'webp_quality'                        => self::integer_definition(
+			'webp_quality'                          => self::integer_definition(
 				82,
 				self::GROUP_FORMATS,
 				'WebP conversion quality.',
 				1,
 				100
 			),
-			'avif_quality'                        => self::integer_definition(
+			'avif_quality'                          => self::integer_definition(
 				60,
 				self::GROUP_FORMATS,
 				'AVIF conversion quality.',
 				1,
 				100
 			),
-			'minimum_savings_percent'             => self::integer_definition(
+			'minimum_savings_percent'               => self::integer_definition(
 				5,
 				self::GROUP_FORMATS,
 				'Minimum byte savings required to keep a generated derivative.',
 				0,
 				100
 			),
-			'optimize_full_size'                  => self::boolean_definition(
+			'optimize_full_size'                    => self::boolean_definition(
 				true,
 				self::GROUP_PROCESS,
 				'Optimize the full-size attachment file.'
 			),
-			'optimize_subsizes'                   => self::boolean_definition(
+			'optimize_subsizes'                     => self::boolean_definition(
 				true,
 				self::GROUP_PROCESS,
 				'Optimize generated attachment subsizes.'
 			),
-			'skip_animated_gif'                   => self::boolean_definition(
+			'skip_animated_gif'                     => self::boolean_definition(
 				true,
 				self::GROUP_PROCESS,
 				'Skip animated GIF sources.'
 			),
-			'max_retries'                         => self::integer_definition(
+			'max_retries'                           => self::integer_definition(
 				3,
 				self::GROUP_PROCESS,
 				'Maximum retry attempts for transient failures.',
 				0,
 				10
 			),
-			'worker_time_budget'                  => self::integer_definition(
+			'worker_time_budget'                    => self::integer_definition(
 				20,
 				self::GROUP_PROCESS,
 				'Worker time budget in seconds before continuation.',
 				1,
 				120
 			),
-			'queue_concurrency'                   => self::integer_definition(
+			'queue_concurrency'                     => self::integer_definition(
 				1,
 				self::GROUP_PROCESS,
 				'Maximum optimization worker concurrency.',
 				1,
 				5
 			),
-			'log_retention_days'                  => self::integer_definition(
+			'log_retention_days'                    => self::integer_definition(
 				30,
 				self::GROUP_LOGGING,
 				'Number of days to retain plugin log rows.',
 				1,
 				3650
 			),
-			'delete_data_on_uninstall'            => self::boolean_definition(
+			'delete_data_on_uninstall'              => self::boolean_definition(
 				false,
 				self::GROUP_LOGGING,
 				'Delete plugin-owned data during uninstall.'
 			),
-			'delete_derivatives_on_uninstall'     => self::boolean_definition(
+			'delete_derivatives_on_uninstall'       => self::boolean_definition(
 				false,
 				self::GROUP_LOGGING,
 				'Delete plugin-owned derivative files during uninstall.'

@@ -123,9 +123,11 @@ final class SettingsRepositoryTest extends TestCase {
 						'media_library_controls'          => true,
 						'allow_attachment_exclusion'      => false,
 						'delivery_enabled'                => true,
+						'loading_attribute_overrides_enabled' => false,
 						'critical_logo_enabled'           => true,
 						'responsive_preload_enabled'      => true,
 						'critical_background_preload_enabled' => true,
+						'elementor_background_delivery_enabled' => false,
 						'delivery_emergency_disabled'     => true,
 						'enabled_formats'                 => array( 'webp', 'avif' ),
 						'format_preference'               => array( 'avif', 'webp' ),
@@ -148,9 +150,11 @@ final class SettingsRepositoryTest extends TestCase {
 		self::assertTrue( $repository->media_library_controls_enabled() );
 		self::assertFalse( $repository->attachment_exclusion_allowed() );
 		self::assertTrue( $repository->delivery_enabled() );
+		self::assertFalse( $repository->loading_attribute_overrides_enabled() );
 		self::assertTrue( $repository->critical_logo_enabled() );
 		self::assertTrue( $repository->responsive_preload_enabled() );
 		self::assertTrue( $repository->critical_background_preload_enabled() );
+		self::assertFalse( $repository->elementor_background_delivery_enabled() );
 		self::assertTrue( $repository->delivery_emergency_disabled() );
 		self::assertSame( array( 'webp', 'avif' ), $repository->enabled_formats() );
 		self::assertSame( array( 'avif', 'webp' ), $repository->format_preference() );

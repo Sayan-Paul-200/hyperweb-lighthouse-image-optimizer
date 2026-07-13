@@ -13,6 +13,8 @@ use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusRefreshService;
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusSummaryService;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentInspector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictDetector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictRuntimeInterface;
 use HyperWeb\LighthouseImageOptimizer\Logging\RecentFailureLogReader;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlService;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
@@ -78,7 +80,8 @@ final class StatusSummaryServiceTest extends TestCase {
 						'enabled_formats'        => array( 'avif', 'webp' ),
 						'delivery_enabled'       => true,
 					)
-				)
+				),
+				$this->detector()
 			),
 			new RecentFailureLogReader(
 				$this->log_database(
@@ -154,7 +157,8 @@ final class StatusSummaryServiceTest extends TestCase {
 					array(
 						'enabled_formats' => array( 'avif' ),
 					)
-				)
+				),
+				$this->detector()
 			),
 			new RecentFailureLogReader( $this->log_database(), 'wp_hwlio_logs' ),
 			new StatusRefreshService( $scheduler ),
@@ -194,5 +198,43 @@ final class StatusSummaryServiceTest extends TestCase {
 		$database->rows = $rows;
 
 		return $database;
+	}
+
+	/**
+	 * Build an empty conflict detector.
+	 *
+	 * @return ConflictDetector
+	 */
+	private function detector(): ConflictDetector {
+		return new ConflictDetector(
+			new class() implements ConflictRuntimeInterface {
+				/**
+				 * Get active plugins.
+				 *
+				 * @return string[]
+				 */
+				public function active_plugin_basenames(): array {
+					return array();
+				}
+
+				/**
+				 * Get network-active plugins.
+				 *
+				 * @return string[]
+				 */
+				public function network_active_plugin_basenames(): array {
+					return array();
+				}
+
+				/**
+				 * Whether multisite is active.
+				 *
+				 * @return bool
+				 */
+				public function is_multisite(): bool {
+					return false;
+				}
+			}
+		);
 	}
 }

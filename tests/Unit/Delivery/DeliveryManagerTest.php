@@ -523,6 +523,7 @@ final class DeliveryManagerTest extends TestCase {
 			new TransformedMarkupRegistry(),
 			new IntrinsicDimensionRepair( $resolver, $analyzer ),
 			new LoadingAttributeManager(
+				$settings,
 				new CriticalImageRegistry( $runtime, $settings, new FakeCriticalImagePostMetaStore() ),
 				$runtime,
 				$analyzer

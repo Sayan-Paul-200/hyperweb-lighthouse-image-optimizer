@@ -107,6 +107,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A WooCommerce compatibility audit, baseline fixture manifest, isolated primary-product integration, and conservative gallery-surface delivery now exist as of Subphase 9.3.
 - A plugin-owned Elementor companion stylesheet layer for structured attachment-backed backgrounds now exists as of Subphase 10.4.
 - An opt-in Elementor critical background preload layer with an explicit hero-background selector, shared background delivery-plan builder, and media-scoped `wp_head` preload tags now exists as of Subphase 10.5.
+- A read-only compatibility conflict detector, capability-first overlap reporting, compatibility settings toggles, and conflict diagnostics now exist as of Subphase 11.1.
 
 ## Phase Status
 
@@ -177,6 +178,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 10.4 - Background delivery strategy
   - [x] Subphase 10.5 - Critical background preload
 - [ ] Phase 11 - CDN, Offload, Multisite, and Conflict Adapters
+  - [x] Subphase 11.1 - Conflict detector
 - [ ] Phase 12 - Page-Level Diagnostics and Lighthouse-Oriented Reporting
 - [ ] Phase 13 - WP-CLI and Developer Operations
 - [ ] Phase 14 - Testing, Performance, Security, and Release
@@ -189,6 +191,113 @@ Phase 7 now includes derivative URL resolution, responsive modern source-set bui
 Phase 8 now includes core-loading preservation, explicit critical-image overrides, conservative intrinsic-dimension repair, and opt-in responsive preload for explicit late-discovered critical images. The phase remains unchecked until supported WordPress frontend loading and layout-stability smoke tests are performed.
 Phase 9 now includes the WooCommerce compatibility baseline audit, expanded fixture coverage for gallery and commerce surfaces, isolated primary-product-image runtime integration, and conservative gallery-secondary delivery. The phase remains unchecked until supported WooCommerce smoke tests are performed across live product, gallery, variation, cart, checkout, and loop-like surfaces.
 Phase 10 now includes the first isolated Elementor adapter for attachment-backed frontend widgets, a repo-owned audit and fixture baseline, a service-only oversized full-selection advisory analyzer, a read-only structured background-discovery layer, a plugin-owned companion stylesheet strategy for supported Elementor attachment-backed backgrounds, and an explicit opt-in critical background preload flow for one selected hero target per request. The phase remains unchecked until supported Elementor frontend, preview, editor, generated-CSS, and critical-background preload smoke tests are performed.
+Phase 11 now includes capability-first detection of overlapping optimizer, delivery, lazy-loading, CDN-transformation, and media-offload plugins, along with compatibility toggles for plugin-owned overlapping modules and conflict diagnostics surfaced through the existing admin/dashboard flows. The phase remains unchecked until later CDN, offload, multisite, and adapter behavior subphases are implemented and smoke tested.
+
+## Subphase 11.1 - Conflict Detector
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a read-only compatibility detection slice under `src/Integration/Conflict/`.
+- [x] Detect overlapping capabilities from a curated active-plugin signature matrix and aggregate one warning per capability.
+- [x] Add the missing compatibility toggles for loading-attribute overrides and Elementor background delivery.
+- [x] Wire the new toggles into runtime no-op guards without widening hook registration.
+- [x] Surface overlap conflicts through the existing dashboard/status and diagnostics flows.
+- [x] Extend the current Settings tab with a Compatibility section for plugin-owned module disablement.
+
+### Files Added
+
+```text
+src/Diagnostics/ConflictDiagnostics.php
+src/Integration/Conflict/ConflictDetector.php
+src/Integration/Conflict/ConflictReport.php
+src/Integration/Conflict/ConflictResult.php
+src/Integration/Conflict/ConflictRuntimeInterface.php
+src/Integration/Conflict/WordPressConflictRuntime.php
+tests/Unit/Admin/Rest/CompositeDiagnosticsServiceTest.php
+tests/Unit/Diagnostics/ConflictDiagnosticsTest.php
+tests/Unit/Integration/Conflict/ConflictDetectorTest.php
+tests/Unit/Integration/ConflictScopePolicyTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Admin/DashboardPage.php
+src/Admin/Rest/CompositeDiagnosticsService.php
+src/Admin/Rest/DashboardEnvironmentSummaryService.php
+src/Admin/SettingsPage.php
+src/Delivery/LoadingAttributeManager.php
+src/Integration/ElementorBackgroundStylesheetManager.php
+src/Plugin.php
+src/Settings/SettingsRepository.php
+src/Settings/SettingsRepositoryInterface.php
+src/Settings/SettingsSchema.php
+src/Settings/StaticSettingsRepository.php
+tests/Unit/Admin/Rest/DashboardEnvironmentSummaryServiceTest.php
+tests/Unit/Admin/Rest/StatusControllerTest.php
+tests/Unit/Admin/Rest/StatusSummaryServiceTest.php
+tests/Unit/Admin/SettingsPageTest.php
+tests/Unit/Delivery/DeliveryManagerTest.php
+tests/Unit/Delivery/LoadingAttributeManagerTest.php
+tests/Unit/Image/FakeSettingsRepository.php
+tests/Unit/Integration/ElementorAttachmentWidgetDeliveryTest.php
+tests/Unit/Integration/ElementorBackgroundStylesheetManagerTest.php
+tests/Unit/Integration/ElementorScopePolicyTest.php
+tests/Unit/Integration/WooCommercePrimaryProductDeliveryTest.php
+tests/Unit/Settings/SettingsRepositoryTest.php
+tests/Unit/Settings/SettingsSanitizerTest.php
+tests/Unit/Settings/SettingsSchemaTest.php
+```
+
+### Conflict-Detection and Compatibility Behavior
+
+- `ConflictDetector` now produces capability-first overlap warnings for `generation`, `delivery`, `lazy_loading`, `cdn_transformation`, and `media_offload`, using a curated active-plugin basename matrix and aggregating all matching plugins into one result per capability.
+- Detection is read-only and current-site scoped. In multisite, the detector includes current-site active plugins plus current-site network-active plugin basenames without scanning every site or modifying any third-party configuration.
+- Conflict results expose only safe scalar payloads: stable code, severity, capability, label, message, evidence plugin display names, and recommended plugin-owned setting keys.
+- `DashboardEnvironmentSummaryService` now merges overlap conflicts into the existing conservative dashboard `conflicts` payload, and `StatusSummaryService` continues exposing that stable `conflicts` array shape with richer entries.
+- `ConflictDiagnostics` converts detector results into `DiagnosticResult` objects, and `CompositeDiagnosticsService` now includes those alongside environment and derivative-health diagnostics.
+- Two new delivery-group booleans now exist in the settings schema and repository: `loading_attribute_overrides_enabled` and `elementor_background_delivery_enabled`, both defaulting to `true`.
+- `LoadingAttributeManager` now fully no-ops when `loading_attribute_overrides_enabled()` is `false`, while `ElementorBackgroundStylesheetManager` now requires both `delivery_enabled()` and `elementor_background_delivery_enabled()` before enqueueing companion CSS.
+- The Settings tab now includes a Compatibility section with explicit toggles for automatic optimization, frontend delivery, loading overrides, responsive image preload, Elementor background delivery, and Elementor hero background preload.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source/policy verification: pass.
+
+- No third-party plugin deactivation, activation, deletion, or option mutation was introduced.
+- No new REST routes or admin pages were added for 11.1.
+- No CDN/offload runtime rewrite behavior was introduced; this subphase remains detection-only plus plugin-owned module toggles.
+
+### Acceptance Criteria
+
+- [x] Overlapping capabilities are detected through a curated active-plugin signature matrix without modifying third-party plugins.
+- [x] Conflict warnings are capability-first and aggregate evidence plugin names per capability.
+- [x] Compatibility toggles now exist for loading-attribute overrides and Elementor background delivery, alongside the existing overlapping-module settings.
+- [x] Disabling loading overrides or Elementor background delivery now makes those runtime providers no-op without affecting unrelated modules.
+- [x] Dashboard/status and diagnostics flows now include overlap conflicts without adding a new page or REST route.
+- [x] The current Settings tab now exposes a Compatibility section for plugin-owned module disablement.
+
+### Deferred Work
+
+- Deep third-party option inspection, product-specific compatibility adapters, and automatic third-party feature negotiation remain deferred.
+- CDN transformation behavior, media offload support, and multisite operational changes remain deferred to later Phase 11 subphases.
+- 11.1 remains detection-only for third-party overlap; it does not change URL rewriting, offload behavior, or CDN delivery semantics.
 
 ## Subphase 10.5 - Critical Background Preload
 

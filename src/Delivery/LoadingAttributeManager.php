@@ -9,6 +9,7 @@ namespace HyperWeb\LighthouseImageOptimizer\Delivery;
 
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
 /**
  * Applies explicit loading-attribute overrides for configured critical images.
@@ -21,6 +22,13 @@ final class LoadingAttributeManager implements HookProviderInterface {
 	 * @var int
 	 */
 	public const PRIORITY = 10;
+
+	/**
+	 * Settings repository.
+	 *
+	 * @var SettingsRepositoryInterface
+	 */
+	private $settings;
 
 	/**
 	 * Critical-image registry.
@@ -53,15 +61,18 @@ final class LoadingAttributeManager implements HookProviderInterface {
 	/**
 	 * Create provider.
 	 *
+	 * @param SettingsRepositoryInterface     $settings Settings repository.
 	 * @param CriticalImageRegistry           $registry Critical-image registry.
 	 * @param AttachmentImageRuntimeInterface $runtime Attachment image runtime.
 	 * @param ImageMarkupAnalyzerInterface    $analyzer Markup analyzer.
 	 */
 	public function __construct(
+		SettingsRepositoryInterface $settings,
 		CriticalImageRegistry $registry,
 		AttachmentImageRuntimeInterface $runtime,
 		ImageMarkupAnalyzerInterface $analyzer
 	) {
+		$this->settings = $settings;
 		$this->registry = $registry;
 		$this->runtime  = $runtime;
 		$this->analyzer = $analyzer;
@@ -98,6 +109,10 @@ final class LoadingAttributeManager implements HookProviderInterface {
 		string $context
 	): array {
 		unset( $context );
+
+		if ( ! $this->settings->loading_attribute_overrides_enabled() ) {
+			return $loading_attrs;
+		}
 
 		if ( 'img' !== strtolower( $tag_name ) ) {
 			return $loading_attrs;
@@ -157,6 +172,10 @@ final class LoadingAttributeManager implements HookProviderInterface {
 	 * @return string
 	 */
 	public function apply_to_fallback_markup( string $html, int $attachment_id ): string {
+		if ( ! $this->settings->loading_attribute_overrides_enabled() ) {
+			return $html;
+		}
+
 		if ( $attachment_id < 1 ) {
 			return $html;
 		}

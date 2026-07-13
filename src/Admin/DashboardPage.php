@@ -75,7 +75,7 @@ final class DashboardPage extends AbstractAdminPage {
 		$this->render_panel(
 			'conflicts',
 			$this->translate( 'Conflict Warnings' ),
-			$this->translate( 'Loading conservative environment warnings that may affect optimization reliability.' )
+			$this->translate( 'Loading conservative environment and compatibility warnings that may affect optimization reliability.' )
 		);
 		echo '</div>';
 		echo '</div>';

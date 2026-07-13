@@ -157,16 +157,53 @@ final class LoadingAttributeManagerTest extends TestCase {
 	}
 
 	/**
+	 * Test the manager fully no-ops when loading overrides are disabled.
+	 *
+	 * @return void
+	 */
+	public function test_manager_no_ops_when_loading_overrides_are_disabled(): void {
+		$manager = $this->manager(
+			new FakeSettingsRepository(
+				array(
+					'loading_attribute_overrides_enabled' => false,
+				)
+			)
+		);
+
+		self::assertSame(
+			array( 'loading' => 'lazy' ),
+			$manager->filter_loading_optimization_attributes(
+				array( 'loading' => 'lazy' ),
+				'img',
+				array(
+					'class' => 'wp-image-123',
+					'src'   => 'https://example.test/uploads/hero.jpg',
+				),
+				'the_content'
+			)
+		);
+		self::assertSame(
+			'<img class="wp-image-123" src="https://example.test/uploads/hero.jpg" loading="lazy">',
+			$manager->apply_to_fallback_markup(
+				'<img class="wp-image-123" src="https://example.test/uploads/hero.jpg" loading="lazy">',
+				123
+			)
+		);
+	}
+
+	/**
 	 * Build manager fixture.
 	 *
+	 * @param FakeSettingsRepository|null $settings Settings.
 	 * @return LoadingAttributeManager
 	 */
-	private function manager(): LoadingAttributeManager {
+	private function manager( ?FakeSettingsRepository $settings = null ): LoadingAttributeManager {
 		$runtime  = new FakeAttachmentImageRuntime();
-		$settings = new FakeSettingsRepository();
+		$settings = $settings ?? new FakeSettingsRepository();
 		$store    = new FakeCriticalImagePostMetaStore();
 
 		return new LoadingAttributeManager(
+			$settings,
 			new CriticalImageRegistry( $runtime, $settings, $store ),
 			$runtime,
 			new WordPressImageMarkupAnalyzer()

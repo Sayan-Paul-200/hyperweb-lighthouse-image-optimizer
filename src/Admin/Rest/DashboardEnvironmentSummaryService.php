@@ -12,6 +12,7 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentInspector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentReport;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\FormatSupportResult;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\UploadsStatus;
+use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictDetector;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
 /**
@@ -34,14 +35,27 @@ final class DashboardEnvironmentSummaryService {
 	private $settings;
 
 	/**
+	 * Conflict detector.
+	 *
+	 * @var ConflictDetector
+	 */
+	private $detector;
+
+	/**
 	 * Create the service.
 	 *
 	 * @param EnvironmentInspector        $inspector Environment inspector.
 	 * @param SettingsRepositoryInterface $settings Settings repository.
+	 * @param ConflictDetector            $detector Conflict detector.
 	 */
-	public function __construct( EnvironmentInspector $inspector, SettingsRepositoryInterface $settings ) {
+	public function __construct(
+		EnvironmentInspector $inspector,
+		SettingsRepositoryInterface $settings,
+		ConflictDetector $detector
+	) {
 		$this->inspector = $inspector;
 		$this->settings  = $settings;
+		$this->detector  = $detector;
 	}
 
 	/**
@@ -93,7 +107,10 @@ final class DashboardEnvironmentSummaryService {
 				'automatic_optimization' => $this->settings->automatic_optimization_enabled(),
 				'delivery_enabled'       => $this->settings->delivery_enabled(),
 			),
-			'conflicts'   => $this->conflicts( $report, $enabled_formats, $available ),
+			'conflicts'   => array_merge(
+				$this->conflicts( $report, $enabled_formats, $available ),
+				$this->detector->detect()->to_array()
+			),
 		);
 	}
 
@@ -121,7 +138,7 @@ final class DashboardEnvironmentSummaryService {
 	 * @param EnvironmentReport $report Environment report.
 	 * @param string[]          $enabled_formats Enabled formats.
 	 * @param string[]          $available_editors Available editor classes.
-	 * @return array<int,array<string,string>>
+	 * @return array<int,array<string,mixed>>
 	 */
 	private function conflicts( EnvironmentReport $report, array $enabled_formats, array $available_editors ): array {
 		$conflicts = array();

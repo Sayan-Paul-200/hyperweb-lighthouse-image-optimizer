@@ -119,6 +119,15 @@ final class FakeSettingsRepository implements SettingsRepositoryInterface {
 	}
 
 	/**
+	 * Whether explicit loading-attribute overrides are enabled.
+	 *
+	 * @return bool
+	 */
+	public function loading_attribute_overrides_enabled(): bool {
+		return (bool) $this->get( 'loading_attribute_overrides_enabled', true );
+	}
+
+	/**
 	 * Whether the site custom logo should be treated as a critical image.
 	 *
 	 * @return bool
@@ -143,6 +152,15 @@ final class FakeSettingsRepository implements SettingsRepositoryInterface {
 	 */
 	public function critical_background_preload_enabled(): bool {
 		return (bool) $this->get( 'critical_background_preload_enabled', false );
+	}
+
+	/**
+	 * Whether Elementor background delivery is enabled.
+	 *
+	 * @return bool
+	 */
+	public function elementor_background_delivery_enabled(): bool {
+		return (bool) $this->get( 'elementor_background_delivery_enabled', true );
 	}
 
 	/**
