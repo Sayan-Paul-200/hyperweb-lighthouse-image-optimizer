@@ -34,7 +34,7 @@
   "scripts": {
     "lint": "@php tools/lint-php.php",
     "cs": "phpcs",
-    "stan": "phpstan analyse",
+    "stan": "phpstan analyse --memory-limit=1G",
     "test": "phpunit",
     "quality": [
       "@lint",

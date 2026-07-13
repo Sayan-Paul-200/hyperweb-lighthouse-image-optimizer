@@ -19,6 +19,13 @@ use HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe;
 final class SourceSetBuilder {
 
 	/**
+	 * Size resolver.
+	 *
+	 * @var AttachmentSizeResolver
+	 */
+	private $size_resolver;
+
+	/**
 	 * Repository.
 	 *
 	 * @var DerivativeRepository
@@ -66,7 +73,8 @@ final class SourceSetBuilder {
 			new DerivativeUrlResolver( $uploads, new DerivativeManifestSanitizer() ),
 			$uploads,
 			new WordPressImageFileProbe(),
-			new DerivativeManifestSanitizer()
+			new DerivativeManifestSanitizer(),
+			new AttachmentSizeResolver( new DerivativeManifestSanitizer() )
 		);
 	}
 
@@ -78,19 +86,22 @@ final class SourceSetBuilder {
 	 * @param UploadsRuntimeInterface     $uploads Uploads runtime.
 	 * @param ImageFileProbeInterface     $files File probe.
 	 * @param DerivativeManifestSanitizer $sanitizer Manifest sanitizer.
+	 * @param AttachmentSizeResolver      $size_resolver Size resolver.
 	 */
 	public function __construct(
 		DerivativeRepository $repository,
 		DerivativeUrlResolver $resolver,
 		UploadsRuntimeInterface $uploads,
 		ImageFileProbeInterface $files,
-		DerivativeManifestSanitizer $sanitizer
+		DerivativeManifestSanitizer $sanitizer,
+		AttachmentSizeResolver $size_resolver
 	) {
-		$this->repository = $repository;
-		$this->resolver   = $resolver;
-		$this->uploads    = $uploads;
-		$this->files      = $files;
-		$this->sanitizer  = $sanitizer;
+		$this->repository    = $repository;
+		$this->resolver      = $resolver;
+		$this->uploads       = $uploads;
+		$this->files         = $files;
+		$this->sanitizer     = $sanitizer;
+		$this->size_resolver = $size_resolver;
 	}
 
 	/**
@@ -100,20 +111,20 @@ final class SourceSetBuilder {
 	 * @return SourceSetBuildResult
 	 */
 	public function build( SourceSetBuildRequest $request ): SourceSetBuildResult {
-		$codes               = array();
-		$had_omissions       = false;
-		$formats             = array();
-		$uploads_base_dir    = $this->uploads_base_dir();
-		$normalized_sources  = $this->normalize_original_sources( $request->original_sources(), $had_omissions );
-		$repository_result   = $this->repository->read( $request->attachment_id() );
-		$manifest            = $repository_result->manifest();
-		$metadata_candidates = $this->metadata_candidates( $request->image_meta(), $had_omissions );
+		$codes              = array();
+		$had_omissions      = false;
+		$formats            = array();
+		$uploads_base_dir   = $this->uploads_base_dir();
+		$normalized_sources = $this->normalize_original_sources( $request->original_sources(), $had_omissions );
+		$repository_result  = $this->repository->read( $request->attachment_id() );
+		$manifest           = $repository_result->manifest();
+		$image_meta         = $request->image_meta();
 
 		if ( ! $manifest->has_derivatives() ) {
 			$codes[] = SourceSetBuildResult::CODE_MANIFEST_EMPTY;
 		}
 
-		if ( null === $metadata_candidates ) {
+		if ( array() === $this->size_resolver->metadata_candidates( $image_meta ) ) {
 			$codes[] = SourceSetBuildResult::CODE_INVALID_IMAGE_META;
 
 			if ( $had_omissions ) {
@@ -134,7 +145,7 @@ final class SourceSetBuilder {
 		}
 
 		foreach ( $normalized_sources as $candidate ) {
-			$metadata_candidate = $this->match_metadata_candidate( $candidate, $metadata_candidates );
+			$metadata_candidate = $this->size_resolver->resolve_source_candidate( $candidate, $image_meta );
 
 			if ( ! is_array( $metadata_candidate ) ) {
 				$had_omissions = true;
@@ -251,117 +262,6 @@ final class SourceSetBuilder {
 	}
 
 	/**
-	 * Build metadata candidates from image metadata.
-	 *
-	 * @param array<string,mixed> $image_meta Image metadata.
-	 * @param bool                $had_omissions Omission flag.
-	 * @return array<int,array<string,mixed>>|null
-	 */
-	private function metadata_candidates( array $image_meta, bool &$had_omissions ): ?array {
-		$file = $this->sanitizer->safe_relative_path( $image_meta['file'] ?? '' );
-
-		if ( '' === $file ) {
-			return null;
-		}
-
-		$directory  = $this->relative_directory( $file );
-		$candidates = array();
-		$full       = $this->metadata_candidate(
-			'full',
-			$file,
-			$image_meta['width'] ?? null,
-			$image_meta['height'] ?? null
-		);
-
-		if ( is_array( $full ) ) {
-			$candidates[] = $full;
-		} else {
-			$had_omissions = true;
-		}
-
-		$sizes = $image_meta['sizes'] ?? array();
-
-		if ( isset( $image_meta['sizes'] ) && ! is_array( $sizes ) ) {
-			$had_omissions = true;
-			$sizes         = array();
-		}
-
-		foreach ( $sizes as $size_name => $size ) {
-			if ( ! is_string( $size_name ) || ! is_array( $size ) ) {
-				$had_omissions = true;
-				continue;
-			}
-
-			$relative_path = $this->metadata_relative_path(
-				isset( $size['file'] ) && is_scalar( $size['file'] ) ? (string) $size['file'] : '',
-				$directory
-			);
-			$candidate     = $this->metadata_candidate(
-				$size_name,
-				$relative_path,
-				$size['width'] ?? null,
-				$size['height'] ?? null
-			);
-
-			if ( is_array( $candidate ) ) {
-				$candidates[] = $candidate;
-			} else {
-				$had_omissions = true;
-			}
-		}
-
-		return array() !== $candidates ? $candidates : null;
-	}
-
-	/**
-	 * Build one metadata candidate.
-	 *
-	 * @param string $size_name Size name.
-	 * @param string $relative_path Relative path.
-	 * @param mixed  $width Width.
-	 * @param mixed  $height Height.
-	 * @return array<string,mixed>|null
-	 */
-	private function metadata_candidate( string $size_name, string $relative_path, $width, $height ): ?array {
-		$relative_path = $this->sanitizer->safe_relative_path( $relative_path );
-		$width         = is_numeric( $width ) ? (int) $width : 0;
-		$height        = is_numeric( $height ) ? (int) $height : 0;
-
-		if ( '' === $relative_path || '' === trim( $size_name ) || $width < 1 || $height < 1 ) {
-			return null;
-		}
-
-		return array(
-			'size_name'     => substr( trim( $size_name ), 0, 64 ),
-			'relative_path' => $relative_path,
-			'width'         => $width,
-			'height'        => $height,
-		);
-	}
-
-	/**
-	 * Match one original candidate to one metadata candidate.
-	 *
-	 * @param array<string,mixed>            $candidate Original candidate.
-	 * @param array<int,array<string,mixed>> $metadata_candidates Metadata candidates.
-	 * @return array<string,mixed>|null
-	 */
-	private function match_metadata_candidate( array $candidate, array $metadata_candidates ): ?array {
-		$matches = array();
-
-		foreach ( $metadata_candidates as $metadata_candidate ) {
-			if (
-				(int) $candidate['value'] === (int) $metadata_candidate['width']
-				&& $this->url_matches_relative_path( (string) $candidate['url'], (string) $metadata_candidate['relative_path'] )
-			) {
-				$matches[] = $metadata_candidate;
-			}
-		}
-
-		return 1 === count( $matches ) ? $matches[0] : null;
-	}
-
-	/**
 	 * Get manifest formats for a matched metadata candidate.
 	 *
 	 * @param DerivativeManifest  $manifest Manifest.
@@ -411,75 +311,5 @@ final class SourceSetBuilder {
 	 */
 	private function absolute_uploads_path( string $base_dir, string $relative_path ): string {
 		return rtrim( str_replace( '\\', '/', trim( $base_dir ) ), '/' ) . '/' . ltrim( str_replace( '\\', '/', trim( $relative_path ) ), '/' );
-	}
-
-	/**
-	 * Extract a relative directory.
-	 *
-	 * @param string $relative_path Relative path.
-	 * @return string
-	 */
-	private function relative_directory( string $relative_path ): string {
-		$directory = dirname( str_replace( '\\', '/', trim( $relative_path ) ) );
-
-		return '.' === $directory ? '' : trim( $directory, '/' );
-	}
-
-	/**
-	 * Resolve one metadata file path relative to the main image directory.
-	 *
-	 * @param string $file File path.
-	 * @param string $directory Relative directory.
-	 * @return string
-	 */
-	private function metadata_relative_path( string $file, string $directory ): string {
-		$file = str_replace( '\\', '/', trim( $file ) );
-
-		if ( '' === $file ) {
-			return '';
-		}
-
-		if ( false !== strpos( $file, '/' ) || '' === $directory ) {
-			return $file;
-		}
-
-		return $directory . '/' . $file;
-	}
-
-	/**
-	 * Determine whether a candidate URL matches a relative uploads path.
-	 *
-	 * @param string $url URL.
-	 * @param string $relative_path Relative uploads path.
-	 * @return bool
-	 */
-	private function url_matches_relative_path( string $url, string $relative_path ): bool {
-		$relative_path = ltrim( str_replace( '\\', '/', trim( $relative_path ) ), '/' );
-
-		if ( '' === trim( $url ) || '' === $relative_path ) {
-			return false;
-		}
-
-		if ( function_exists( 'wp_parse_url' ) ) {
-			$path = wp_parse_url( $url, PHP_URL_PATH );
-		} else {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Fallback for non-WordPress test/runtime contexts.
-			$path = parse_url( $url, PHP_URL_PATH );
-		}
-
-		$path = is_string( $path ) ? rawurldecode( $path ) : $url;
-		$path = str_replace( '\\', '/', trim( $path ) );
-
-		if ( '' === $path ) {
-			return false;
-		}
-
-		if ( $path === $relative_path ) {
-			return true;
-		}
-
-		$suffix = '/' . $relative_path;
-
-		return strlen( $path ) >= strlen( $suffix ) && substr( $path, -strlen( $suffix ) ) === $suffix;
 	}
 }

@@ -42,15 +42,24 @@ final class DeliveryScopePolicyTest extends TestCase {
 			'frontend content hook'      => '/\bwp_content_img_tag\b/',
 			'responsive srcset hook'     => '/\bwp_calculate_image_srcset\b/',
 			'delivery loading hook'      => '/\bwp_get_loading_optimization_attributes\b/',
+			'preload head hook'          => '/\bwp_head\b/',
 			'runtime hook registration'  => '/\b(?:add_action|add_filter)\s*\(/',
 			'async queue scheduling'     => '/\bas_enqueue_async_action\s*\(/',
 			'single queue scheduling'    => '/\bas_schedule_single_action\s*\(/',
 			'output buffering'           => '/\bob_start\s*\(/',
 		);
 		$allowed_patterns   = array(
-			'src/Delivery/DeliveryManager.php' => array(
+			'src/Delivery/DeliveryManager.php'          => array(
 				'frontend image hook',
 				'frontend content hook',
+				'runtime hook registration',
+			),
+			'src/Delivery/LoadingAttributeManager.php'  => array(
+				'delivery loading hook',
+				'runtime hook registration',
+			),
+			'src/Delivery/ResponsivePreloadManager.php' => array(
+				'preload head hook',
 				'runtime hook registration',
 			),
 		);

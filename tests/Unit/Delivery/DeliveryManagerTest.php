@@ -11,9 +11,13 @@ require_once __DIR__ . '/DeliveryTestWordPressShim.php';
 
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
+use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentSizeResolver;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentImageSourceExtractor;
+use HyperWeb\LighthouseImageOptimizer\Delivery\CriticalImageRegistry;
 use HyperWeb\LighthouseImageOptimizer\Delivery\DeliveryManager;
 use HyperWeb\LighthouseImageOptimizer\Delivery\DerivativeUrlResolver;
+use HyperWeb\LighthouseImageOptimizer\Delivery\IntrinsicDimensionRepair;
+use HyperWeb\LighthouseImageOptimizer\Delivery\LoadingAttributeManager;
 use HyperWeb\LighthouseImageOptimizer\Delivery\MarkupEligibility;
 use HyperWeb\LighthouseImageOptimizer\Delivery\PictureRenderer;
 use HyperWeb\LighthouseImageOptimizer\Delivery\SourceSetBuilder;
@@ -226,6 +230,21 @@ final class DeliveryManagerTest extends TestCase {
 	}
 
 	/**
+	 * Test missing intrinsic dimensions are repaired before picture rendering on attachment markup.
+	 *
+	 * @return void
+	 */
+	public function test_missing_intrinsic_dimensions_are_repaired_before_picture_rendering_on_attachment_markup(): void {
+		$html    = '<img src="https://example.test/wp-content/uploads/2026/07/hero.jpg" srcset="https://example.test/wp-content/uploads/2026/07/hero-150x100.jpg 150w, https://example.test/wp-content/uploads/2026/07/hero.jpg 2400w" sizes="100vw" alt="Hero" loading="lazy">';
+		$runtime = $this->runtime();
+		$result  = $this->manager( $runtime )->filter_attachment_image( $html, self::ATTACHMENT_ID, 'full', false, array() );
+
+		self::assertStringStartsWith( '<picture', $result );
+		self::assertStringContainsString( 'width="2400"', $result );
+		self::assertStringContainsString( 'height="1600"', $result );
+	}
+
+	/**
 	 * Test missing valid derivatives returns the original markup unchanged.
 	 *
 	 * @return void
@@ -286,6 +305,47 @@ final class DeliveryManagerTest extends TestCase {
 	}
 
 	/**
+	 * Test missing intrinsic dimensions are repaired on resolved content-image markup.
+	 *
+	 * @return void
+	 */
+	public function test_missing_intrinsic_dimensions_are_repaired_on_resolved_content_image_markup(): void {
+		$html    = '<img class="wp-image-123 size-thumbnail" src="https://example.test/wp-content/uploads/2026/07/hero-150x100.jpg" alt="Hero">';
+		$runtime = $this->runtime();
+		$result  = $this->manager( $runtime )->filter_content_img_tag( $html, 'the_content', self::ATTACHMENT_ID );
+
+		self::assertStringStartsWith( '<picture', $result );
+		self::assertStringContainsString( 'width="150"', $result );
+		self::assertStringContainsString( 'height="100"', $result );
+	}
+
+	/**
+	 * Test configured critical attachment images are de-lazied in both attachment and content hook paths.
+	 *
+	 * @return void
+	 */
+	public function test_configured_critical_attachment_images_are_not_lazy_loaded_in_both_hook_paths(): void {
+		$GLOBALS['hwlio_test_filters'] = array(
+			'hwlio_critical_image_selection' => static function ( array $selection ): array {
+				$selection['primary_attachment_id']   = self::ATTACHMENT_ID;
+				$selection['critical_attachment_ids'] = array( self::ATTACHMENT_ID );
+
+				return $selection;
+			},
+		);
+
+		$html    = $this->img_html();
+		$attach  = $this->manager( $this->runtime() )->filter_attachment_image( $html, self::ATTACHMENT_ID, 'full', false, array() );
+		$content = $this->manager( $this->runtime() )->filter_content_img_tag( $html, 'the_content', self::ATTACHMENT_ID );
+
+		self::assertStringNotContainsString( 'loading="lazy"', $attach );
+		self::assertStringContainsString( 'loading="eager"', $attach );
+		self::assertStringContainsString( 'fetchpriority="high"', $attach );
+		self::assertStringNotContainsString( 'loading="lazy"', $content );
+		self::assertStringContainsString( 'loading="eager"', $content );
+	}
+
+	/**
 	 * Test conflicting loading and fetchpriority markup remains unchanged in attachment and content hook paths.
 	 *
 	 * @return void
@@ -297,6 +357,21 @@ final class DeliveryManagerTest extends TestCase {
 
 		self::assertSame( $html, $manager->filter_attachment_image( $html, self::ATTACHMENT_ID, 'full', false, array() ) );
 		self::assertSame( $html, $manager->filter_content_img_tag( $html, 'the_content', self::ATTACHMENT_ID ) );
+	}
+
+	/**
+	 * Test uncertain intrinsic dimensions leave fallback markup unchanged while delivery still fails open safely.
+	 *
+	 * @return void
+	 */
+	public function test_uncertain_intrinsic_dimensions_leave_fallback_markup_unchanged_while_delivery_still_fails_open_safely(): void {
+		$html    = '<img src="https://example.test/wp-content/uploads/2026/07/hero.jpg" width="1000" alt="Hero">';
+		$runtime = $this->runtime();
+		$result  = $this->manager( $runtime )->filter_attachment_image( $html, self::ATTACHMENT_ID, 'full', false, array() );
+
+		self::assertStringStartsWith( '<picture', $result );
+		self::assertStringContainsString( '<img src="https://example.test/wp-content/uploads/2026/07/hero.jpg" width="1000" alt="Hero">', $result );
+		self::assertStringNotContainsString( 'height="1600"', $result );
 	}
 
 	/**
@@ -312,15 +387,18 @@ final class DeliveryManagerTest extends TestCase {
 	}
 
 	/**
-	 * Test content images without valid derivatives remain unchanged.
+	 * Test content images without valid derivatives still receive certain intrinsic-dimension repair.
 	 *
 	 * @return void
 	 */
-	public function test_content_images_without_valid_derivatives_remain_unchanged(): void {
+	public function test_content_images_without_valid_derivatives_still_receive_certain_intrinsic_dimension_repair(): void {
 		$html    = '<img class="wp-image-123 size-full" src="https://example.test/wp-content/uploads/2026/07/hero.jpg" width="2400" alt="Hero">';
 		$runtime = $this->runtime();
 
-		self::assertSame( $html, $this->manager( $runtime, null, false )->filter_content_img_tag( $html, 'the_content', self::ATTACHMENT_ID ) );
+		self::assertSame(
+			'<img class="wp-image-123 size-full" src="https://example.test/wp-content/uploads/2026/07/hero.jpg" width="2400" alt="Hero" height="1600">',
+			$this->manager( $runtime, null, false )->filter_content_img_tag( $html, 'the_content', self::ATTACHMENT_ID )
+		);
 	}
 
 	/**
@@ -420,7 +498,9 @@ final class DeliveryManagerTest extends TestCase {
 		$uploads->base_dir = self::UPLOADS;
 		$store             = new FakeAttachmentMetaStore();
 		$store->meta[ self::ATTACHMENT_ID ][ LifecyclePolicy::META_DERIVATIVES ] = $with_derivatives ? $this->stored_manifest() : array();
-		$analyzer = new WordPressImageMarkupAnalyzer();
+		$analyzer  = new WordPressImageMarkupAnalyzer();
+		$sanitizer = new DerivativeManifestSanitizer();
+		$resolver  = new AttachmentSizeResolver( $sanitizer );
 
 		return new DeliveryManager(
 			$settings,
@@ -430,16 +510,23 @@ final class DeliveryManagerTest extends TestCase {
 			new SourceSetBuilder(
 				new DerivativeRepository(
 					$store,
-					new DerivativeManifestSanitizer(),
+					$sanitizer,
 					new FixedAttachmentClock( 1783526500 )
 				),
-				new DerivativeUrlResolver( $uploads, new DerivativeManifestSanitizer() ),
+				new DerivativeUrlResolver( $uploads, $sanitizer ),
 				$uploads,
 				$this->probe_with_derivatives( $with_derivatives ),
-				new DerivativeManifestSanitizer()
+				$sanitizer,
+				$resolver
 			),
 			new PictureRenderer( $analyzer ),
-			new TransformedMarkupRegistry()
+			new TransformedMarkupRegistry(),
+			new IntrinsicDimensionRepair( $resolver, $analyzer ),
+			new LoadingAttributeManager(
+				new CriticalImageRegistry( $runtime, $settings, new FakeCriticalImagePostMetaStore() ),
+				$runtime,
+				$analyzer
+			)
 		);
 	}
 

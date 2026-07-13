@@ -79,6 +79,27 @@ interface SettingsRepositoryInterface {
 	public function delivery_enabled(): bool;
 
 	/**
+	 * Whether the site custom logo should be treated as a critical image.
+	 *
+	 * @return bool
+	 */
+	public function critical_logo_enabled(): bool;
+
+	/**
+	 * Whether responsive preload is enabled for explicit late-discovered critical images.
+	 *
+	 * @return bool
+	 */
+	public function responsive_preload_enabled(): bool;
+
+	/**
+	 * Whether critical background preload is enabled for an explicitly selected Elementor hero background.
+	 *
+	 * @return bool
+	 */
+	public function critical_background_preload_enabled(): bool;
+
+	/**
 	 * Whether the emergency frontend-delivery rollback switch is active.
 	 *
 	 * @return bool

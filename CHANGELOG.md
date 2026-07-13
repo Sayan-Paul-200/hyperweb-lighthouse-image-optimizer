@@ -38,6 +38,17 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added attachment regeneration and edit reconciliation with stale-derivative detection on metadata updates, dedicated reconcile queue/worker flows, manifest reset semantics, safe sidecar replacement, and conservative obsolete-sidecar cleanup.
 - Added recurring queue maintenance for hourly stale-lock recovery, daily internal statistics-cache reconciliation, and a shared infrastructure Action Scheduler recurring-action seam.
 - Added Phase 8.1 core-loading preservation guards so picture delivery now preserves non-conflicting core loading attributes and skips wrapping lazy-loaded high-priority fallback images.
+- Added a critical-image registry, explicit loading-attribute overrides, a minimal critical-logo settings control, and post/page critical-image editor controls.
+- Added conservative intrinsic-dimension repair for attachment-backed fallback images when delivery can match the rendered size to attachment metadata with certainty.
+- Added an opt-in responsive preload provider for one explicitly selected late-discovered critical image per request, with conservative singular-content matching and preferred modern-format preload output.
+- Added a WooCommerce compatibility audit, raw baseline fixture fragments, and audit-only guard tests ahead of runtime integration work.
+- Added an isolated WooCommerce primary-product-image integration that registers the visible single-product image as critical, preserves zoom/lightbox image attributes, and keeps non-primary Woo image contexts fail-open.
+- Added conservative WooCommerce gallery-surface delivery so confirmed secondary gallery images may render while loop, cart, checkout, related, upsell, and variation-sensitive fragments remain fail-open.
+- Added an isolated Elementor attachment-widget compatibility layer with a repo-owned audit baseline, conservative widget fragment classification, and eligibility-only frontend gating for supported attachment-backed widgets.
+- Added a service-only Elementor oversized-selection diagnostics foundation for supported attachment widgets, with conservative full-size advisory detection and repo-owned diagnostic fixtures.
+- Added a read-only Elementor background-discovery foundation for supported structured classic background controls, explicit desktop/tablet/mobile mappings, and conservative unsupported CSS URL reporting.
+- Added a plugin-owned Elementor companion stylesheet layer for structured attachment-backed backgrounds, with safe uploads-scoped artifact storage, viewport-aware responsive CSS generation, late frontend enqueueing, and rollback that leaves Elementor's own CSS untouched.
+- Added explicit Elementor hero-background selection and opt-in critical background preload, backed by a shared background delivery-plan builder and media-scoped modern preload tags for one selected supported target per request.
 
 ### Removed
 

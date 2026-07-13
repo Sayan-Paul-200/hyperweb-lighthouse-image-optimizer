@@ -28,6 +28,10 @@ use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\MediaLibraryIntegration
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\WordPressMediaLibraryRuntime;
 use HyperWeb\LighthouseImageOptimizer\Admin\Menu;
 use HyperWeb\LighthouseImageOptimizer\Admin\NoticeManager;
+use HyperWeb\LighthouseImageOptimizer\Admin\PostEditor\CriticalImageAssets;
+use HyperWeb\LighthouseImageOptimizer\Admin\PostEditor\CriticalImageMetaBox;
+use HyperWeb\LighthouseImageOptimizer\Admin\PostEditor\ElementorHeroBackgroundMetaBox;
+use HyperWeb\LighthouseImageOptimizer\Admin\PostEditor\WordPressPostEditorRuntime;
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\AttachmentActionService;
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\AttachmentDetailsService;
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\AttachmentsController;
@@ -55,14 +59,24 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\WordPressAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\DerivativeHealthDiagnostics;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\EnvironmentDiagnostics;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentImageSourceExtractor;
+use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentSizeResolver;
+use HyperWeb\LighthouseImageOptimizer\Delivery\CriticalImageRegistry;
 use HyperWeb\LighthouseImageOptimizer\Delivery\DeliveryManager;
+use HyperWeb\LighthouseImageOptimizer\Delivery\IntrinsicDimensionRepair;
+use HyperWeb\LighthouseImageOptimizer\Delivery\LateDiscoveredCriticalImageLocator;
+use HyperWeb\LighthouseImageOptimizer\Delivery\LoadingAttributeManager;
 use HyperWeb\LighthouseImageOptimizer\Delivery\MarkupEligibility;
 use HyperWeb\LighthouseImageOptimizer\Delivery\PictureRenderer;
+use HyperWeb\LighthouseImageOptimizer\Delivery\ResponsivePreloadManager;
+use HyperWeb\LighthouseImageOptimizer\Delivery\ResponsivePreloadRegistry;
 use HyperWeb\LighthouseImageOptimizer\Delivery\SourceSetBuilder;
 use HyperWeb\LighthouseImageOptimizer\Delivery\TransformedMarkupRegistry;
+use HyperWeb\LighthouseImageOptimizer\Delivery\WordPressUploadsRuntime;
+use HyperWeb\LighthouseImageOptimizer\Delivery\WordPressCriticalImagePostMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Delivery\WordPressAttachmentImageRuntime;
 use HyperWeb\LighthouseImageOptimizer\Delivery\WordPressImageMarkupAnalyzer;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\I18n;
@@ -73,6 +87,21 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressCacheInvalidationD
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressOptionStore;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressTransientStore;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\UpgradeRunner;
+use HyperWeb\LighthouseImageOptimizer\Integration\ElementorIntegration;
+use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundDiscovery;
+use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundDeliveryPlanBuilder;
+use HyperWeb\LighthouseImageOptimizer\Integration\ElementorCriticalBackgroundPreloadManager;
+use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundStylesheetGenerator;
+use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundStylesheetManager;
+use HyperWeb\LighthouseImageOptimizer\Integration\ElementorWidgetMatcher;
+use HyperWeb\LighthouseImageOptimizer\Integration\WordPressElementorHeroBackgroundPostMetaStore;
+use HyperWeb\LighthouseImageOptimizer\Integration\WordPressElementorBackgroundStylesheetRuntime;
+use HyperWeb\LighthouseImageOptimizer\Integration\WordPressElementorBackgroundStylesheetStore;
+use HyperWeb\LighthouseImageOptimizer\Integration\WordPressElementorDocumentDataStore;
+use HyperWeb\LighthouseImageOptimizer\Integration\WordPressElementorRuntime;
+use HyperWeb\LighthouseImageOptimizer\Integration\WooCommerceIntegration;
+use HyperWeb\LighthouseImageOptimizer\Integration\WooCommercePrimaryImageMatcher;
+use HyperWeb\LighthouseImageOptimizer\Integration\WordPressWooCommerceRuntime;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogMaintenance;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogBrowserService;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogDeletionService;
@@ -152,40 +181,40 @@ final class Plugin {
 			? (int) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_SCHEMA_VERSION' )
 			: 1;
 
-		$hooks               = new HookRegistrar();
-		$admin_runtime       = new WordPressAdminRuntime();
-		$menu                = new Menu( $admin_runtime );
-		$query_provider      = static function (): array {
+		$hooks                        = new HookRegistrar();
+		$admin_runtime                = new WordPressAdminRuntime();
+		$menu                         = new Menu( $admin_runtime );
+		$query_provider               = static function (): array {
 			// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only tab routing for the current screen shell and bootstrap.
 			$query = $_GET;
 
 			return function_exists( 'wp_unslash' ) ? wp_unslash( $query ) : $query;
 			// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		};
-		$notice_manager      = new NoticeManager();
-		$context_resolver    = new AdminScreenContextResolver( $menu, $query_provider );
-		$plugin_url          = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_URL' )
+		$notice_manager               = new NoticeManager();
+		$context_resolver             = new AdminScreenContextResolver( $menu, $query_provider );
+		$plugin_url                   = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_URL' )
 			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_URL' )
 			: '';
-		$rest_runtime        = new WordPressRestRuntime();
-		$rest_errors         = new RestErrorFactory( $rest_runtime );
-		$settings            = SettingsRepository::for_wordpress();
-		$queue               = ActionSchedulerQueue::for_wordpress();
-		$single_actions      = new ActionSchedulerSingleActionScheduler();
-		$queue_control_store = QueueControlStateStore::for_wordpress();
-		$attachment_jobs     = ActionSchedulerAttachmentJobControl::for_wordpress();
-		$queue_control       = new QueueControlService( $queue_control_store, $attachment_jobs );
-		$meta                = new WordPressAttachmentMetaStore();
-		$clock               = new SystemAttachmentClock();
-		$cache_invalidation  = new WordPressCacheInvalidationDispatcher();
-		$repository          = new DerivativeRepository(
+		$rest_runtime                 = new WordPressRestRuntime();
+		$rest_errors                  = new RestErrorFactory( $rest_runtime );
+		$settings                     = SettingsRepository::for_wordpress();
+		$queue                        = ActionSchedulerQueue::for_wordpress();
+		$single_actions               = new ActionSchedulerSingleActionScheduler();
+		$queue_control_store          = QueueControlStateStore::for_wordpress();
+		$attachment_jobs              = ActionSchedulerAttachmentJobControl::for_wordpress();
+		$queue_control                = new QueueControlService( $queue_control_store, $attachment_jobs );
+		$meta                         = new WordPressAttachmentMetaStore();
+		$clock                        = new SystemAttachmentClock();
+		$cache_invalidation           = new WordPressCacheInvalidationDispatcher();
+		$repository                   = new DerivativeRepository(
 			$meta,
 			new DerivativeManifestSanitizer(),
 			$clock,
 			$cache_invalidation
 		);
-		$details             = new AttachmentDetailsService( $repository );
-		$attachment_queue    = new AttachmentQueueService(
+		$details                      = new AttachmentDetailsService( $repository );
+		$attachment_queue             = new AttachmentQueueService(
 			$queue,
 			$meta,
 			$repository,
@@ -194,26 +223,26 @@ final class Plugin {
 			$clock,
 			$queue_control_store
 		);
-		$media_runtime       = new WordPressMediaLibraryRuntime();
-		$media_renderer      = new MediaAttachmentRenderer();
-		$media_presenter     = new MediaAttachmentPresenter( new AttachmentActionAvailability() );
-		$media_reader        = new AttachmentStatusReader( $meta );
-		$bulk_sessions       = new WordPressTransientBulkScanSessionStore( new WordPressTransientStore() );
-		$bulk_runtime        = new WordPressBulkScannerRuntime();
-		$bulk_scans          = new BulkScanService(
+		$media_runtime                = new WordPressMediaLibraryRuntime();
+		$media_renderer               = new MediaAttachmentRenderer();
+		$media_presenter              = new MediaAttachmentPresenter( new AttachmentActionAvailability() );
+		$media_reader                 = new AttachmentStatusReader( $meta );
+		$bulk_sessions                = new WordPressTransientBulkScanSessionStore( new WordPressTransientStore() );
+		$bulk_runtime                 = new WordPressBulkScannerRuntime();
+		$bulk_scans                   = new BulkScanService(
 			$bulk_runtime,
 			$bulk_sessions,
 			$media_reader,
 			$settings
 		);
-		$bulk_preview        = new BulkPreviewService(
+		$bulk_preview                 = new BulkPreviewService(
 			$bulk_sessions,
 			$bulk_runtime,
 			$media_reader,
 			$media_presenter,
 			$settings
 		);
-		$bulk_queue          = new BulkQueueService(
+		$bulk_queue                   = new BulkQueueService(
 			$bulk_sessions,
 			$bulk_scans,
 			$media_reader,
@@ -221,8 +250,8 @@ final class Plugin {
 			$settings,
 			$queue_control_store
 		);
-		$status_refresh      = new StatusRefreshService( $single_actions );
-		$status_summary      = new StatusSummaryService(
+		$status_refresh               = new StatusRefreshService( $single_actions );
+		$status_summary               = new StatusSummaryService(
 			$queue,
 			new StatisticsCacheReader( new WordPressOptionStore() ),
 			$settings,
@@ -231,15 +260,89 @@ final class Plugin {
 			$status_refresh,
 			$queue_control
 		);
-		$admin_pages         = array(
+		$admin_pages                  = array(
 			new DashboardPage(),
 			new BulkPage(),
-			new SettingsPage(),
+			new SettingsPage( $settings ),
 			new DiagnosticsPage(),
 			new LogsPage(),
 		);
-		$delivery_runtime    = new WordPressAttachmentImageRuntime();
-		$delivery_analyzer   = new WordPressImageMarkupAnalyzer();
+		$delivery_runtime             = new WordPressAttachmentImageRuntime();
+		$delivery_analyzer            = new WordPressImageMarkupAnalyzer();
+		$delivery_sanitizer           = new DerivativeManifestSanitizer();
+		$size_resolver                = new AttachmentSizeResolver( $delivery_sanitizer );
+		$critical_post_meta           = new WordPressCriticalImagePostMetaStore();
+		$elementor_document_store     = new WordPressElementorDocumentDataStore();
+		$elementor_hero_backgrounds   = new WordPressElementorHeroBackgroundPostMetaStore();
+		$critical_registry            = new CriticalImageRegistry( $delivery_runtime, $settings, $critical_post_meta );
+		$woocommerce_runtime          = new WordPressWooCommerceRuntime();
+		$woocommerce_matcher          = new WooCommercePrimaryImageMatcher( $woocommerce_runtime, $delivery_analyzer );
+		$elementor_runtime            = new WordPressElementorRuntime();
+		$elementor_matcher            = new ElementorWidgetMatcher( $elementor_runtime, $delivery_analyzer );
+		$elementor_css_runtime        = new WordPressElementorBackgroundStylesheetRuntime();
+		$loading_manager              = new LoadingAttributeManager( $critical_registry, $delivery_runtime, $delivery_analyzer );
+		$uploads_runtime              = new WordPressUploadsRuntime();
+		$delivery_files               = new WordPressImageFileProbe();
+		$source_extractor             = new AttachmentImageSourceExtractor( $delivery_analyzer );
+		$source_set_builder           = new SourceSetBuilder(
+			DerivativeRepository::for_wordpress(),
+			new \HyperWeb\LighthouseImageOptimizer\Delivery\DerivativeUrlResolver(
+				$uploads_runtime,
+				new DerivativeManifestSanitizer()
+			),
+			$uploads_runtime,
+			$delivery_files,
+			new DerivativeManifestSanitizer(),
+			$size_resolver
+		);
+		$dimension_repair             = new IntrinsicDimensionRepair( $size_resolver, $delivery_analyzer );
+		$preload_registry             = new ResponsivePreloadRegistry();
+		$elementor_background_plans   = new ElementorBackgroundDeliveryPlanBuilder(
+			new ElementorBackgroundDiscovery( $elementor_document_store ),
+			$repository,
+			new \HyperWeb\LighthouseImageOptimizer\Delivery\DerivativeUrlResolver(
+				$uploads_runtime,
+				new DerivativeManifestSanitizer()
+			),
+			$settings,
+			new DerivativeManifestSanitizer()
+		);
+		$preload_manager              = new ResponsivePreloadManager(
+			$settings,
+			$delivery_runtime,
+			$critical_registry,
+			new LateDiscoveredCriticalImageLocator( $delivery_runtime, $delivery_analyzer ),
+			$dimension_repair,
+			$source_extractor,
+			$source_set_builder,
+			$delivery_analyzer,
+			$preload_registry
+		);
+		$elementor_background_preload = new ElementorCriticalBackgroundPreloadManager(
+			$settings,
+			$elementor_runtime,
+			$elementor_css_runtime,
+			$elementor_hero_backgrounds,
+			$elementor_background_plans,
+			$preload_registry
+		);
+		$elementor_background_styles  = new ElementorBackgroundStylesheetManager(
+			$settings,
+			$elementor_runtime,
+			$elementor_css_runtime,
+			new ElementorBackgroundStylesheetGenerator(
+				new ElementorBackgroundDiscovery( $elementor_document_store ),
+				$repository,
+				new \HyperWeb\LighthouseImageOptimizer\Delivery\DerivativeUrlResolver(
+					$uploads_runtime,
+					new DerivativeManifestSanitizer()
+				),
+				$settings,
+				new DerivativeManifestSanitizer()
+			),
+			new WordPressElementorBackgroundStylesheetStore()
+		);
+		$post_editor_runtime          = new WordPressPostEditorRuntime();
 
 		return new self(
 			$version,
@@ -354,6 +457,23 @@ final class Plugin {
 					},
 					$queue_control_store
 				),
+				new CriticalImageMetaBox( $post_editor_runtime, $critical_post_meta ),
+				new CriticalImageAssets(
+					$post_editor_runtime,
+					new WordPressAdminAssetRuntime(),
+					$plugin_url,
+					$version
+				),
+				new ElementorHeroBackgroundMetaBox(
+					$post_editor_runtime,
+					$elementor_hero_backgrounds,
+					new ElementorBackgroundDiscovery( $elementor_document_store )
+				),
+				new WooCommerceIntegration(
+					$woocommerce_runtime,
+					$woocommerce_matcher
+				),
+				new ElementorIntegration( $elementor_matcher ),
 				new ReconciliationWorker(
 					$queue,
 					\HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentLockManager::for_wordpress(),
@@ -395,6 +515,10 @@ final class Plugin {
 					$queue_control_store,
 					$single_actions
 				),
+				$loading_manager,
+				$preload_manager,
+				$elementor_background_preload,
+				$elementor_background_styles,
 				new DeliveryManager(
 					$settings,
 					$delivery_runtime,
@@ -403,10 +527,12 @@ final class Plugin {
 						$delivery_runtime,
 						$delivery_analyzer
 					),
-					new AttachmentImageSourceExtractor( $delivery_analyzer ),
-					SourceSetBuilder::for_wordpress(),
+					$source_extractor,
+					$source_set_builder,
 					new PictureRenderer( $delivery_analyzer ),
-					new TransformedMarkupRegistry()
+					new TransformedMarkupRegistry(),
+					$dimension_repair,
+					$loading_manager
 				),
 				new I18n( self::SLUG, dirname( $basename ) . '/languages/' ),
 			)

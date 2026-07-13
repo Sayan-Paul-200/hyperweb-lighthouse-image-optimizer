@@ -119,6 +119,33 @@ final class FakeSettingsRepository implements SettingsRepositoryInterface {
 	}
 
 	/**
+	 * Whether the site custom logo should be treated as a critical image.
+	 *
+	 * @return bool
+	 */
+	public function critical_logo_enabled(): bool {
+		return (bool) $this->get( 'critical_logo_enabled', false );
+	}
+
+	/**
+	 * Whether responsive preload is enabled for explicit late-discovered critical images.
+	 *
+	 * @return bool
+	 */
+	public function responsive_preload_enabled(): bool {
+		return (bool) $this->get( 'responsive_preload_enabled', false );
+	}
+
+	/**
+	 * Whether critical background preload is enabled for an explicitly selected Elementor hero background.
+	 *
+	 * @return bool
+	 */
+	public function critical_background_preload_enabled(): bool {
+		return (bool) $this->get( 'critical_background_preload_enabled', false );
+	}
+
+	/**
 	 * Whether the emergency delivery rollback switch is active.
 	 *
 	 * @return bool

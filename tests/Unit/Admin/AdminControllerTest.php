@@ -17,6 +17,7 @@ use HyperWeb\LighthouseImageOptimizer\Admin\Menu;
 use HyperWeb\LighthouseImageOptimizer\Admin\NoticeManager;
 use HyperWeb\LighthouseImageOptimizer\Admin\SettingsPage;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -71,7 +72,7 @@ final class AdminControllerTest extends TestCase {
 
 		self::assertStringContainsString( 'Lighthouse Image Optimizer', $output );
 		self::assertStringContainsString( '>Settings<', $output );
-		self::assertStringContainsString( 'The visible settings form will be added', $output );
+		self::assertStringContainsString( 'Treat the site custom logo as a critical image', $output );
 		self::assertStringContainsString( 'tab=settings', $output );
 		self::assertStringContainsString( 'id="hwlio-admin-notices"', $output );
 		self::assertStringContainsString( 'id="hwlio-admin-app"', $output );
@@ -196,7 +197,7 @@ final class AdminControllerTest extends TestCase {
 			array(
 				new DashboardPage(),
 				new BulkPage(),
-				new SettingsPage(),
+				new SettingsPage( new FakeSettingsRepository() ),
 				new DiagnosticsPage(),
 				new LogsPage(),
 			),

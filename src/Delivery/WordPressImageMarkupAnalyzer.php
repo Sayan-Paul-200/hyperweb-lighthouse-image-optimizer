@@ -46,7 +46,12 @@ final class WordPressImageMarkupAnalyzer implements ImageMarkupAnalyzerInterface
 		}
 
 		return ImageMarkupAnalysis::renderable(
+			$this->extract_attribute_value( $html, 'src' ),
 			$this->extract_attribute_value( $html, 'sizes' ),
+			$this->has_attribute( $html, 'width' ),
+			$this->has_attribute( $html, 'height' ),
+			$this->extract_positive_int( $html, 'width' ),
+			$this->extract_positive_int( $html, 'height' ),
 			$this->extract_attribute_value( $html, 'loading' ),
 			$this->extract_attribute_value( $html, 'fetchpriority' ),
 			$this->extract_attribute_value( $html, 'decoding' )
@@ -117,5 +122,41 @@ final class WordPressImageMarkupAnalyzer implements ImageMarkupAnalyzerInterface
 		}
 
 		return null;
+	}
+
+	/**
+	 * Whether one attribute exists on the fragment.
+	 *
+	 * @param string $html Markup fragment.
+	 * @param string $attribute Attribute name.
+	 * @return bool
+	 */
+	private function has_attribute( string $html, string $attribute ): bool {
+		return 1 === preg_match(
+			sprintf(
+				'/\b%s\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s"\'=<>`]+)/i',
+				preg_quote( $attribute, '/' )
+			),
+			$html
+		);
+	}
+
+	/**
+	 * Extract one positive integer attribute value.
+	 *
+	 * @param string $html Markup fragment.
+	 * @param string $attribute Attribute name.
+	 * @return int|null
+	 */
+	private function extract_positive_int( string $html, string $attribute ): ?int {
+		$value = $this->extract_attribute_value( $html, $attribute );
+
+		if ( null === $value || ! is_numeric( $value ) ) {
+			return null;
+		}
+
+		$value = (int) $value;
+
+		return $value > 0 ? $value : null;
 	}
 }

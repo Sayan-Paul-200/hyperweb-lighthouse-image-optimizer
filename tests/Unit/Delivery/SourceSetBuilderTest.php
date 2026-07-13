@@ -9,6 +9,7 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery;
 
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
+use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentSizeResolver;
 use HyperWeb\LighthouseImageOptimizer\Delivery\DerivativeUrlResolver;
 use HyperWeb\LighthouseImageOptimizer\Delivery\SourceSetBuildRequest;
 use HyperWeb\LighthouseImageOptimizer\Delivery\SourceSetBuildResult;
@@ -247,7 +248,8 @@ final class SourceSetBuilderTest extends TestCase {
 			new DerivativeUrlResolver( $runtime, new DerivativeManifestSanitizer() ),
 			$runtime,
 			$probe,
-			new DerivativeManifestSanitizer()
+			new DerivativeManifestSanitizer(),
+			new AttachmentSizeResolver( new DerivativeManifestSanitizer() )
 		);
 	}
 

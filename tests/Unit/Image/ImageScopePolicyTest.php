@@ -88,6 +88,9 @@ final class ImageScopePolicyTest extends TestCase {
 				'frontend image hook',
 				'frontend content hook',
 			),
+			'src/Delivery/ResponsivePreloadManager.php'   => array(
+				'runtime hook registration',
+			),
 		);
 
 		foreach ( $this->image_source_files() as $file => $contents ) {

@@ -36,6 +36,34 @@ interface AttachmentImageRuntimeInterface {
 	public function request_context(): array;
 
 	/**
+	 * Get the current singular post ID when on a frontend singular request.
+	 *
+	 * @return int
+	 */
+	public function current_singular_post_id(): int;
+
+	/**
+	 * Get the current singular post type when on a frontend singular request.
+	 *
+	 * @return string
+	 */
+	public function current_singular_post_type(): string;
+
+	/**
+	 * Get the current custom-logo attachment ID when available.
+	 *
+	 * @return int
+	 */
+	public function custom_logo_attachment_id(): int;
+
+	/**
+	 * Get the current singular post content when available.
+	 *
+	 * @return string
+	 */
+	public function current_singular_post_content(): string;
+
+	/**
 	 * Determine the most reliable known width for the current attachment image request.
 	 *
 	 * @param int                 $attachment_id Attachment ID.

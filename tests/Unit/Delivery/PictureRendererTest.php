@@ -94,7 +94,7 @@ final class PictureRendererTest extends TestCase {
 	 */
 	public function test_empty_wrapper_classes_are_omitted(): void {
 		$result = PictureRenderer::for_wordpress()->render(
-			new PictureRenderRequest( 123, '<img src="hero.jpg" alt="Hero">', $this->source_sets(), array( 'webp' ), '' )
+			new PictureRenderRequest( 123, '<img src="hero.jpg" alt="Hero">', $this->source_sets(), array( 'webp' ), array(), '' )
 		);
 
 		self::assertSame(
@@ -240,6 +240,47 @@ final class PictureRendererTest extends TestCase {
 		self::assertFalse( $result->is_rendered() );
 		self::assertSame( $request->img_html(), $result->html() );
 		self::assertTrue( $result->has_code( PictureRenderResult::CODE_NO_SOURCES ) );
+	}
+
+	/**
+	 * Test rendered results retain preflight intrinsic-dimension repair codes.
+	 *
+	 * @return void
+	 */
+	public function test_rendered_results_retain_preflight_intrinsic_dimension_repair_codes(): void {
+		$result = PictureRenderer::for_wordpress()->render(
+			new PictureRenderRequest(
+				123,
+				'<img src="hero.jpg" width="2400" height="1600" alt="Hero">',
+				$this->source_sets(),
+				array( 'avif', 'webp' ),
+				array( PictureRenderResult::CODE_INTRINSIC_DIMENSIONS_REPAIRED )
+			)
+		);
+
+		self::assertTrue( $result->is_rendered() );
+		self::assertTrue( $result->has_code( PictureRenderResult::CODE_INTRINSIC_DIMENSIONS_REPAIRED ) );
+	}
+
+	/**
+	 * Test unchanged results retain preflight intrinsic-dimension uncertainty codes.
+	 *
+	 * @return void
+	 */
+	public function test_unchanged_results_retain_preflight_intrinsic_dimension_uncertainty_codes(): void {
+		$result = PictureRenderer::for_wordpress()->render(
+			new PictureRenderRequest(
+				123,
+				'<span>Hero</span><img src="hero.jpg" alt="Hero">',
+				$this->source_sets(),
+				array( 'avif', 'webp' ),
+				array( PictureRenderResult::CODE_INTRINSIC_DIMENSIONS_UNCERTAIN )
+			)
+		);
+
+		self::assertFalse( $result->is_rendered() );
+		self::assertTrue( $result->has_code( PictureRenderResult::CODE_INTRINSIC_DIMENSIONS_UNCERTAIN ) );
+		self::assertTrue( $result->has_code( PictureRenderResult::CODE_INVALID_MARKUP ) );
 	}
 
 	/**

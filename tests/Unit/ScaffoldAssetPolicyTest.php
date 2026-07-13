@@ -30,15 +30,24 @@ final class ScaffoldAssetPolicyTest extends TestCase {
 			'script enqueue'             => '/\bwp_enqueue_script\s*\(/',
 		);
 		$allowed_patterns   = array(
-			'src/Admin/Assets.php'                     => array(
+			'src/Admin/Assets.php'                         => array(
 				'global admin asset hook',
 			),
 			'src/Admin/MediaLibrary/MediaLibraryAssets.php' => array(
 				'global admin asset hook',
 			),
-			'src/Admin/WordPressAdminAssetRuntime.php' => array(
+			'src/Admin/PostEditor/CriticalImageAssets.php' => array(
+				'global admin asset hook',
+			),
+			'src/Admin/WordPressAdminAssetRuntime.php'     => array(
 				'stylesheet enqueue',
 				'script enqueue',
+			),
+			'src/Integration/ElementorBackgroundStylesheetManager.php' => array(
+				'global frontend asset hook',
+			),
+			'src/Integration/WordPressElementorBackgroundStylesheetRuntime.php' => array(
+				'stylesheet enqueue',
 			),
 		);
 

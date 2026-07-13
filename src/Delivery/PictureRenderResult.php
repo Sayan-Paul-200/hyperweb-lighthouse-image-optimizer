@@ -15,6 +15,8 @@ final class PictureRenderResult {
 	public const CODE_RENDERED                       = 'rendered';
 	public const CODE_ALREADY_PICTURE                = 'already_picture';
 	public const CODE_CONFLICTING_LOADING_ATTRIBUTES = 'conflicting_loading_attributes';
+	public const CODE_INTRINSIC_DIMENSIONS_REPAIRED  = 'intrinsic_dimensions_repaired';
+	public const CODE_INTRINSIC_DIMENSIONS_UNCERTAIN = 'intrinsic_dimensions_uncertain';
 	public const CODE_INVALID_MARKUP                 = 'invalid_markup';
 	public const CODE_NO_SOURCES                     = 'no_sources';
 	public const CODE_PARTIAL_SOURCES_OMITTED        = 'partial_sources_omitted';

@@ -63,6 +63,74 @@ final class WordPressAttachmentImageRuntime implements AttachmentImageRuntimeInt
 	}
 
 	/**
+	 * Get the current singular post ID when on a frontend singular request.
+	 *
+	 * @return int
+	 */
+	public function current_singular_post_id(): int {
+		if ( ! function_exists( 'is_singular' ) || ! function_exists( 'get_queried_object_id' ) ) {
+			return 0;
+		}
+
+		if ( ! \is_singular() ) {
+			return 0;
+		}
+
+		return max( 0, (int) \get_queried_object_id() );
+	}
+
+	/**
+	 * Get the current singular post type when on a frontend singular request.
+	 *
+	 * @return string
+	 */
+	public function current_singular_post_type(): string {
+		$post_id = $this->current_singular_post_id();
+
+		if ( $post_id < 1 || ! function_exists( 'get_post_type' ) ) {
+			return '';
+		}
+
+		$post_type = \get_post_type( $post_id );
+
+		return is_string( $post_type ) ? $post_type : '';
+	}
+
+	/**
+	 * Get the current custom-logo attachment ID when available.
+	 *
+	 * @return int
+	 */
+	public function custom_logo_attachment_id(): int {
+		if ( ! function_exists( 'get_theme_mod' ) ) {
+			return 0;
+		}
+
+		if ( function_exists( 'current_theme_supports' ) && ! \current_theme_supports( 'custom-logo' ) ) {
+			return 0;
+		}
+
+		return max( 0, (int) \get_theme_mod( 'custom_logo', 0 ) );
+	}
+
+	/**
+	 * Get the current singular post content when available.
+	 *
+	 * @return string
+	 */
+	public function current_singular_post_content(): string {
+		$post_id = $this->current_singular_post_id();
+
+		if ( $post_id < 1 || ! function_exists( 'get_post_field' ) ) {
+			return '';
+		}
+
+		$content = \get_post_field( 'post_content', $post_id );
+
+		return is_string( $content ) ? $content : '';
+	}
+
+	/**
 	 * Determine the most reliable known width for the current attachment image request.
 	 *
 	 * @param int                 $attachment_id Attachment ID.

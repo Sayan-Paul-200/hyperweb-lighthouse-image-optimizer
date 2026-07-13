@@ -66,6 +66,20 @@ final class DeliveryManager implements HookProviderInterface {
 	private $registry;
 
 	/**
+	 * Intrinsic dimension repair service.
+	 *
+	 * @var IntrinsicDimensionRepair
+	 */
+	private $dimension_repair;
+
+	/**
+	 * Loading attribute manager.
+	 *
+	 * @var LoadingAttributeManager
+	 */
+	private $loading_attributes;
+
+	/**
 	 * Create provider.
 	 *
 	 * @param SettingsRepositoryInterface     $settings Settings repository.
@@ -75,6 +89,8 @@ final class DeliveryManager implements HookProviderInterface {
 	 * @param SourceSetBuilder                $builder Source-set builder.
 	 * @param PictureRenderer                 $renderer Picture renderer.
 	 * @param TransformedMarkupRegistry       $registry Request-local registry.
+	 * @param IntrinsicDimensionRepair        $dimension_repair Intrinsic dimension repair.
+	 * @param LoadingAttributeManager         $loading_attributes Loading attribute manager.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $settings,
@@ -83,15 +99,19 @@ final class DeliveryManager implements HookProviderInterface {
 		AttachmentImageSourceExtractor $extractor,
 		SourceSetBuilder $builder,
 		PictureRenderer $renderer,
-		TransformedMarkupRegistry $registry
+		TransformedMarkupRegistry $registry,
+		IntrinsicDimensionRepair $dimension_repair,
+		LoadingAttributeManager $loading_attributes
 	) {
-		$this->settings    = $settings;
-		$this->runtime     = $runtime;
-		$this->eligibility = $eligibility;
-		$this->extractor   = $extractor;
-		$this->builder     = $builder;
-		$this->renderer    = $renderer;
-		$this->registry    = $registry;
+		$this->settings           = $settings;
+		$this->runtime            = $runtime;
+		$this->eligibility        = $eligibility;
+		$this->extractor          = $extractor;
+		$this->builder            = $builder;
+		$this->renderer           = $renderer;
+		$this->registry           = $registry;
+		$this->dimension_repair   = $dimension_repair;
+		$this->loading_attributes = $loading_attributes;
 	}
 
 	/**
@@ -178,8 +198,11 @@ final class DeliveryManager implements HookProviderInterface {
 				return $html;
 			}
 
-			$image_meta = $this->runtime->attachment_metadata( $attachment_id );
-			$extraction = $this->extractor->extract( $html, $known_width );
+			$image_meta       = $this->runtime->attachment_metadata( $attachment_id );
+			$dimension_repair = $this->dimension_repair->repair( $attachment_id, $html, $image_meta, $known_width );
+			$html             = $dimension_repair->html();
+			$html             = $this->loading_attributes->apply_to_fallback_markup( $html, $attachment_id );
+			$extraction       = $this->extractor->extract( $html, $known_width );
 
 			if ( ! $extraction->has_sources() || array() === $image_meta ) {
 				return $html;
@@ -198,7 +221,8 @@ final class DeliveryManager implements HookProviderInterface {
 					$attachment_id,
 					$html,
 					$source_sets,
-					$this->settings->format_preference()
+					$this->settings->format_preference(),
+					$dimension_repair->codes()
 				)
 			);
 

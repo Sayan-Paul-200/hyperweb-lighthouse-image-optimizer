@@ -45,21 +45,28 @@ final class PictureRenderer {
 	 */
 	public function render( PictureRenderRequest $request ): PictureRenderResult {
 		$analysis = $this->analyzer->analyze( $request->img_html() );
+		$codes    = $request->preflight_codes();
 
 		if ( $analysis->is_picture() ) {
-			return PictureRenderResult::unchanged( $request, array( PictureRenderResult::CODE_ALREADY_PICTURE ) );
+			$codes[] = PictureRenderResult::CODE_ALREADY_PICTURE;
+
+			return PictureRenderResult::unchanged( $request, $codes );
 		}
 
 		if ( ! $analysis->is_renderable_img() ) {
-			return PictureRenderResult::unchanged( $request, array( PictureRenderResult::CODE_INVALID_MARKUP ) );
+			$codes[] = PictureRenderResult::CODE_INVALID_MARKUP;
+
+			return PictureRenderResult::unchanged( $request, $codes );
 		}
 
 		if ( $analysis->has_loading_priority_conflict() ) {
-			return PictureRenderResult::unchanged( $request, array( PictureRenderResult::CODE_CONFLICTING_LOADING_ATTRIBUTES ) );
+			$codes[] = PictureRenderResult::CODE_CONFLICTING_LOADING_ATTRIBUTES;
+
+			return PictureRenderResult::unchanged( $request, $codes );
 		}
 
 		$available_formats = $this->ordered_formats( $request->source_sets(), $request->format_preference() );
-		$codes             = $this->base_codes( $request->source_sets() );
+		$codes             = array_merge( $codes, $this->base_codes( $request->source_sets() ) );
 
 		if ( array() === $available_formats ) {
 			array_unshift( $codes, PictureRenderResult::CODE_NO_SOURCES );

@@ -29,6 +29,13 @@ final class FakeAttachmentImageRuntime implements AttachmentImageRuntimeInterfac
 	public $metadata = array();
 
 	/**
+	 * Attachment metadata keyed by attachment ID.
+	 *
+	 * @var array<int,array<string,mixed>>
+	 */
+	public $metadata_map = array();
+
+	/**
 	 * Request-context flags.
 	 *
 	 * @var array<string,bool>
@@ -46,6 +53,34 @@ final class FakeAttachmentImageRuntime implements AttachmentImageRuntimeInterfac
 	 * @var int|null
 	 */
 	public $requested_width = 2400;
+
+	/**
+	 * Current singular post ID.
+	 *
+	 * @var int
+	 */
+	public $post_id = 0;
+
+	/**
+	 * Current singular post type.
+	 *
+	 * @var string
+	 */
+	public $post_type = '';
+
+	/**
+	 * Current custom-logo attachment ID.
+	 *
+	 * @var int
+	 */
+	public $custom_logo_attachment_id = 0;
+
+	/**
+	 * Current singular post content.
+	 *
+	 * @var string
+	 */
+	public $post_content = '';
 
 	/**
 	 * Whether one attachment is an image.
@@ -66,7 +101,11 @@ final class FakeAttachmentImageRuntime implements AttachmentImageRuntimeInterfac
 	 * @return array<string,mixed>
 	 */
 	public function attachment_metadata( int $attachment_id ): array {
-		unset( $attachment_id );
+		$metadata = $this->metadata_map[ $attachment_id ] ?? null;
+
+		if ( is_array( $metadata ) ) {
+			return $metadata;
+		}
 
 		return $this->metadata;
 	}
@@ -78,6 +117,42 @@ final class FakeAttachmentImageRuntime implements AttachmentImageRuntimeInterfac
 	 */
 	public function request_context(): array {
 		return $this->request_context;
+	}
+
+	/**
+	 * Get the current singular post ID when on a frontend singular request.
+	 *
+	 * @return int
+	 */
+	public function current_singular_post_id(): int {
+		return $this->post_id;
+	}
+
+	/**
+	 * Get the current singular post type when on a frontend singular request.
+	 *
+	 * @return string
+	 */
+	public function current_singular_post_type(): string {
+		return $this->post_type;
+	}
+
+	/**
+	 * Get the current custom-logo attachment ID when available.
+	 *
+	 * @return int
+	 */
+	public function custom_logo_attachment_id(): int {
+		return $this->custom_logo_attachment_id;
+	}
+
+	/**
+	 * Get the current singular post content when available.
+	 *
+	 * @return string
+	 */
+	public function current_singular_post_content(): string {
+		return $this->post_content;
 	}
 
 	/**

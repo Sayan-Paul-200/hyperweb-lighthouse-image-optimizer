@@ -103,6 +103,10 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A cached dashboard, dry-run bulk scanner, and session-backed bulk queue controls with global pause/resume now exist as of Subphases 6.5 through 6.7.
 - A derivative URL resolver, responsive modern source-set builder, safe picture renderer, and active attachment-image plus post-content delivery integrations now exist as of Subphases 7.1 through 7.5.
 - Delivery now includes an internal emergency rollback switch, cache-invalidation request action, and missing-derivative diagnostics as of Subphase 7.6.
+- A critical-image registry, explicit loading-attribute override provider, minimal critical-logo settings UI, post/page critical-image editor controls, conservative intrinsic-dimension repair, and opt-in responsive preload now exist as of Subphase 8.4.
+- A WooCommerce compatibility audit, baseline fixture manifest, isolated primary-product integration, and conservative gallery-surface delivery now exist as of Subphase 9.3.
+- A plugin-owned Elementor companion stylesheet layer for structured attachment-backed backgrounds now exists as of Subphase 10.4.
+- An opt-in Elementor critical background preload layer with an explicit hero-background selector, shared background delivery-plan builder, and media-scoped `wp_head` preload tags now exists as of Subphase 10.5.
 
 ## Phase Status
 
@@ -159,8 +163,19 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 7.6 - Delivery rollback and cache hooks
 - [ ] Phase 8 - Loading Optimization and Layout Stability
   - [x] Subphase 8.1 - Preserve core loading attributes
+  - [x] Subphase 8.2 - Critical image registry
+  - [x] Subphase 8.3 - Intrinsic dimension repair
+  - [x] Subphase 8.4 - Optional responsive preload
 - [ ] Phase 9 - WooCommerce Integration
+  - [x] Subphase 9.1 - Compatibility audit and fixtures
+  - [x] Subphase 9.2 - Primary product image optimization
+  - [x] Subphase 9.3 - Gallery and commerce surfaces
 - [ ] Phase 10 - Elementor and CSS Background Integration
+  - [x] Subphase 10.1 - Elementor attachment-widget compatibility
+  - [x] Subphase 10.2 - Oversized selection diagnostics
+  - [x] Subphase 10.3 - Background image discovery
+  - [x] Subphase 10.4 - Background delivery strategy
+  - [x] Subphase 10.5 - Critical background preload
 - [ ] Phase 11 - CDN, Offload, Multisite, and Conflict Adapters
 - [ ] Phase 12 - Page-Level Diagnostics and Lighthouse-Oriented Reporting
 - [ ] Phase 13 - WP-CLI and Developer Operations
@@ -171,6 +186,459 @@ Phase 1 implementation subphases are complete. The phase remains unchecked at th
 Phase 5 implementation subphases are complete. The phase remains unchecked at the phase level until supported WordPress queue execution and recurring-maintenance smoke tests are performed.
 Phase 6 now includes the admin menu shell, screen-scoped assets and REST bootstrap, attachment-first REST controllers, Media Library controls, dashboard, dry-run bulk scanning, and bounded bulk queue controls. The phase remains unchecked until supported WordPress admin and queue smoke tests are performed.
 Phase 7 now includes derivative URL resolution, responsive modern source-set building, safe picture rendering, active `wp_get_attachment_image` plus `wp_content_img_tag` delivery integrations, an internal emergency rollback switch, cache-invalidation request hooks, and missing-derivative diagnostics. The phase remains unchecked until supported WordPress frontend delivery and cache-integration smoke tests are performed.
+Phase 8 now includes core-loading preservation, explicit critical-image overrides, conservative intrinsic-dimension repair, and opt-in responsive preload for explicit late-discovered critical images. The phase remains unchecked until supported WordPress frontend loading and layout-stability smoke tests are performed.
+Phase 9 now includes the WooCommerce compatibility baseline audit, expanded fixture coverage for gallery and commerce surfaces, isolated primary-product-image runtime integration, and conservative gallery-secondary delivery. The phase remains unchecked until supported WooCommerce smoke tests are performed across live product, gallery, variation, cart, checkout, and loop-like surfaces.
+Phase 10 now includes the first isolated Elementor adapter for attachment-backed frontend widgets, a repo-owned audit and fixture baseline, a service-only oversized full-selection advisory analyzer, a read-only structured background-discovery layer, a plugin-owned companion stylesheet strategy for supported Elementor attachment-backed backgrounds, and an explicit opt-in critical background preload flow for one selected hero target per request. The phase remains unchecked until supported Elementor frontend, preview, editor, generated-CSS, and critical-background preload smoke tests are performed.
+
+## Subphase 10.5 - Critical Background Preload
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add the opt-in `critical_background_preload_enabled` delivery setting, typed repository access, and minimal Settings-page checkbox.
+- [x] Add an Elementor-specific post-meta seam and post/page hero-background selector that persists one normalized `{ element_id, setting_group }` target only when it is currently discoverable.
+- [x] Extract a shared background delivery-plan builder so the 10.4 companion stylesheet and 10.5 preload logic resolve the same validated document targets, derivative URLs, and breakpoint media queries.
+- [x] Add a narrow `wp_head` preload provider that emits safe modern preload tags only for the selected supported Elementor background target.
+- [x] Share request-local preload dedupe across attachment-image preload and Elementor background preload without widening the frontend hook surface.
+
+### Files Added
+
+```text
+src/Delivery/PreloadLinkInterface.php
+src/Integration/ElementorBackgroundDeliveryPlan.php
+src/Integration/ElementorBackgroundDeliveryPlanBuilder.php
+src/Integration/ElementorBackgroundDeliveryPlanResult.php
+src/Integration/ElementorBackgroundDeliveryVariant.php
+src/Integration/ElementorBackgroundPreloadLink.php
+src/Integration/ElementorBackgroundPreloadResult.php
+src/Integration/ElementorCriticalBackgroundPreloadManager.php
+src/Integration/ElementorHeroBackgroundPostMetaStoreInterface.php
+src/Integration/ElementorHeroBackgroundTargetSelection.php
+src/Integration/WordPressElementorHeroBackgroundPostMetaStore.php
+src/Admin/PostEditor/ElementorHeroBackgroundMetaBox.php
+tests/Unit/Admin/PostEditor/ElementorHeroBackgroundMetaBoxTest.php
+tests/Unit/Integration/ElementorBackgroundDeliveryPlanBuilderTest.php
+tests/Unit/Integration/ElementorCriticalBackgroundPreloadManagerTest.php
+tests/Unit/Integration/FakeElementorHeroBackgroundPostMetaStore.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/elementor-compatibility-audit.md
+docs/implementation-status.md
+src/Admin/SettingsPage.php
+src/Delivery/ResponsivePreloadLink.php
+src/Delivery/ResponsivePreloadRegistry.php
+src/Plugin.php
+src/Settings/SettingsRepository.php
+src/Settings/SettingsRepositoryInterface.php
+src/Settings/SettingsSchema.php
+src/Settings/StaticSettingsRepository.php
+tests/Unit/Admin/PostEditor/PostEditorScopePolicyTest.php
+tests/Unit/Admin/SettingsPageTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Image/FakeSettingsRepository.php
+tests/Unit/Integration/ElementorScopePolicyTest.php
+tests/Unit/PluginTest.php
+tests/Unit/Settings/SettingsRepositoryTest.php
+tests/Unit/Settings/SettingsSanitizerTest.php
+tests/Unit/Settings/SettingsSchemaTest.php
+```
+
+### Critical-Background Preload Behavior
+
+- `critical_background_preload_enabled` defaults to `false`, is sanitized through the existing settings pipeline, and is exposed through the current minimal Settings-page delivery section.
+- `ElementorHeroBackgroundMetaBox` registers only on `post` and `page`, lists only 10.3-discovered supported Elementor background targets, and saves one normalized `{ element_id, setting_group }` selection after nonce, capability, autosave, revision, and stale-target checks.
+- `ElementorBackgroundDeliveryPlanBuilder` is now the shared source of truth for 10.4 companion CSS generation and 10.5 preload generation, so both features resolve the same validated structured classic background targets, explicit device mappings, preferred ready derivative URLs, and breakpoint media queries.
+- `ElementorCriticalBackgroundPreloadManager` registers only `wp_head`, remains opt-in, excludes admin/feed/ajax/rest/editor/preview requests, requires delivery to stay enabled and out of emergency rollback, and supports only the current singular Elementor document.
+- Preload is emitted only for the one explicitly selected hero-background target. Desktop-only targets emit one tag, while responsive targets may emit up to three mutually exclusive media-scoped tags for explicit desktop/tablet/mobile variants.
+- The provider uses only the highest-preference ready modern derivative per device, never preloads the original fallback URL, never emits a global desktop preload when smaller explicit variants exist, and fails open silently on stale selections, missing breakpoint maps, or missing ready derivatives.
+- `ResponsivePreloadRegistry` now works through a small preload-link interface so attachment-image preload and Elementor background preload share one request-local dedupe seam keyed by final emitted-link identity.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Targeted verification completed during implementation:
+
+```text
+php -l src/Integration/ElementorBackgroundDeliveryPlanBuilder.php: pass
+php -l src/Integration/ElementorCriticalBackgroundPreloadManager.php: pass
+php -l src/Admin/PostEditor/ElementorHeroBackgroundMetaBox.php: pass
+php -l src/Plugin.php: pass
+php -l src/Integration/ElementorBackgroundStylesheetGenerator.php: pass
+```
+
+Manual WordPress/Elementor smoke testing remains pending in this plugin-only workspace:
+
+- the Settings page should show the `critical_background_preload_enabled` checkbox and persist it through `options.php`
+- post/page editor screens should show the hero-background selector only when supported Elementor background targets are discoverable
+- eligible singular Elementor frontend requests should emit one desktop preload tag or mutually exclusive media-scoped preload tags for the one selected target
+- editor and preview requests should remain fail-open and emit no critical-background preload tags
+
+### Acceptance Criteria
+
+- [x] A dedicated opt-in `critical_background_preload_enabled` setting exists and is exposed through the current minimal settings surface.
+- [x] Hero-background selection is stored separately from attachment critical-image selection and persists only normalized `{ element_id, setting_group }` targets.
+- [x] The shared Elementor background delivery-plan builder now acts as the common source of truth for both companion CSS generation and critical-background preload generation.
+- [x] A narrow `wp_head` runtime provider emits safe modern preload tags only for the selected supported Elementor background target and fails open on uncertainty.
+- [x] Request-local preload dedupe is shared between attachment-image preload and Elementor background preload without adding extra frontend hooks, CSS rewriting, REST routes, or broader admin UI.
+
+### Deferred Work
+
+- Automatic hero-background inference, broad CSS parsing, theme-builder/global-kit/template support, and page-level diagnostics surfacing remain deferred.
+- Critical background preload still excludes Elementor editor/preview, unsupported background modes, unsupported CSS URL cases, and non-singular documents.
+- Background preload remains separate from the attachment critical-image registry and does not expand WooCommerce or generic image preload behavior.
+
+## Subphase 10.4 - Background Delivery Strategy
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a plugin-owned Elementor companion stylesheet subsystem with a bounded frontend runtime provider, a safe uploads-scoped artifact store, and a callable document regeneration/rollback path.
+- [x] Generate modern background overrides only from 10.3-discovered structured attachment-backed backgrounds while preserving Elementor's original CSS as the fallback source of truth.
+- [x] Emit viewport-aware responsive rules only when a reliable breakpoint map is available, and skip responsive delivery rather than guessing when that map is unavailable.
+- [x] Keep runtime scope conservative: frontend singular Elementor documents only, editor/preview excluded, no Elementor CSS rewrites, no post-meta mutation, no REST/admin/settings/UI surface.
+- [x] Extend the repo-owned audit and automated test baseline to cover companion stylesheet generation, storage, enqueue behavior, and scope boundaries.
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/elementor-compatibility-audit.md
+docs/implementation-status.md
+src/Integration/ElementorBackgroundBreakpointMap.php
+src/Integration/ElementorBackgroundStylesheetGenerator.php
+src/Integration/ElementorBackgroundStylesheetManager.php
+src/Integration/ElementorBackgroundStylesheetResult.php
+src/Integration/ElementorBackgroundStylesheetRuntimeInterface.php
+src/Integration/ElementorBackgroundStylesheetStoreInterface.php
+src/Integration/WordPressElementorBackgroundStylesheetRuntime.php
+src/Integration/WordPressElementorBackgroundStylesheetStore.php
+src/Plugin.php
+tests/Unit/Delivery/DeliveryTestWordPressShim.php
+tests/Unit/Integration/ElementorBackgroundStylesheetGeneratorTest.php
+tests/Unit/Integration/ElementorBackgroundStylesheetManagerTest.php
+tests/Unit/Integration/ElementorBackgroundFixtureManifestTest.php
+tests/Unit/Integration/ElementorScopePolicyTest.php
+tests/Unit/Integration/FakeElementorBackgroundStylesheetRuntime.php
+tests/Unit/Integration/FakeElementorBackgroundStylesheetStore.php
+tests/Unit/Integration/WordPressElementorBackgroundStylesheetRuntimeTest.php
+tests/Unit/Integration/WordPressElementorBackgroundStylesheetStoreTest.php
+tests/Unit/PluginTest.php
+```
+
+### Delivery Behavior
+
+- `ElementorBackgroundStylesheetGenerator` builds companion CSS only from 10.3-supported structured classic background and classic background-overlay mappings.
+- The generator requires a validated local original URL match against sanitized manifest source data before emitting any modern override.
+- Ready derivatives are resolved only from plugin-owned `_hwlio_derivatives` state and are emitted in `format_preference()` order inside guarded `image-set(...)` overrides.
+- Desktop-only documents may emit a base selector rule, while documents with explicit tablet/mobile sources emit mutually exclusive media-query-scoped rules only when a reliable Elementor breakpoint map is available.
+- `WordPressElementorBackgroundStylesheetStore` writes only plugin-owned uploads artifacts, uses temp/backup replace semantics, validates all artifact paths stay inside uploads, and never rewrites Elementor's own CSS files.
+- `ElementorBackgroundStylesheetManager` registers only `wp_enqueue_scripts`, excludes admin/feed/ajax/rest/editor/preview requests, supports only the current singular Elementor document, and lazily regenerates/enqueues one companion stylesheet when safe rules exist.
+- `rollback_document()` removes only the plugin-owned companion artifact; after rollback, Elementor's own generated CSS remains authoritative immediately.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Targeted verification completed during implementation:
+
+```text
+phpunit tests/Unit/Integration/ElementorBackgroundStylesheetGeneratorTest.php: pass
+phpunit tests/Unit/Integration/ElementorBackgroundStylesheetManagerTest.php: pass
+phpunit tests/Unit/Integration/WordPressElementorBackgroundStylesheetRuntimeTest.php: pass
+phpunit tests/Unit/Integration/WordPressElementorBackgroundStylesheetStoreTest.php: pass
+phpunit tests/Unit/Integration/ElementorScopePolicyTest.php: pass
+phpunit tests/Unit/PluginTest.php: pass
+```
+
+Manual WordPress/Elementor smoke testing remains pending in this plugin-only workspace:
+
+- eligible singular Elementor documents should enqueue one late companion stylesheet when supported background derivatives are ready
+- explicit responsive desktop/tablet/mobile background mappings should avoid a global desktop override when smaller breakpoint-specific mappings exist
+- editor and preview requests should remain fail-open and enqueue nothing
+- rollback should remove only the plugin-owned companion stylesheet and leave Elementor's own CSS behavior intact
+
+### Acceptance Criteria
+
+- [x] A plugin-owned companion stylesheet strategy exists for supported structured Elementor backgrounds.
+- [x] Elementor's own generated CSS remains untouched and continues to provide the fallback source of truth.
+- [x] Responsive background output is viewport-aware only when a reliable breakpoint map is available; otherwise responsive delivery is skipped rather than guessed.
+- [x] Regeneration and rollback operate only on the plugin-owned companion artifact.
+- [x] Runtime behavior remains conservative: current singular Elementor document only, editor/preview excluded, no REST/admin/settings/UI expansion.
+
+## Subphase 10.3 - Background Image Discovery
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a narrow read-only Elementor document-data seam that decodes structured `_elementor_data` safely without mutating Elementor meta.
+- [x] Add service-only background discovery value objects and a callable discovery service under the isolated integration slice.
+- [x] Discover supported classic background and classic background overlay attachment-backed mappings with explicit desktop/tablet/mobile separation.
+- [x] Record unsupported URL-only values, unsupported background modes, and narrowly scoped custom CSS `url(...)` cases without parsing unrelated CSS.
+- [x] Expand the repo-owned Elementor audit and fixture baseline for structured background discovery while keeping runtime/provider composition unchanged.
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/elementor-compatibility-audit.md
+docs/implementation-status.md
+src/Integration/ElementorBackgroundDiscovery.php
+src/Integration/ElementorBackgroundDiscoveryResult.php
+src/Integration/ElementorBackgroundSource.php
+src/Integration/ElementorDocumentData.php
+src/Integration/ElementorDocumentDataStoreInterface.php
+src/Integration/ElementorUnsupportedBackgroundCase.php
+src/Integration/WordPressElementorDocumentDataStore.php
+tests/Fixtures/Elementor/BackgroundDiscovery/background-classic-desktop.php
+tests/Fixtures/Elementor/BackgroundDiscovery/background-classic-responsive.php
+tests/Fixtures/Elementor/BackgroundDiscovery/background-custom-css-url.php
+tests/Fixtures/Elementor/BackgroundDiscovery/background-invalid-document.php
+tests/Fixtures/Elementor/BackgroundDiscovery/background-overlay-classic.php
+tests/Fixtures/Elementor/BackgroundDiscovery/background-unsupported-modes.php
+tests/Fixtures/Elementor/BackgroundDiscovery/background-url-only.php
+tests/Fixtures/Elementor/background-discovery-manifest.php
+tests/Unit/Integration/ElementorBackgroundDiscoveryTest.php
+tests/Unit/Integration/ElementorBackgroundFixtureManifestTest.php
+tests/Unit/Integration/ElementorScopePolicyTest.php
+tests/Unit/Integration/FakeElementorDocumentDataStore.php
+tests/Unit/Integration/WordPressElementorDocumentDataStoreTest.php
+```
+
+### Discovery Behavior
+
+- `WordPressElementorDocumentDataStore` reads only the canonical `_elementor_data` post meta and decodes normalized element arrays safely; it never writes or repairs Elementor data.
+- `ElementorBackgroundDiscovery` is callable-only and read-only. It does not register hooks, change plugin composition, inspect generated CSS files, or mutate delivery behavior.
+- Supported discovery is intentionally limited to structured classic background-image and classic background-overlay controls with positive attachment IDs.
+- Explicit desktop, tablet, and mobile values are recorded separately; responsive inheritance is not synthesized in 10.3.
+- URL-only media values, unsupported non-classic modes, and known Elementor-owned `custom_css` `url(...)` values are recorded as unsupported observations using stable codes.
+- Invalid or malformed structured document data returns a stable `invalid_document_data` observation rather than fataling or attempting recovery.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans are expected to confirm:
+
+- Elementor coupling remains confined to `src/Integration/` plus `src/Plugin.php`.
+- No new runtime hooks, REST routes, admin assets, settings, or post-meta writes were introduced.
+- No generated CSS inspection, CSS rewriting, or Elementor CSS regeneration behavior was added in 10.3.
+
+Manual WordPress/Elementor smoke testing remains pending in this plugin-only workspace:
+
+- supported classic background and overlay controls should be discoverable from structured Elementor document data
+- explicit tablet/mobile background controls should be reported separately from desktop
+- unsupported custom CSS `url(...)` and unsupported modes should be observable as advisory unsupported cases only
+
+### Acceptance Criteria
+
+- [x] Supported Elementor background settings and attachment IDs can now be discovered read-only from structured document data.
+- [x] Explicit desktop/tablet/mobile sources are distinguished without inheritance guessing.
+- [x] Unsupported CSS URL cases are recorded conservatively without parsing unrelated CSS.
+- [x] Discovery remains service-only, read-only, and does not change runtime delivery, plugin composition, or Elementor data.
+
+### Deferred Work
+
+- Critical background preload remains deferred to Subphase 10.5.
+
+## Subphase 10.2 - Oversized Selection Diagnostics
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a service-only Elementor oversized-selection analyzer and result model under the isolated integration slice.
+- [x] Reuse the existing Elementor widget matcher, image-markup analyzer, and attachment-size resolver for conservative advisory detection.
+- [x] Report selected source dimensions, likely rendered slot dimensions where reliable, width ratio evidence, and a safe recommendation without changing Elementor data.
+- [x] Expand the repo-owned Elementor audit and fixture baseline for supported full-selection diagnostic cases and uncertainty boundaries.
+- [x] Keep runtime hooks, plugin composition, REST/UI surfaces, settings, and post-meta behavior unchanged in 10.2.
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/elementor-compatibility-audit.md
+docs/implementation-status.md
+src/Integration/ElementorOversizedSelectionAnalyzer.php
+src/Integration/ElementorOversizedSelectionResult.php
+tests/Fixtures/Elementor/baseline-manifest.php
+tests/Fixtures/Elementor/image-widget-full-near-full.html
+tests/Fixtures/Elementor/image-widget-full-small-slot.html
+tests/Fixtures/Elementor/image-widget-full-uncertain.html
+tests/Unit/Integration/ElementorFixtureManifestTest.php
+tests/Unit/Integration/ElementorOversizedSelectionAnalyzerTest.php
+tests/Unit/Integration/ElementorOversizedSelectionResultTest.php
+tests/Unit/Integration/ElementorScopePolicyTest.php
+```
+
+### Advisory Behavior
+
+- `ElementorOversizedSelectionAnalyzer` is a callable-only advisory service. It does not register hooks, mutate markup, touch Elementor serialized data, or store any diagnostics.
+- The analyzer only evaluates fragments that `ElementorWidgetMatcher` already classifies as `supported_attachment_widget`.
+- Selected source resolution reuses `AttachmentSizeResolver::resolve_from_analysis()` and only produces a finding when the fragment resolves uniquely to the metadata `full` candidate.
+- Reliable slot evidence stays intentionally strict: intrinsic `width`/`height` attributes from `ImageMarkupAnalysis` plus optional `known_width` when provided by the caller.
+- A finding is reported only when the selected full source width is at least `1.5x` the reliable slot width.
+- Gallery, carousel, editor, preview, malformed, and otherwise unsupported contexts remain outside scope and return `unsupported_elementor_context`.
+- Missing slot-width evidence or unresolved selected candidates return `oversized_selection_uncertain` rather than guessing from CSS, wrapper markup, breakpoints, or Elementor controls.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans are expected to confirm:
+
+- Elementor coupling remains confined to `src/Integration/` plus `src/Plugin.php`.
+- No new runtime hooks, REST routes, admin assets, settings, or post-meta writes were introduced.
+- Media Library details, attachment REST payloads, and page-level diagnostics surfaces remain unchanged in 10.2.
+
+Manual WordPress/Elementor smoke testing remains pending in this plugin-only workspace:
+
+- supported frontend widgets selecting `full` for much smaller slots should be diagnosable by the service layer without mutating output
+- supported frontend widgets selecting intermediate sizes should not be flagged as oversized full-image selections
+- gallery/carousel and editor/preview requests should remain outside 10.2 advisory scope
+
+### Acceptance Criteria
+
+- [x] Supported Elementor attachment widgets selecting `full` while rendering materially smaller can now be detected advisory-only with selected-source and slot-dimension evidence.
+- [x] Reliable slot evidence stays conservative and uncertainty is reported instead of guessed.
+- [x] Diagnostic output is service-only, public-safe, and does not alter Elementor data, page data, plugin state, or runtime markup.
+- [x] The repo-owned Elementor audit and fixture baseline now covers oversized-selection and uncertainty cases in addition to supported/fail-open delivery contexts.
+- [x] No runtime hooks, REST/UI surfaces, settings, post-meta behavior, or plugin composition changes were added in 10.2.
+
+### Deferred Work
+
+- Visible Elementor/page-level surfacing of oversized-selection advisories remains deferred to Phase 12 page diagnostics.
+- Elementor CSS background discovery/delivery/regeneration remains deferred to Subphases 10.3 and 10.4.
+
+## Subphase 10.1 - Elementor Attachment-Widget Compatibility
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a dedicated Elementor compatibility audit and raw fragment fixture baseline for supported and fail-open widget contexts.
+- [x] Add a narrow Elementor runtime seam with explicit editor-mode and preview-mode fail-open behavior.
+- [x] Add a conservative exact-fragment matcher for supported attachment widgets versus excluded gallery/carousel contexts.
+- [x] Compose one isolated Elementor runtime provider that filters only `hwlio_markup_is_eligible`.
+- [x] Reuse the existing delivery pipeline unchanged for supported widgets so fallback `<img>` markup stays verbatim inside generated `<picture>` output.
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/elementor-compatibility-audit.md
+docs/implementation-status.md
+src/Integration/ElementorIntegration.php
+src/Integration/ElementorRuntimeInterface.php
+src/Integration/ElementorWidgetMatcher.php
+src/Integration/WordPressElementorRuntime.php
+src/Plugin.php
+tests/Fixtures/Elementor/baseline-manifest.php
+tests/Fixtures/Elementor/carousel-widget-attachment.html
+tests/Fixtures/Elementor/cta-widget-attachment.html
+tests/Fixtures/Elementor/gallery-widget-attachment.html
+tests/Fixtures/Elementor/image-box-widget-attachment.html
+tests/Fixtures/Elementor/image-widget-attachment.html
+tests/Unit/Integration/ElementorAttachmentWidgetDeliveryTest.php
+tests/Unit/Integration/ElementorFixtureManifestTest.php
+tests/Unit/Integration/ElementorIntegrationTest.php
+tests/Unit/Integration/ElementorScopePolicyTest.php
+tests/Unit/Integration/ElementorWidgetMatcherTest.php
+tests/Unit/Integration/FakeElementorRuntime.php
+tests/Unit/Integration/WordPressElementorRuntimeTest.php
+tests/Unit/PluginTest.php
+```
+
+### Elementor Compatibility Behavior
+
+- `WordPressElementorRuntime` now isolates Elementor availability plus editor/preview detection, preferring supported runtime objects when available and falling back conservatively to request signals only inside the adapter.
+- `ElementorWidgetMatcher` inspects only exact standalone `<img>` fragments and classifies them as `supported_attachment_widget`, `excluded_gallery_or_carousel`, `editor_or_preview`, or `unrecognized`.
+- 10.1 treats attachment-backed Image, Image Box, and CTA fixtures as the supported frontend baseline when they carry trusted Elementor-specific fragment markers plus attachment markers.
+- Gallery and carousel/swiper-style fragments are explicit fail-open exclusions in 10.1, and editor/preview mode also forces fail-open behavior so Elementor authoring UX is not disrupted.
+- `ElementorIntegration` is the only new runtime provider in this subphase and hooks only `hwlio_markup_is_eligible`; it does not add critical-image registration, loading-role behavior, preload behavior, settings, REST, admin UI, or serialized-data access.
+- Supported frontend Elementor attachment widgets continue through the existing `DeliveryManager` pipeline unchanged, so fallback `<img>` classes, `data-elementor-*` attributes, and other valid image-node attributes remain verbatim inside generated `<picture>` output.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. Elementor coupling is confined to `src/Integration/` plus `src/Plugin.php`; no Elementor post-meta writes, CSS background logic, REST routes, admin assets, or new frontend hooks were introduced in 10.1.
+
+Manual WordPress/Elementor smoke testing remains pending in this plugin-only workspace:
+
+- supported frontend Image, Image Box, and CTA widgets should render through the existing delivery pipeline without losing attachment-backed `<img>` attributes
+- Gallery and Carousel widgets should remain unchanged in 10.1
+- Elementor editor and preview requests should fail open to original markup
+
+### Acceptance Criteria
+
+- [x] A repo-owned Elementor audit and fixture baseline now exists for supported and fail-open widget contexts.
+- [x] Elementor request-mode detection is isolated to a narrow runtime seam and editor/preview mode is explicitly fail-open.
+- [x] Safe attachment-backed frontend Image, Image Box, and CTA fragments may continue through existing delivery, while Gallery and Carousel contexts are excluded.
+- [x] The only runtime behavior change is an isolated `hwlio_markup_is_eligible` integration; no new frontend hooks, settings, post-meta writes, REST endpoints, or admin UI were added.
+- [x] Supported widget delivery continues to preserve fallback `<img>` markup verbatim inside generated `<picture>` output.
+
+### Deferred Work
+
+- Elementor critical-image registration, preload behavior, oversized-selection diagnostics, CSS background handling, and CSS regeneration remain deferred to later Phase 10 subphases.
+- Elementor gallery/carousel support remains deliberately excluded until a later subphase proves those widget-JS-heavy contexts safe.
 
 ## Subphase 7.6 - Delivery Rollback and Cache Hooks
 
@@ -4198,6 +4666,562 @@ Source scans: pass. Runtime hook registration is confined to `src/Queue/Optimiza
 - Admin, REST, and bulk-processing exposure remain deferred to Phase 6.
 - Runtime WordPress smoke testing remains pending in this plugin-only workspace.
 
+## Subphase 9.1 - Compatibility Audit and Fixtures
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a dedicated WooCommerce compatibility audit document covering single-product primary, single-product gallery, cart, and checkout image contexts.
+- [x] Add raw WooCommerce baseline fixture fragments plus a machine-readable fixture manifest under `tests/Fixtures/WooCommerce/`.
+- [x] Keep runtime unchanged: no WooCommerce provider, settings, delivery mutation, plugin composition change, or adapter logic was introduced.
+- [x] Add audit-only tests proving the fixture pack is complete and WooCommerce runtime integration has not started yet.
+
+### Files Added
+
+```text
+docs/woocommerce-compatibility-audit.md
+tests/Fixtures/WooCommerce/baseline-manifest.php
+tests/Fixtures/WooCommerce/cart-item-thumbnail.html
+tests/Fixtures/WooCommerce/checkout-review-thumbnail.html
+tests/Fixtures/WooCommerce/single-product-gallery-secondary.html
+tests/Fixtures/WooCommerce/single-product-primary.html
+tests/Unit/Integration/WooCommerceFixtureManifestTest.php
+tests/Unit/Integration/WooCommerceScopePolicyTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+```
+
+### WooCommerce Baseline Behavior
+
+- The repository now has a canonical WooCommerce baseline audit in `docs/woocommerce-compatibility-audit.md`, scoped to four initial contexts: primary product image, secondary gallery image, cart thumbnail, and checkout/review thumbnail.
+- The audit records likely WooCommerce hook/template entrypoints, wrapper expectations, image classes, data attributes, critical-role expectations, and fail-open requirements for each context before any runtime adapter is added.
+- `tests/Fixtures/WooCommerce/baseline-manifest.php` is the machine-readable source of truth for those baseline contexts and intentionally fixes the manifest shape for later Phase 9 tests.
+- Raw fixture fragments preserve representative WooCommerce wrapper markup plus image attributes such as `wp-post-image`, Woo size classes, and gallery data attributes like `data-caption`, `data-src`, and `data-large_image`.
+- No runtime WooCommerce integration exists yet; later WooCommerce work is expected to extend existing plugin seams such as `hwlio_critical_image_candidates`, `hwlio_critical_image_selection`, `hwlio_markup_is_eligible`, and `hwlio_picture_sources`.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. `src/` still contains no WooCommerce runtime hook registration, no `woocommerce_*` hook strings, no `WooCommerce` class references, and no `wc_*` / `woocommerce_*` helper calls.
+
+Manual/source verification remains:
+
+- the audit document should remain the baseline reference for future 9.2 and 9.3 implementation work
+- fixture fragments should stay representative rather than being reduced to synthetic markup
+- live WordPress + WooCommerce smoke capture remains pending because this repository currently has no WooCommerce test harness
+
+### Acceptance Criteria
+
+- [x] Baseline snapshots exist before WooCommerce-specific runtime changes.
+- [x] Product primary, gallery secondary, cart, and checkout contexts are documented and represented in repository fixtures.
+- [x] Runtime WooCommerce integration remains absent in Subphase 9.1.
+- [x] Fixture completeness and audit-only scope are enforced by automated tests.
+
+### Deferred Work
+
+- Primary product-image critical registration, zoom/lightbox compatibility behavior, and responsive delivery tuning remain deferred to Subphase 9.2.
+- Gallery, loop thumbnails, variations, related products, upsells, cart, and checkout runtime compatibility behavior remain deferred to Subphase 9.3.
+- Live WooCommerce page capture and smoke verification remain pending until a supported WordPress + WooCommerce runtime is available.
+
+## Subphase 9.2 - Primary Product Image Optimization
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add an isolated WooCommerce integration slice under `src/Integration/` with a narrow runtime seam, primary-image matcher, and runtime provider.
+- [x] Register the current product featured image as the critical primary image on valid single-product requests through the existing `hwlio_critical_image_candidates` seam.
+- [x] Add the new `hwlio_loading_image_role` integration seam so WooCommerce can refine `primary` / `secondary` / `none` classification per exact fragment.
+- [x] Restrict 9.2 picture delivery to the confirmed single-product primary image while leaving recognized non-primary Woo image contexts unchanged.
+- [x] Preserve WooCommerce zoom/lightbox image data by continuing to mutate only the fallback `<img>` fragment and leaving wrapper markup outside the delivery pipeline untouched.
+
+### Files Added
+
+```text
+src/Integration/WooCommerceIntegration.php
+src/Integration/WooCommercePrimaryImageMatcher.php
+src/Integration/WooCommerceRuntimeInterface.php
+src/Integration/WordPressWooCommerceRuntime.php
+tests/Unit/Integration/FakeWooCommerceRuntime.php
+tests/Unit/Integration/WooCommerceIntegrationTest.php
+tests/Unit/Integration/WooCommercePrimaryProductDeliveryTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Delivery/LoadingAttributeManager.php
+src/Plugin.php
+tests/Unit/Delivery/DeliveryManagerTest.php
+tests/Unit/Delivery/LoadingAttributeManagerTest.php
+tests/Unit/Integration/WooCommerceScopePolicyTest.php
+tests/Unit/PluginTest.php
+```
+
+### WooCommerce Primary-Image Behavior
+
+- The plugin now has an isolated WooCommerce runtime adapter that composes only internal plugin filters and introduces no Woo-specific frontend hooks, settings, template overrides, or admin surfaces.
+- On valid single-product requests, the current product featured image is registered as the request primary critical image through `hwlio_critical_image_candidates`, but `preload_attachment_id` intentionally remains unset in 9.2.
+- `hwlio_loading_image_role` lets integrations refine the computed loading role per fragment; WooCommerce uses it to keep only the confirmed primary product image as `primary` and to demote known non-primary or duplicate same-attachment contexts to `none`.
+- `hwlio_markup_is_eligible` now allows picture delivery only for the confirmed single-product primary image and leaves gallery, cart, checkout, and duplicate same-attachment appearances unchanged.
+- Picture rendering still preserves the fallback `<img>` verbatim, so Woo image classes and zoom/lightbox data attributes such as `data-caption`, `data-src`, `data-large_image`, `data-large_image_width`, and `data-large_image_height` survive inside generated `<picture>` markup.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Targeted verification completed during implementation also passed for:
+
+- WooCommerce integration tests
+- WooCommerce scope policy tests
+- Delivery manager tests
+- plugin composition tests
+
+Manual/source verification remains:
+
+- live WordPress + WooCommerce smoke verification for primary product zoom/lightbox behavior
+- supported-browser manual verification that the visible product image is not accidentally lazy-loaded
+- broader gallery/cart/checkout/loop/variation/upsell coverage, which remains owned by Subphase 9.3
+
+### Acceptance Criteria
+
+- [x] The primary visible product image is registered as critical where appropriate.
+- [x] Product-image fallback markup preserves Woo zoom/lightbox image attributes through picture delivery.
+- [x] Responsive modern sources map correctly for the confirmed primary product image.
+- [x] Recognized non-primary Woo image contexts remain unchanged in 9.2.
+- [x] The primary product image is not accidentally lazy-loaded by plugin-managed loading overrides.
+
+### Deferred Work
+
+- Gallery, cart, checkout, loop thumbnails, related products, upsells, variation switching, and broader WooCommerce image-surface compatibility remain deferred to Subphase 9.3.
+- WooCommerce-specific preload behavior remains deferred; the primary product image participates in critical-image overrides but does not set `preload_attachment_id` in 9.2.
+- Live WordPress + WooCommerce runtime smoke verification remains pending until a supported WooCommerce test environment is available.
+
+## Subphase 9.3 - Gallery and Commerce Surfaces
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Extend the WooCommerce audit and fixture baseline with loop, related, upsell, and variation-sensitive image contexts.
+- [x] Broaden the Woo runtime seam with normalized gallery attachment IDs while keeping Woo access isolated to the integration slice.
+- [x] Expand the Woo fragment matcher to classify primary, confirmed gallery-secondary, commerce-thumbnail, variation-or-uncertain, and unrecognized fragments conservatively.
+- [x] Keep critical-image and preload behavior primary-only while widening picture-delivery eligibility to confirmed single-product gallery-secondary images.
+- [x] Preserve Woo gallery/lightbox fallback `<img>` attributes verbatim inside generated `<picture>` markup and keep broader commerce surfaces fail-open.
+
+### Files Added
+
+```text
+tests/Fixtures/WooCommerce/product-loop-thumbnail.html
+tests/Fixtures/WooCommerce/related-product-thumbnail.html
+tests/Fixtures/WooCommerce/single-product-variation-image.html
+tests/Fixtures/WooCommerce/upsell-product-thumbnail.html
+tests/Unit/Integration/WooCommercePrimaryImageMatcherTest.php
+tests/Unit/Integration/WordPressWooCommerceRuntimeTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+docs/woocommerce-compatibility-audit.md
+src/Integration/WooCommerceIntegration.php
+src/Integration/WooCommercePrimaryImageMatcher.php
+src/Integration/WooCommerceRuntimeInterface.php
+src/Integration/WordPressWooCommerceRuntime.php
+tests/Fixtures/WooCommerce/baseline-manifest.php
+tests/Unit/Delivery/FakeAttachmentImageRuntime.php
+tests/Unit/Delivery/DeliveryTestWordPressShim.php
+tests/Unit/Integration/FakeWooCommerceRuntime.php
+tests/Unit/Integration/WooCommerceFixtureManifestTest.php
+tests/Unit/Integration/WooCommerceIntegrationTest.php
+tests/Unit/Integration/WooCommercePrimaryProductDeliveryTest.php
+```
+
+### WooCommerce Gallery and Commerce Behavior
+
+- The Woo runtime seam now exposes normalized current-product gallery attachment IDs so the integration can distinguish real gallery members from generic Woo thumbnails.
+- The matcher now classifies Woo fragments into `primary`, `gallery_secondary`, `commerce_thumbnail`, `variation_or_uncertain`, and `unrecognized` outcomes instead of using a single non-primary bucket.
+- Confirmed single-product gallery-secondary images are now eligible for picture delivery through the existing core delivery pipeline, with the fallback `<img>` preserved verbatim so Woo classes and gallery/lightbox data attributes survive unchanged.
+- Critical-image registration remains primary-only, `preload_attachment_id` remains unset for Woo, and loading-role refinement continues to demote gallery, loop, cart, checkout, related, upsell, and variation-sensitive fragments to `none`.
+- Recognized broader commerce-thumbnail surfaces and variation-sensitive/ambiguous single-product fragments now fail open explicitly instead of being guessed into delivery behavior.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Manual/source verification remains:
+
+- live WooCommerce smoke verification for gallery navigation/lightbox behavior after picture delivery
+- live WooCommerce variation switching verification to confirm fail-open behavior remains intact
+- live cart, checkout, related, upsell, and loop thumbnail verification in a supported WooCommerce runtime
+
+### Acceptance Criteria
+
+- [x] Confirmed secondary gallery images are eligible for picture delivery.
+- [x] Loop thumbnails, cart, checkout, related products, upsells, and variation-sensitive/uncertain fragments remain conservative fail-open contexts.
+- [x] Primary-product-image critical treatment remains unchanged and Woo auto-preload remains disabled.
+- [x] Repository-owned fixtures and audit coverage now include gallery, loop, related, upsell, and variation-sensitive commerce surfaces.
+
+### Deferred Work
+
+- WooCommerce-specific preload behavior remains deferred.
+- Broader Woo loop/commerce-surface enablement remains deferred until a later subphase proves those contexts safe.
+- Live WordPress + WooCommerce smoke verification remains pending until a supported WooCommerce test environment is available.
+
+## Subphase 8.4 - Optional Responsive Preload
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add the opt-in `responsive_preload_enabled` delivery setting, repository getter, sanitizer coverage, and minimal settings-page checkbox.
+- [x] Extend the critical-image selection model with `preload_attachment_id` while keeping built-in preload selection conservative and attachment-backed.
+- [x] Add a dedicated `wp_head` preload provider that emits at most one responsive preload tag per request.
+- [x] Add a late-discovered critical-image locator that resolves one unique attachment-backed `<img>` fragment from current singular post content before `wp_head`.
+- [x] Reuse existing delivery analysis, dimension repair, source extraction, source-set building, and format-preference logic to compute consistent modern-image preload data.
+- [x] Add a request-local preload dedupe registry and safe preload link/result value objects without widening the frontend hook surface.
+
+### Files Added
+
+```text
+src/Delivery/LateDiscoveredCriticalImageLocator.php
+src/Delivery/LateDiscoveredCriticalImageMatch.php
+src/Delivery/ResponsivePreloadLink.php
+src/Delivery/ResponsivePreloadManager.php
+src/Delivery/ResponsivePreloadRegistry.php
+src/Delivery/ResponsivePreloadResult.php
+tests/Unit/Delivery/LateDiscoveredCriticalImageLocatorTest.php
+tests/Unit/Delivery/ResponsivePreloadManagerTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+composer.json
+docs/implementation-status.md
+src/Admin/SettingsPage.php
+src/Delivery/AttachmentImageRuntimeInterface.php
+src/Delivery/CriticalImageRegistry.php
+src/Delivery/CriticalImageSelection.php
+src/Delivery/WordPressAttachmentImageRuntime.php
+src/Plugin.php
+src/Settings/SettingsRepository.php
+src/Settings/SettingsRepositoryInterface.php
+src/Settings/SettingsSchema.php
+src/Settings/StaticSettingsRepository.php
+tests/Unit/Admin/SettingsPageTest.php
+tests/Unit/Attachment/AttachmentScopePolicyTest.php
+tests/Unit/Delivery/CriticalImageRegistryTest.php
+tests/Unit/Delivery/DeliveryScopePolicyTest.php
+tests/Unit/Delivery/DeliveryTestWordPressShim.php
+tests/Unit/Delivery/FakeAttachmentImageRuntime.php
+tests/Unit/Delivery/WordPressAttachmentImageRuntimeTest.php
+tests/Unit/Image/FakeSettingsRepository.php
+tests/Unit/PluginTest.php
+tests/Unit/Settings/SettingsRepositoryTest.php
+tests/Unit/Settings/SettingsSanitizerTest.php
+tests/Unit/Settings/SettingsSchemaTest.php
+```
+
+### Responsive Preload Behavior
+
+- `responsive_preload_enabled` defaults to `false`, so upgrades do not start preloading automatically.
+- `CriticalImageSelection` now carries `preload_attachment_id`, and the built-in registry assigns it only from the per-post/page primary critical attachment.
+- The custom logo can remain a secondary critical image for loading overrides, but it is not auto-preloaded in 8.4.
+- `ResponsivePreloadManager` is now a dedicated delivery provider that hooks only `wp_head` at priority `1` and emits at most one `<link rel="preload" as="image">` tag per request.
+- `LateDiscoveredCriticalImageLocator` scans only standalone `<img>` fragments from current singular post content, trusts only attachment-backed identifiers already compatible with the delivery stack, and requires one unique match before preload can continue.
+- Preload reuses the existing delivery path: intrinsic-dimension repair may normalize the matched fragment, the markup analyzer and source extractor read the original responsive candidates, and `SourceSetBuilder` plus `format_preference()` select the preferred modern derivative source set.
+- Preload is emitted only when the matched fallback fragment has a non-empty `sizes` attribute, the fallback `src` maps uniquely to one extracted source candidate, and the chosen modern format has a complete responsive set for that same candidate width.
+- `ResponsivePreloadRegistry` dedupes by attachment, format, `href`, `imagesrcset`, and `imagesizes`, preventing duplicate head tags across repeated provider calls in the same request.
+- No preload is emitted for uncertain cases, normal early-rendered attachment images, unresolved content images, critical URLs without an attachment-backed match, or requests outside the supported frontend singular context.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --memory-limit=1G: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. Runtime delivery remains confined to `wp_get_attachment_image`, `wp_content_img_tag`, `wp_get_loading_optimization_attributes`, and the new `wp_head` preload provider; `wp_get_attachment_image_attributes`, `wp_calculate_image_srcset`, output buffering, REST routes, and frontend asset hooks remain absent.
+
+Manual WordPress smoke testing remains pending in this plugin-only workspace:
+
+- singular post/page requests with a uniquely matched per-post/page critical content image should emit one deduplicated modern-format preload tag with matching `imagesrcset` and `imagesizes`
+- pages without an explicit late-discovered critical image should emit no preload
+- supported-browser network inspection should confirm the intended scenario avoids duplicate image downloads
+
+### Acceptance Criteria
+
+- [x] An opt-in `responsive_preload_enabled` setting exists and is exposed through the current minimal settings UI.
+- [x] The critical-image selection model now carries a conservative built-in `preload_attachment_id` without introducing a parallel registry.
+- [x] A dedicated `wp_head` provider emits at most one attachment-backed responsive preload tag per request and fails open on uncertain cases.
+- [x] Preload candidate discovery is limited to unique, attachment-backed standalone `<img>` fragments in current singular post content before `wp_head`.
+- [x] Preload data is derived from the existing delivery pipeline and only emits when `href`, `imagesrcset`, and `imagesizes` can stay consistent with the matched fallback image.
+- [x] No output buffering, `wp_get_attachment_image_attributes`, `wp_calculate_image_srcset`, REST routes, extra preload hint families, or broad frontend heuristics were introduced in 8.4.
+
+### Deferred Work
+
+- Theme-layout heuristics, automatic preload for ordinary early-rendered attachment images, and built-in custom-logo preload remain deferred.
+- WooCommerce and Elementor critical/preload sources remain deferred to Phases 9 and 10 and should extend the registry through the existing filter payloads.
+- CLS-related CSS behavior, broader diagnostics surfacing, and any additional browser hint families remain deferred to later Phase 8 and diagnostics work.
+
+## Subphase 8.3 - Intrinsic Dimension Repair
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a callable intrinsic-dimension repair collaborator for attachment-backed fallback `<img>` fragments.
+- [x] Extend exact-fragment markup analysis with `src`, intrinsic-dimension values, and missing-vs-invalid presence facts.
+- [x] Extract reusable metadata candidate matching into `AttachmentSizeResolver` and share it with responsive source-set building.
+- [x] Repair only missing intrinsic dimensions when the selected attachment size can be identified with certainty from current markup plus metadata.
+- [x] Carry repair and uncertainty outcomes through delivery render-result codes without widening the runtime hook surface.
+
+### Files Added
+
+```text
+src/Delivery/AttachmentSizeResolver.php
+src/Delivery/IntrinsicDimensionRepair.php
+src/Delivery/IntrinsicDimensionRepairResult.php
+tests/Unit/Delivery/AttachmentSizeResolverTest.php
+tests/Unit/Delivery/IntrinsicDimensionRepairTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Delivery/DeliveryManager.php
+src/Delivery/ImageMarkupAnalysis.php
+src/Delivery/PictureRenderRequest.php
+src/Delivery/PictureRenderResult.php
+src/Delivery/PictureRenderer.php
+src/Delivery/SourceSetBuilder.php
+src/Delivery/WordPressImageMarkupAnalyzer.php
+src/Plugin.php
+tests/Unit/Delivery/DeliveryManagerTest.php
+tests/Unit/Delivery/PictureRendererTest.php
+tests/Unit/Delivery/SourceSetBuilderTest.php
+tests/Unit/Delivery/WordPressImageMarkupAnalyzerTest.php
+```
+
+### Intrinsic-Dimension Behavior
+
+- `WordPressImageMarkupAnalyzer` now captures exact standalone fallback-image `src`, `width`, `height`, and separate attribute-presence facts so delivery can distinguish “missing” from “present but invalid.”
+- `AttachmentSizeResolver` now centralizes conservative metadata candidate construction and exact `src` matching, and `SourceSetBuilder` reuses that matcher instead of maintaining a separate implicit candidate path.
+- `IntrinsicDimensionRepair` runs only for attachment-backed images already inside the delivery pipeline and only when at least one intrinsic dimension is missing.
+- Both dimensions are repaired only when one metadata candidate is uniquely identifiable from the current fallback `src` and the matched metadata dimensions are valid positive integers.
+- Partial repair is conservative: the plugin adds only the missing counterpart and only when any existing valid intrinsic dimension exactly matches the matched metadata candidate.
+- Conflicting, ambiguous, unmatched, external, malformed, or incomplete cases remain unchanged and surface only through `intrinsic_dimensions_uncertain` render-result codes.
+- `DeliveryManager` now runs intrinsic-dimension repair before loading-attribute overrides, source extraction, and picture rendering, so both `wp_get_attachment_image` and `wp_content_img_tag` share the same CLS-safe repair pass.
+- The runtime hook surface remains unchanged in 8.3: no `wp_get_attachment_image_attributes`, no `wp_calculate_image_srcset`, no output buffering, no inline layout CSS, and no attachment-metadata writes were introduced.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. Runtime delivery remains confined to the existing `wp_get_attachment_image`, `wp_content_img_tag`, and `wp_get_loading_optimization_attributes` providers; no `wp_get_attachment_image_attributes`, `wp_calculate_image_srcset`, inline style injection, attachment-metadata writes, REST routes, or admin-surface expansion were introduced.
+
+Manual WordPress smoke testing remains pending in this plugin-only workspace:
+
+- attachment-backed fallback images missing `width` and/or `height` should receive intrinsic-dimension repair only when the rendered size maps uniquely to current metadata
+- repaired fallback `<img>` markup should remain embedded verbatim inside generated `<picture>` output
+- unresolved or ambiguous content images should continue to fail open without guessed dimensions
+- incoming lazy/high conflict cases should continue to return original markup unchanged
+
+### Acceptance Criteria
+
+- [x] A delivery-side intrinsic-dimension repair service exists and rewrites only missing `width` and/or `height` attributes.
+- [x] Exact-fragment analysis now captures `src`, intrinsic-dimension values, and missing-vs-invalid presence facts needed for conservative repair.
+- [x] Shared metadata candidate matching is reused by both intrinsic-dimension repair and responsive source-set building.
+- [x] Repaired and uncertain outcomes survive the delivery pipeline through stable render-result codes without adding new external surfaces.
+- [x] No new frontend hooks, inline layout CSS, metadata writes, settings, REST routes, or admin UI were introduced in 8.3.
+
+### Deferred Work
+
+- Preload behavior and any broader critical/LCP coordination remain deferred to later Phase 8 subphases.
+- WooCommerce- and Elementor-specific loading/layout behavior remains deferred to Phases 9 and 10.
+- Page-level diagnostics surfacing for repair opportunities remains deferred; 8.3 reports only through internal render-result codes.
+
+## Subphase 8.2 - Critical Image Registry
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a delivery-side critical-image registry with normalized per-request primary attachment, critical attachment IDs, and critical URLs.
+- [x] Add a narrow `wp_get_loading_optimization_attributes` provider for explicit critical-image loading overrides.
+- [x] Apply the same explicit loading override to attachment-backed fallback `<img>` markup before picture rendering.
+- [x] Extend the delivery runtime seam with typed singular-post and custom-logo helpers.
+- [x] Add the persisted `critical_logo_enabled` setting and `_hwlio_critical_image_id` post/page meta seam.
+- [x] Replace the placeholder settings tab with a minimal server-rendered critical-logo control.
+- [x] Add post/page critical-image meta-box and media-picker asset providers without widening the runtime surface.
+
+### Files Added
+
+```text
+admin/js/hyperweb-lighthouse-image-optimizer-post-editor.js
+src/Admin/PostEditor/CriticalImageAssets.php
+src/Admin/PostEditor/CriticalImageMetaBox.php
+src/Admin/PostEditor/PostEditorRuntimeInterface.php
+src/Admin/PostEditor/WordPressPostEditorRuntime.php
+src/Delivery/CriticalImagePostMetaStoreInterface.php
+src/Delivery/CriticalImageRegistry.php
+src/Delivery/CriticalImageSelection.php
+src/Delivery/LoadingAttributeManager.php
+src/Delivery/WordPressCriticalImagePostMetaStore.php
+src/Settings/StaticSettingsRepository.php
+tests/Unit/Admin/PostEditor/CriticalImageAssetsTest.php
+tests/Unit/Admin/PostEditor/CriticalImageMetaBoxTest.php
+tests/Unit/Admin/PostEditor/FakePostEditorRuntime.php
+tests/Unit/Admin/PostEditor/PostEditorScopePolicyTest.php
+tests/Unit/Admin/SettingsPageTest.php
+tests/Unit/Delivery/CriticalImageRegistryTest.php
+tests/Unit/Delivery/FakeCriticalImagePostMetaStore.php
+tests/Unit/Delivery/LoadingAttributeManagerTest.php
+tests/Unit/Delivery/WordPressAttachmentImageRuntimeTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Admin/SettingsPage.php
+src/Delivery/AttachmentImageRuntimeInterface.php
+src/Delivery/DeliveryManager.php
+src/Delivery/WordPressAttachmentImageRuntime.php
+src/Plugin.php
+src/Settings/SettingsRepository.php
+src/Settings/SettingsRepositoryInterface.php
+src/Settings/SettingsSchema.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Delivery/DeliveryManagerTest.php
+tests/Unit/Delivery/DeliveryScopePolicyTest.php
+tests/Unit/Delivery/DeliveryTestWordPressShim.php
+tests/Unit/Delivery/FakeAttachmentImageRuntime.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Image/FakeSettingsRepository.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/PluginTest.php
+tests/Unit/ScaffoldAssetPolicyTest.php
+tests/Unit/Settings/SettingsRepositoryTest.php
+tests/Unit/Settings/SettingsSanitizerTest.php
+tests/Unit/Settings/SettingsSchemaTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Critical-Image Behavior
+
+- `CriticalImageRegistry` now resolves one normalized request-local selection with `primary_attachment_id`, `critical_attachment_ids`, and `critical_urls`, using built-in post/page meta first and the optional custom logo second.
+- Built-in candidates are filtered through `hwlio_critical_image_candidates`, then the final normalized selection is exposed through `hwlio_critical_image_selection` and renormalized after each pass.
+- `LoadingAttributeManager` is now the only runtime provider that hooks `wp_get_loading_optimization_attributes`; unconfigured images keep core behavior unchanged.
+- Primary critical images have lazy loading removed, are set to `loading="eager"` when needed, and may receive plugin-assigned `fetchpriority="high"` once per request.
+- Secondary critical images are de-lazied but never receive automatic plugin-assigned high priority, and `decoding` remains untouched.
+- `DeliveryManager` now applies the same narrow loading override to attachment-backed fallback `<img>` markup before picture wrapping so attachment and post-content delivery stay consistent.
+- `SettingsPage` now renders a minimal server-side checkbox for `critical_logo_enabled`, while post/page edit screens expose a classic side meta box with a media picker, hidden attachment ID field, preview, and clear action.
+- Critical-image persistence remains deliberately narrow in 8.2: only `post` and `page` support `_hwlio_critical_image_id`, and unsupported, empty, autosave, revision, or unauthorized saves are ignored or deleted safely.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. `wp_get_loading_optimization_attributes` is confined to `src/Delivery/LoadingAttributeManager.php`; `add_meta_box`, `save_post`, and `wp_enqueue_media` are confined to the new post-editor slice; WooCommerce/Elementor integrations, REST routes, preload logic, dimension repair, and broad frontend hooks remain absent.
+
+Manual WordPress smoke testing remains pending in this plugin-only workspace:
+
+- the Settings tab should show the `critical_logo_enabled` checkbox and save through `options.php`
+- post/page edit screens should show the critical-image side meta box with working media-picker select/replace/clear flows
+- primary critical images should be de-lazied and receive at most one automatic `fetchpriority="high"` per request
+- non-critical images and incoming lazy/high conflict cases should continue to fail open safely
+
+### Acceptance Criteria
+
+- [x] A normalized critical-image registry exists with built-in post/page meta and optional custom-logo candidates plus explicit filter override points.
+- [x] Explicit critical-image loading overrides are applied only through `wp_get_loading_optimization_attributes` and the attachment-backed fallback markup rewrite helper.
+- [x] Only one image per request may receive automatic plugin-assigned `fetchpriority="high"`, while secondary critical images are merely de-lazied.
+- [x] `critical_logo_enabled` is persisted through the existing settings schema, sanitizer, repository, and minimal settings-page UI.
+- [x] Post/page edit screens now expose a nonce-protected, capability-checked critical-image meta box with screen-scoped media-picker assets and no jQuery dependency.
+- [x] WooCommerce, Elementor, preload, CLS dimension repair, REST settings exposure, and broad frontend hook expansion remain deferred.
+
+### Deferred Work
+
+- WooCommerce-specific and Elementor-specific critical-image sources remain deferred to Phases 9 and 10 and should hook the registry filters instead of adding parallel logic.
+- Intrinsic-dimension repair was completed in Subphase 8.3; preload behavior remains deferred to later Phase 8 subphases.
+- REST/UI expansion for broader critical-image management remains deferred; 8.2 keeps the visible controls intentionally minimal.
+
 ## Subphase 8.1 - Preserve Core Loading Attributes
 
 **Status:** Complete
@@ -4256,6 +5280,6 @@ Source scans: pass. Runtime delivery remains confined to `wp_get_attachment_imag
 
 ### Deferred Work
 
-- Explicit critical-image registry, eager/high-priority overrides, and logo/per-post critical controls remain deferred to Subphase 8.2.
+- Explicit critical-image registry, eager/high-priority overrides, and logo/per-post critical controls were completed in Subphase 8.2.
+- CLS-oriented intrinsic-dimension repair was completed in Subphase 8.3.
 - Preload behavior remains deferred to later Phase 8 work.
-- CLS-oriented width/height repair remains deferred to later Phase 8 subphases.
