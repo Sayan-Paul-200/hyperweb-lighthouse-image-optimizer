@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile Generic.Files.OneObjectStructurePerFile.MultipleFound -- Test-only fake controller lives with its only consumer.
 /**
  * Tests for the REST API provider.
  *

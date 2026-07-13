@@ -127,7 +127,7 @@ final class Menu {
 	 */
 	public function page_url( string $tab = self::DEFAULT_TAB ): string {
 		$resolved_tab = $this->resolve_tab( $tab );
-		$query = array(
+		$query        = array(
 			'page' => self::MENU_SLUG,
 		);
 

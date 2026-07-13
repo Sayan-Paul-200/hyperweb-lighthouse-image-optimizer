@@ -167,6 +167,6 @@ final class BulkScanSummary {
 	 * @return int
 	 */
 	private static function safe_delta( array $delta, string $key ): int {
-		return isset( $delta[ $key ] ) && is_numeric( $delta[ $key ] ) ? max( 0, (int) $delta[ $key ] ) : 0;
+		return isset( $delta[ $key ] ) ? max( 0, (int) $delta[ $key ] ) : 0;
 	}
 }

@@ -30,8 +30,8 @@ final class StatisticsReconcilerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_reconcile_aggregates_mixed_attachment_states_and_totals(): void {
-		$store  = new FakeAttachmentMetaStore();
-		$store->meta[101][ LifecyclePolicy::META_STATUS ] = array(
+		$store = new FakeAttachmentMetaStore();
+		$store->meta[101][ LifecyclePolicy::META_STATUS ]      = array(
 			'state'      => AttachmentStatus::STATE_OPTIMIZED,
 			'formats'    => array( 'webp', 'avif' ),
 			'updated_at' => 1783526500,
@@ -94,7 +94,7 @@ final class StatisticsReconcilerTest extends TestCase {
 				),
 			)
 		);
-		$store->meta[102][ LifecyclePolicy::META_STATUS ] = array(
+		$store->meta[102][ LifecyclePolicy::META_STATUS ]      = array(
 			'state'      => AttachmentStatus::STATE_PARTIAL,
 			'formats'    => array( 'webp', 'avif' ),
 			'updated_at' => 1783526600,
@@ -136,7 +136,7 @@ final class StatisticsReconcilerTest extends TestCase {
 				),
 			)
 		);
-		$store->meta[103][ LifecyclePolicy::META_STATUS ] = array(
+		$store->meta[103][ LifecyclePolicy::META_STATUS ]      = array(
 			'state'      => AttachmentStatus::STATE_FAILED,
 			'formats'    => array(),
 			'updated_at' => 1783526700,
@@ -146,7 +146,7 @@ final class StatisticsReconcilerTest extends TestCase {
 		$store->meta[103][ LifecyclePolicy::META_DERIVATIVES ] = array(
 			'schema_version' => 999,
 		);
-		$store->meta[104][ LifecyclePolicy::META_STATUS ] = array(
+		$store->meta[104][ LifecyclePolicy::META_STATUS ]      = array(
 			'state'      => AttachmentStatus::STATE_STALE,
 			'formats'    => array(),
 			'updated_at' => 1783526800,
@@ -205,8 +205,8 @@ final class StatisticsReconcilerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_reconcile_preserves_previous_cache_when_write_fails(): void {
-		$store                          = new FakeAttachmentMetaStore();
-		$store->meta[101][ LifecyclePolicy::META_STATUS ] = array(
+		$store = new FakeAttachmentMetaStore();
+		$store->meta[101][ LifecyclePolicy::META_STATUS ]      = array(
 			'state'      => AttachmentStatus::STATE_OPTIMIZED,
 			'formats'    => array( 'webp' ),
 			'updated_at' => 1783526500,

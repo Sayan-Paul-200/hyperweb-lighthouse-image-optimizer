@@ -73,10 +73,10 @@ final class SourceSetBuilder {
 	/**
 	 * Create builder.
 	 *
-	 * @param DerivativeRepository       $repository Repository.
-	 * @param DerivativeUrlResolver      $resolver URL resolver.
-	 * @param UploadsRuntimeInterface    $uploads Uploads runtime.
-	 * @param ImageFileProbeInterface    $files File probe.
+	 * @param DerivativeRepository        $repository Repository.
+	 * @param DerivativeUrlResolver       $resolver URL resolver.
+	 * @param UploadsRuntimeInterface     $uploads Uploads runtime.
+	 * @param ImageFileProbeInterface     $files File probe.
 	 * @param DerivativeManifestSanitizer $sanitizer Manifest sanitizer.
 	 */
 	public function __construct(
@@ -230,9 +230,9 @@ final class SourceSetBuilder {
 				continue;
 			}
 
-			$url = isset( $source['url'] ) && is_scalar( $source['url'] ) ? trim( (string) $source['url'] ) : '';
+			$url        = isset( $source['url'] ) && is_scalar( $source['url'] ) ? trim( (string) $source['url'] ) : '';
 			$descriptor = isset( $source['descriptor'] ) && is_scalar( $source['descriptor'] ) ? trim( (string) $source['descriptor'] ) : '';
-			$value = isset( $source['value'] ) && is_numeric( $source['value'] ) ? (int) $source['value'] : 0;
+			$value      = isset( $source['value'] ) && is_numeric( $source['value'] ) ? (int) $source['value'] : 0;
 
 			if ( '' === $url || 'w' !== $descriptor || $value < 1 || isset( $seen[ $value ] ) ) {
 				$had_omissions = true;
@@ -316,10 +316,10 @@ final class SourceSetBuilder {
 	/**
 	 * Build one metadata candidate.
 	 *
-	 * @param string     $size_name Size name.
-	 * @param string     $relative_path Relative path.
-	 * @param mixed      $width Width.
-	 * @param mixed      $height Height.
+	 * @param string $size_name Size name.
+	 * @param string $relative_path Relative path.
+	 * @param mixed  $width Width.
+	 * @param mixed  $height Height.
 	 * @return array<string,mixed>|null
 	 */
 	private function metadata_candidate( string $size_name, string $relative_path, $width, $height ): ?array {
@@ -342,7 +342,7 @@ final class SourceSetBuilder {
 	/**
 	 * Match one original candidate to one metadata candidate.
 	 *
-	 * @param array<string,mixed>       $candidate Original candidate.
+	 * @param array<string,mixed>            $candidate Original candidate.
 	 * @param array<int,array<string,mixed>> $metadata_candidates Metadata candidates.
 	 * @return array<string,mixed>|null
 	 */
@@ -364,15 +364,15 @@ final class SourceSetBuilder {
 	/**
 	 * Get manifest formats for a matched metadata candidate.
 	 *
-	 * @param DerivativeManifest   $manifest Manifest.
-	 * @param array<string,mixed>  $metadata_candidate Metadata candidate.
+	 * @param DerivativeManifest  $manifest Manifest.
+	 * @param array<string,mixed> $metadata_candidate Metadata candidate.
 	 * @return array<string,array<string,mixed>>
 	 */
 	private function manifest_formats_for_candidate( DerivativeManifest $manifest, array $metadata_candidate ): array {
 		$sizes     = $manifest->sizes();
 		$size_name = (string) $metadata_candidate['size_name'];
 
-		if ( ! isset( $sizes[ $size_name ] ) || ! is_array( $sizes[ $size_name ] ) ) {
+		if ( ! isset( $sizes[ $size_name ] ) ) {
 			return array();
 		}
 
@@ -460,7 +460,13 @@ final class SourceSetBuilder {
 			return false;
 		}
 
-		$path = parse_url( $url, PHP_URL_PATH );
+		if ( function_exists( 'wp_parse_url' ) ) {
+			$path = wp_parse_url( $url, PHP_URL_PATH );
+		} else {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Fallback for non-WordPress test/runtime contexts.
+			$path = parse_url( $url, PHP_URL_PATH );
+		}
+
 		$path = is_string( $path ) ? rawurldecode( $path ) : $url;
 		$path = str_replace( '\\', '/', trim( $path ) );
 

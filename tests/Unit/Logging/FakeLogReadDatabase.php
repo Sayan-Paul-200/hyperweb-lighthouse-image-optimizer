@@ -56,7 +56,7 @@ final class FakeLogReadDatabase implements LogReadDatabaseInterface {
 	/**
 	 * Select one bounded page of log rows.
 	 *
-	 * @param string   $table Table name.
+	 * @param string                                              $table Table name.
 	 * @param \HyperWeb\LighthouseImageOptimizer\Logging\LogQuery $query Query object.
 	 * @return array<int,array<string,mixed>>
 	 */
@@ -73,7 +73,7 @@ final class FakeLogReadDatabase implements LogReadDatabaseInterface {
 	/**
 	 * Count rows matching the given query.
 	 *
-	 * @param string   $table Table name.
+	 * @param string                                              $table Table name.
 	 * @param \HyperWeb\LighthouseImageOptimizer\Logging\LogQuery $query Query object.
 	 * @return int
 	 */

@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile Generic.Files.OneObjectStructurePerFile.MultipleFound -- Test-only fake runtime lives with its only consumer.
 /**
  * Tests for derivative health diagnostics.
  *
@@ -105,7 +106,7 @@ final class DerivativeHealthDiagnosticsTest extends TestCase {
 	 * @return void
 	 */
 	public function test_bounded_scan_truncation_warns(): void {
-		$ids = range( 1, 1001 );
+		$ids     = range( 1, 1001 );
 		$runtime = new FakeDerivativeHealthRuntime( $ids );
 		$store   = new FakeAttachmentMetaStore();
 

@@ -47,7 +47,7 @@ final class LogRetentionService {
 	 * @return LogRetentionUpdateResult
 	 */
 	public function update( int $retention_days ): LogRetentionUpdateResult {
-		$result = $this->settings->save(
+		$result   = $this->settings->save(
 			array(
 				'log_retention_days' => $retention_days,
 			)

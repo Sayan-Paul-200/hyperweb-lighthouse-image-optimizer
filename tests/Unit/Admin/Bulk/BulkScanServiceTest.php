@@ -29,10 +29,10 @@ final class BulkScanServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_start_scan_classifies_states_and_completes_short_page(): void {
-		$runtime                 = new FakeBulkScannerRuntime();
-		$runtime->pages[0]       = array( 10, 11, 12, 13, 14, 15, 16 );
-		$runtime->images[16]     = false;
-		$store                   = new FakeAttachmentMetaStore();
+		$runtime             = new FakeBulkScannerRuntime();
+		$runtime->pages[0]   = array( 10, 11, 12, 13, 14, 15, 16 );
+		$runtime->images[16] = false;
+		$store               = new FakeAttachmentMetaStore();
 		$store->meta[10][ LifecyclePolicy::META_STATUS ] = array(
 			'state'    => AttachmentStatus::STATE_EXCLUDED,
 			'excluded' => true,
@@ -54,8 +54,8 @@ final class BulkScanServiceTest extends TestCase {
 		$store->meta[15][ LifecyclePolicy::META_STATUS ] = array(
 			'state' => AttachmentStatus::STATE_STALE,
 		);
-		$sessions = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
-		$service  = new BulkScanService(
+		$sessions                                        = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
+		$service = new BulkScanService(
 			$runtime,
 			$sessions,
 			new AttachmentStatusReader( $store ),
@@ -91,12 +91,12 @@ final class BulkScanServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_continue_scan_resumes_from_cursor(): void {
-		$runtime           = new FakeBulkScannerRuntime();
-		$runtime->pages[0] = range( 1, 100 );
+		$runtime             = new FakeBulkScannerRuntime();
+		$runtime->pages[0]   = range( 1, 100 );
 		$runtime->pages[100] = array( 101 );
-		$store             = new FakeAttachmentMetaStore();
-		$sessions          = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
-		$service           = new BulkScanService(
+		$store               = new FakeAttachmentMetaStore();
+		$sessions            = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
+		$service             = new BulkScanService(
 			$runtime,
 			$sessions,
 			new AttachmentStatusReader( $store ),
@@ -145,8 +145,8 @@ final class BulkScanServiceTest extends TestCase {
 			'state'   => AttachmentStatus::STATE_OPTIMIZED,
 			'formats' => array( 'webp', 'avif' ),
 		);
-		$sessions = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
-		$service  = new BulkScanService(
+		$sessions                                        = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
+		$service = new BulkScanService(
 			$runtime,
 			$sessions,
 			new AttachmentStatusReader( $store ),

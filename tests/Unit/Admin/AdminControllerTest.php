@@ -184,7 +184,7 @@ final class AdminControllerTest extends TestCase {
 	 *
 	 * @param array<string,mixed>   $query Query data.
 	 * @param FakeAdminRuntime|null $runtime Optional runtime.
-	 * @param Menu|null            $menu Optional menu helper.
+	 * @param Menu|null             $menu Optional menu helper.
 	 * @return AdminController
 	 */
 	private function controller( array $query, ?FakeAdminRuntime $runtime = null, ?Menu $menu = null ): AdminController {

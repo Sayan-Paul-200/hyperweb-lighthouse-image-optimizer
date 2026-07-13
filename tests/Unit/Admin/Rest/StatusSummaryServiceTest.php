@@ -36,9 +36,9 @@ final class StatusSummaryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_summary_uses_cached_statistics_and_settings(): void {
-		$queue            = new FakeQueue();
-		$queue->available = false;
-		$options          = new FakeOptionStore(
+		$queue             = new FakeQueue();
+		$queue->available  = false;
+		$options           = new FakeOptionStore(
 			array(
 				LifecyclePolicy::OPTION_STATISTICS_CACHE => array(
 					'schema_version'    => 1,
@@ -57,10 +57,10 @@ final class StatusSummaryServiceTest extends TestCase {
 				),
 			)
 		);
-		$jobs             = new FakeAttachmentJobControl();
-		$jobs->pending    = 4;
+		$jobs              = new FakeAttachmentJobControl();
+		$jobs->pending     = 4;
 		$jobs->in_progress = 1;
-		$service          = new StatusSummaryService(
+		$service           = new StatusSummaryService(
 			$queue,
 			new StatisticsCacheReader( $options ),
 			new FakeSettingsRepository(
@@ -96,9 +96,13 @@ final class StatusSummaryServiceTest extends TestCase {
 			),
 			new StatusRefreshService( new FakeSingleActionScheduler() ),
 			new QueueControlService(
-				new QueueControlStateStore( $options, LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE, static function (): string {
-					return '2026-07-12 00:00:00';
-				} ),
+				new QueueControlStateStore(
+					$options,
+					LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE,
+					static function (): string {
+						return '2026-07-12 00:00:00';
+					}
+				),
 				$jobs
 			)
 		);
@@ -133,10 +137,10 @@ final class StatusSummaryServiceTest extends TestCase {
 		$probe->action_scheduler_initialized = false;
 		$scheduler                           = new FakeSingleActionScheduler();
 		$scheduler->scheduled                = true;
-		$jobs              = new FakeAttachmentJobControl();
-		$jobs->pending     = 2;
-		$jobs->in_progress = 0;
-		$service = new StatusSummaryService(
+		$jobs                                = new FakeAttachmentJobControl();
+		$jobs->pending                       = 2;
+		$jobs->in_progress                   = 0;
+		$service                             = new StatusSummaryService(
 			new FakeQueue(),
 			new StatisticsCacheReader( new FakeOptionStore() ),
 			new FakeSettingsRepository(
@@ -155,9 +159,13 @@ final class StatusSummaryServiceTest extends TestCase {
 			new RecentFailureLogReader( $this->log_database(), 'wp_hwlio_logs' ),
 			new StatusRefreshService( $scheduler ),
 			new QueueControlService(
-				new QueueControlStateStore( new FakeOptionStore(), LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE, static function (): string {
-					return '2026-07-12 00:00:00';
-				} ),
+				new QueueControlStateStore(
+					new FakeOptionStore(),
+					LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE,
+					static function (): string {
+						return '2026-07-12 00:00:00';
+					}
+				),
 				$jobs
 			)
 		);

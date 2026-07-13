@@ -12,10 +12,10 @@ namespace HyperWeb\LighthouseImageOptimizer\Logging;
  */
 final class LogQuery {
 
-	public const LEVEL_ALL       = 'all';
-	public const DEFAULT_PAGE    = 1;
+	public const LEVEL_ALL        = 'all';
+	public const DEFAULT_PAGE     = 1;
 	public const DEFAULT_PER_PAGE = 20;
-	public const MAX_PER_PAGE    = 100;
+	public const MAX_PER_PAGE     = 100;
 
 	/**
 	 * Filtered level.

@@ -42,7 +42,7 @@ final class BulkQueueServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_queue_continues_across_candidate_pages(): void {
-		$runtime = $this->build_runtime();
+		$runtime                   = $this->build_runtime();
 		$runtime['bulk']->pages[0] = range( 1, 55 );
 
 		$session = $runtime['scans']->start_scan( new BulkScanFilters(), 7 );
@@ -67,7 +67,7 @@ final class BulkQueueServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_retry_mode_uses_target_format_and_skips_non_retryable_candidates(): void {
-		$runtime = $this->build_runtime(
+		$runtime                   = $this->build_runtime(
 			array(
 				'enabled_formats' => array( 'webp', 'avif' ),
 			)
@@ -119,7 +119,7 @@ final class BulkQueueServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_queue_paused_state_stops_before_enqueuing_candidates(): void {
-		$runtime = $this->build_runtime(
+		$runtime                   = $this->build_runtime(
 			array(
 				'enabled_formats' => array( 'webp' ),
 			),
@@ -154,13 +154,13 @@ final class BulkQueueServiceTest extends TestCase {
 	 * @return array<string,mixed>
 	 */
 	private function build_runtime( array $settings = array(), bool $paused = false ): array {
-		$bulk        = new FakeBulkScannerRuntime();
-		$store       = new FakeAttachmentMetaStore();
-		$clock       = new FixedAttachmentClock( 1783612800 );
-		$repository  = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
-		$sessions    = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
-		$statuses    = new AttachmentStatusReader( $store );
-		$settings    = new FakeSettingsRepository(
+		$bulk       = new FakeBulkScannerRuntime();
+		$store      = new FakeAttachmentMetaStore();
+		$clock      = new FixedAttachmentClock( 1783612800 );
+		$repository = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
+		$sessions   = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
+		$statuses   = new AttachmentStatusReader( $store );
+		$settings   = new FakeSettingsRepository(
 			array_replace(
 				array(
 					'enabled_formats' => array( 'webp' ),
@@ -168,7 +168,7 @@ final class BulkQueueServiceTest extends TestCase {
 				$settings
 			)
 		);
-		$scans       = new BulkScanService(
+		$scans      = new BulkScanService(
 			$bulk,
 			$sessions,
 			$statuses,
@@ -180,9 +180,9 @@ final class BulkQueueServiceTest extends TestCase {
 				return 'feedfacefeedfacefeedfacefeedface';
 			}
 		);
-		$probe       = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
+		$probe      = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
 		$probe->add_file( '/uploads/2026/07/hero.jpg', 1000, 1783526400, 'image/jpeg', 2400, 1600 );
-		$collector   = new SourceCollector(
+		$collector = new SourceCollector(
 			new FakeAttachmentSourceProvider(
 				'/uploads/2026/07/hero.jpg',
 				array(
@@ -195,7 +195,7 @@ final class BulkQueueServiceTest extends TestCase {
 			),
 			$probe
 		);
-		$options     = new FakeOptionStore(
+		$options   = new FakeOptionStore(
 			$paused
 				? array(
 					LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE => array(
@@ -206,15 +206,15 @@ final class BulkQueueServiceTest extends TestCase {
 				)
 				: array()
 		);
-		$controls    = new QueueControlStateStore(
+		$controls  = new QueueControlStateStore(
 			$options,
 			LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE,
 			static function (): string {
 				return '2026-07-12 00:00:00';
 			}
 		);
-		$queue       = new FakeQueue();
-		$queueing    = new AttachmentQueueService(
+		$queue     = new FakeQueue();
+		$queueing  = new AttachmentQueueService(
 			$queue,
 			$store,
 			$repository,

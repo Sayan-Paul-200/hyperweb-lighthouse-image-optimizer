@@ -73,9 +73,9 @@ final class JobsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_permission_callback_requires_manage_options(): void {
-		$runtime                         = new FakeRestRuntime();
+		$runtime                                 = new FakeRestRuntime();
 		$runtime->capabilities['manage_options'] = false;
-		$controller                      = $this->fixture( $runtime )['controller'];
+		$controller                              = $this->fixture( $runtime )['controller'];
 
 		$result = $controller->can_manage_options();
 
@@ -157,7 +157,7 @@ final class JobsControllerTest extends TestCase {
 		$fixture                   = $this->fixture( $runtime );
 		$fixture['bulk']->pages[0] = array( 55 );
 
-		$first = $fixture['controller']->scan_jobs( new FakeRestRequest() );
+		$first                    = $fixture['controller']->scan_jobs( new FakeRestRequest() );
 		$runtime->current_user_id = 99;
 
 		$response = $fixture['controller']->scan_jobs(
@@ -202,10 +202,10 @@ final class JobsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_pause_and_resume_jobs_return_queue_control_payloads(): void {
-		$runtime   = new FakeRestRuntime();
-		$fixture   = $this->fixture( $runtime );
-		$paused    = $fixture['controller']->pause_jobs();
-		$resumed   = $fixture['controller']->resume_jobs();
+		$runtime = new FakeRestRuntime();
+		$fixture = $this->fixture( $runtime );
+		$paused  = $fixture['controller']->pause_jobs();
+		$resumed = $fixture['controller']->resume_jobs();
 
 		self::assertSame( 'response', $paused['type'] );
 		self::assertTrue( $paused['data']['queueControl']['paused'] );
@@ -223,7 +223,7 @@ final class JobsControllerTest extends TestCase {
 		$fixture                   = $this->fixture( $runtime );
 		$fixture['bulk']->pages[0] = array( 10, 11 );
 
-		$scan = $fixture['controller']->scan_jobs( new FakeRestRequest() );
+		$scan  = $fixture['controller']->scan_jobs( new FakeRestRequest() );
 		$queue = $fixture['controller']->queue_jobs(
 			new FakeRestRequest(
 				array(
@@ -248,9 +248,9 @@ final class JobsControllerTest extends TestCase {
 		$fixture                   = $this->fixture( $runtime );
 		$fixture['bulk']->pages[0] = array( 10 );
 
-		$scan = $fixture['controller']->scan_jobs( new FakeRestRequest() );
+		$scan                     = $fixture['controller']->scan_jobs( new FakeRestRequest() );
 		$runtime->current_user_id = 99;
-		$queue = $fixture['controller']->queue_jobs(
+		$queue                    = $fixture['controller']->queue_jobs(
 			new FakeRestRequest(
 				array(
 					'scan_token' => $scan['data']['scanToken'],
@@ -295,7 +295,7 @@ final class JobsControllerTest extends TestCase {
 		);
 		$repository = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
 		$sessions   = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
-		$service  = new BulkScanService(
+		$service    = new BulkScanService(
 			$bulk,
 			$sessions,
 			new AttachmentStatusReader( $store ),
@@ -310,9 +310,9 @@ final class JobsControllerTest extends TestCase {
 				return sprintf( 'feedfacefeedfacefeedfacefeedfa%02d', $sequence );
 			}
 		);
-		$probe    = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
+		$probe      = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
 		$probe->add_file( '/uploads/2026/07/hero.jpg', 1000, 1783526400, 'image/jpeg', 2400, 1600 );
-		$collector = new SourceCollector(
+		$collector     = new SourceCollector(
 			new FakeAttachmentSourceProvider(
 				'/uploads/2026/07/hero.jpg',
 				array(
@@ -325,10 +325,14 @@ final class JobsControllerTest extends TestCase {
 			),
 			$probe
 		);
-		$job_control = new FakeAttachmentJobControl();
-		$controls    = new QueueControlStateStore( new FakeOptionStore(), 'hwlio_queue_control_state', static function (): string {
-			return '2026-07-12 00:00:00';
-		} );
+		$job_control   = new FakeAttachmentJobControl();
+		$controls      = new QueueControlStateStore(
+			new FakeOptionStore(),
+			'hwlio_queue_control_state',
+			static function (): string {
+				return '2026-07-12 00:00:00';
+			}
+		);
 		$queue_service = new BulkQueueService(
 			$sessions,
 			$service,

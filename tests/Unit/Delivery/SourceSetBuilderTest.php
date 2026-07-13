@@ -109,17 +109,17 @@ final class SourceSetBuilderTest extends TestCase {
 		$store = new FakeAttachmentMetaStore();
 		$store->meta[ self::ATTACHMENT_ID ][ LifecyclePolicy::META_DERIVATIVES ] = $this->stored_manifest();
 		$sources = array(
-			2400 => array(
+			2400        => array(
 				'url'        => 'https://example.test/wp-content/uploads/2026/07/hero.jpg',
 				'descriptor' => 'w',
 				'value'      => 2400,
 			),
-			'bad-x' => array(
+			'bad-x'     => array(
 				'url'        => 'https://example.test/wp-content/uploads/2026/07/hero.jpg',
 				'descriptor' => 'x',
 				'value'      => 2,
 			),
-			'bad-url' => array(
+			'bad-url'   => array(
 				'descriptor' => 'w',
 				'value'      => 150,
 			),
@@ -153,7 +153,7 @@ final class SourceSetBuilderTest extends TestCase {
 				'descriptor' => 'w',
 				'value'      => 2400,
 			),
-			999 => array(
+			999  => array(
 				'url'        => 'https://example.test/wp-content/uploads/2026/07/not-generated.jpg',
 				'descriptor' => 'w',
 				'value'      => 999,
@@ -221,7 +221,9 @@ final class SourceSetBuilderTest extends TestCase {
 		)->to_array();
 
 		self::assertSame( array( 150, 2400 ), array_keys( $payload['formats']['webp']['sources'] ) );
-		self::assertStringNotContainsString( self::UPLOADS, json_encode( $payload ) ?: '' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test assertion for serialized payload safety.
+		$json = json_encode( $payload );
+		self::assertStringNotContainsString( self::UPLOADS, is_string( $json ) ? $json : '' );
 	}
 
 	/**
@@ -232,7 +234,7 @@ final class SourceSetBuilderTest extends TestCase {
 	 * @return SourceSetBuilder
 	 */
 	private function builder( FakeAttachmentMetaStore $store, FakeImageFileProbe $probe ): SourceSetBuilder {
-		$runtime = new FakeUploadsUrlRuntime();
+		$runtime           = new FakeUploadsUrlRuntime();
 		$runtime->base_url = 'https://example.test/wp-content/uploads';
 		$runtime->base_dir = self::UPLOADS;
 
@@ -391,7 +393,7 @@ final class SourceSetBuilderTest extends TestCase {
 	private function dirty_manifest(): array {
 		$manifest = $this->stored_manifest();
 
-		$manifest['sizes']['full']['formats']['gif'] = array(
+		$manifest['sizes']['full']['formats']['gif']       = array(
 			'file'   => '2026/07/hero.jpg.hwlio.gif',
 			'mime'   => 'image/gif',
 			'status' => 'ready',

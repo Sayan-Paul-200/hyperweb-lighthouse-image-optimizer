@@ -70,11 +70,11 @@ final class AdminController implements HookProviderInterface {
 	/**
 	 * Create the controller.
 	 *
-	 * @param Menu                     $menu Menu helper.
-	 * @param AdminPageInterface[]     $pages Screen pages.
-	 * @param AdminRuntimeInterface    $runtime Admin runtime adapter.
+	 * @param Menu                       $menu Menu helper.
+	 * @param AdminPageInterface[]       $pages Screen pages.
+	 * @param AdminRuntimeInterface      $runtime Admin runtime adapter.
 	 * @param AdminScreenContextResolver $context_resolver Screen context resolver.
-	 * @param NoticeManager            $notice_manager Notice manager.
+	 * @param NoticeManager              $notice_manager Notice manager.
 	 */
 	public function __construct(
 		Menu $menu,
@@ -129,6 +129,7 @@ final class AdminController implements HookProviderInterface {
 		$current_page = $this->resolve_current_page( $context );
 		$current_tab  = $context->current_tab();
 
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through local wrapper methods.
 		echo '<div class="wrap">';
 		echo '<h1>' . $this->escape_html( $this->translate( 'Lighthouse Image Optimizer' ) ) . '</h1>';
 		echo '<nav class="nav-tab-wrapper" aria-label="' . $this->escape_html( $this->translate( 'Lighthouse Image Optimizer sections' ) ) . '">';
@@ -160,11 +161,13 @@ final class AdminController implements HookProviderInterface {
 		$current_page->render();
 		echo '</div>';
 		echo '</div>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
 	 * Resolve the current page from request data.
 	 *
+	 * @param AdminScreenContext $context Screen context.
 	 * @return AdminPageInterface
 	 */
 	private function resolve_current_page( AdminScreenContext $context ): AdminPageInterface {
@@ -245,6 +248,7 @@ final class AdminController implements HookProviderInterface {
 	 */
 	private function translate( string $text ): string {
 		if ( function_exists( '__' ) ) {
+			// phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Wrapper accepts only plugin-owned literals provided by calling code.
 			return __( $text, 'hyperweb-lighthouse-image-optimizer' );
 		}
 

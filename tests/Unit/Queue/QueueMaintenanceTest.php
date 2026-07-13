@@ -100,7 +100,7 @@ final class QueueMaintenanceTest extends TestCase {
 	 */
 	public function test_stale_lock_recovery_repairs_processing_status_and_logs_info(): void {
 		$store = new FakeAttachmentMetaStore();
-		$store->meta[123][ LifecyclePolicy::META_LOCK ] = $this->lock_payload( 'stale-one', self::NOW - 700, self::NOW - 100 );
+		$store->meta[123][ LifecyclePolicy::META_LOCK ]   = $this->lock_payload( 'stale-one', self::NOW - 700, self::NOW - 100 );
 		$store->meta[123][ LifecyclePolicy::META_STATUS ] = array(
 			'state'      => AttachmentStatus::STATE_PROCESSING,
 			'formats'    => array( 'webp' ),
@@ -108,7 +108,7 @@ final class QueueMaintenanceTest extends TestCase {
 			'error_code' => null,
 			'excluded'   => true,
 		);
-		$store->meta[124][ LifecyclePolicy::META_LOCK ] = $this->lock_payload( 'stale-two', self::NOW - 700, self::NOW - 100 );
+		$store->meta[124][ LifecyclePolicy::META_LOCK ]   = $this->lock_payload( 'stale-two', self::NOW - 700, self::NOW - 100 );
 		$store->meta[124][ LifecyclePolicy::META_STATUS ] = array(
 			'state'      => AttachmentStatus::STATE_OPTIMIZED,
 			'formats'    => array( 'webp', 'avif' ),
@@ -168,7 +168,7 @@ final class QueueMaintenanceTest extends TestCase {
 	public function test_stale_lock_recovery_logs_warning_on_recovery_failure(): void {
 		$store = new FakeAttachmentMetaStore();
 		$store->meta[123][ LifecyclePolicy::META_LOCK ] = $this->lock_payload( 'old-token', self::NOW - 700, self::NOW - 100 );
-		$store->before_delete_value = static function ( int $attachment_id, string $key ) use ( $store ): void {
+		$store->before_delete_value                     = static function ( int $attachment_id, string $key ) use ( $store ): void {
 			$store->meta[ $attachment_id ][ $key ] = array(
 				'token'      => 'new-worker-token',
 				'created_at' => self::NOW,

@@ -69,13 +69,13 @@ final class StatusSummaryService {
 	/**
 	 * Create the service.
 	 *
-	 * @param QueueInterface              $queue Queue adapter.
-	 * @param StatisticsCacheReader       $statistics Statistics cache reader.
-	 * @param SettingsRepositoryInterface $settings Settings repository.
+	 * @param QueueInterface                     $queue Queue adapter.
+	 * @param StatisticsCacheReader              $statistics Statistics cache reader.
+	 * @param SettingsRepositoryInterface        $settings Settings repository.
 	 * @param DashboardEnvironmentSummaryService $environment Dashboard environment summary service.
-	 * @param RecentFailureLogReader      $recent_failures Recent failure log reader.
-	 * @param StatusRefreshService        $refresh Refresh service.
-	 * @param QueueControlService         $queue_control Queue control service.
+	 * @param RecentFailureLogReader             $recent_failures Recent failure log reader.
+	 * @param StatusRefreshService               $refresh Refresh service.
+	 * @param QueueControlService                $queue_control Queue control service.
 	 */
 	public function __construct(
 		QueueInterface $queue,

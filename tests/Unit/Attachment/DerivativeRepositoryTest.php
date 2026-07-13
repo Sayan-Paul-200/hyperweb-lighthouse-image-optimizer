@@ -196,9 +196,9 @@ final class DerivativeRepositoryTest extends TestCase {
 	 * @return void
 	 */
 	public function test_skipped_and_failed_results_do_not_create_ready_derivative_entries(): void {
-		$store  = new FakeAttachmentMetaStore();
+		$store      = new FakeAttachmentMetaStore();
 		$dispatcher = new FakeCacheInvalidationDispatcher();
-		$result = $this->repository( $store, $dispatcher )->save_results(
+		$result     = $this->repository( $store, $dispatcher )->save_results(
 			123,
 			$this->fingerprint(),
 			new ConversionResultCollection(
@@ -341,9 +341,9 @@ final class DerivativeRepositoryTest extends TestCase {
 	 * @return void
 	 */
 	public function test_save_status_persists_status_summary_only(): void {
-		$store  = new FakeAttachmentMetaStore();
+		$store      = new FakeAttachmentMetaStore();
 		$dispatcher = new FakeCacheInvalidationDispatcher();
-		$status = new AttachmentStatus( AttachmentStatus::STATE_QUEUED, array( 'webp' ), self::NOW );
+		$status     = new AttachmentStatus( AttachmentStatus::STATE_QUEUED, array( 'webp' ), self::NOW );
 
 		$result = $this->repository( $store, $dispatcher )->save_status( 123, $status );
 
@@ -376,7 +376,8 @@ final class DerivativeRepositoryTest extends TestCase {
 	/**
 	 * Build repository.
 	 *
-	 * @param FakeAttachmentMetaStore $store Store.
+	 * @param FakeAttachmentMetaStore              $store Store.
+	 * @param FakeCacheInvalidationDispatcher|null $dispatcher Cache invalidation dispatcher.
 	 * @return DerivativeRepository
 	 */
 	private function repository( FakeAttachmentMetaStore $store, ?FakeCacheInvalidationDispatcher $dispatcher = null ): DerivativeRepository {

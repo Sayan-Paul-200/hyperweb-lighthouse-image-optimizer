@@ -152,7 +152,7 @@ final class ReconciliationWorkerTest extends TestCase {
 	 */
 	public function test_obsolete_sidecars_are_removed_after_reconciliation(): void {
 		$dispatcher = new FakeCacheInvalidationDispatcher();
-		$runtime = $this->build_runtime(
+		$runtime    = $this->build_runtime(
 			new FakeSettingsRepository(
 				array(
 					'enabled_formats' => array( 'avif' ),
@@ -240,10 +240,11 @@ final class ReconciliationWorkerTest extends TestCase {
 	/**
 	 * Build a test runtime.
 	 *
-	 * @param FakeSettingsRepository|null    $settings Settings override.
-	 * @param FakeFilesystem|null            $filesystem Filesystem override.
-	 * @param QueueControlStateStore|null    $controls Queue control store.
-	 * @param FakeSingleActionScheduler|null $scheduler Single action scheduler.
+	 * @param FakeSettingsRepository|null          $settings Settings override.
+	 * @param FakeFilesystem|null                  $filesystem Filesystem override.
+	 * @param QueueControlStateStore|null          $controls Queue control store.
+	 * @param FakeSingleActionScheduler|null       $scheduler Single action scheduler.
+	 * @param FakeCacheInvalidationDispatcher|null $dispatcher Cache invalidation dispatcher.
 	 * @return array<string,mixed>
 	 */
 	private function build_runtime(

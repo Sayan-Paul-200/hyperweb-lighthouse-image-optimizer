@@ -76,10 +76,10 @@ final class StatisticsReconciler implements StatisticsReconcilerInterface {
 		OptionStoreInterface $options,
 		?callable $clock = null
 	) {
-		$this->scanner     = $scanner;
-		$this->repository  = $repository;
-		$this->options     = $options;
-		$this->clock       = $clock;
+		$this->scanner    = $scanner;
+		$this->repository = $repository;
+		$this->options    = $options;
+		$this->clock      = $clock;
 	}
 
 	/**
@@ -88,11 +88,11 @@ final class StatisticsReconciler implements StatisticsReconcilerInterface {
 	 * @return StatisticsReconciliationResult
 	 */
 	public function reconcile(): StatisticsReconciliationResult {
-		$states               = $this->empty_state_counts();
-		$formats              = $this->empty_format_totals();
-		$totals               = $this->empty_totals();
-		$metadata_warnings    = false;
-		$generated_at_gmt     = $this->now();
+		$states            = $this->empty_state_counts();
+		$formats           = $this->empty_format_totals();
+		$totals            = $this->empty_totals();
+		$metadata_warnings = false;
+		$generated_at_gmt  = $this->now();
 
 		try {
 			for ( $page = 1; ; ++$page ) {
@@ -163,8 +163,8 @@ final class StatisticsReconciler implements StatisticsReconcilerInterface {
 	/**
 	 * Accumulate manifest totals.
 	 *
-	 * @param DerivativeManifest           $manifest Derivative manifest.
-	 * @param array<string,int|float>      $totals Aggregate totals.
+	 * @param DerivativeManifest              $manifest Derivative manifest.
+	 * @param array<string,int|float>         $totals Aggregate totals.
 	 * @param array<string,array<string,int>> $formats Per-format totals.
 	 * @return bool
 	 */

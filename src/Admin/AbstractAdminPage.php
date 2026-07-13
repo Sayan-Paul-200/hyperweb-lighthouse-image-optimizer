@@ -68,10 +68,12 @@ abstract class AbstractAdminPage implements AdminPageInterface {
 	 * @return void
 	 */
 	public function render(): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through local wrapper methods.
 		echo '<div class="card">';
 		echo '<h2>' . $this->escape_html( $this->title() ) . '</h2>';
 		echo '<p>' . $this->escape_html( $this->description() ) . '</p>';
 		echo '</div>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -82,6 +84,7 @@ abstract class AbstractAdminPage implements AdminPageInterface {
 	 */
 	protected function translate( string $text ): string {
 		if ( function_exists( '__' ) ) {
+			// phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Wrapper accepts only plugin-owned literals provided by calling code.
 			return __( $text, 'hyperweb-lighthouse-image-optimizer' );
 		}
 

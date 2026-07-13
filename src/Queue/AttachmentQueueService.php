@@ -73,12 +73,12 @@ final class AttachmentQueueService {
 	/**
 	 * Create the service.
 	 *
-	 * @param QueueInterface                    $queue Queue adapter.
-	 * @param AttachmentMetaStoreInterface      $meta Meta store.
-	 * @param DerivativeRepository              $repository Repository.
-	 * @param SourceCollector                   $collector Source collector.
-	 * @param AttachmentFingerprintBuilder      $fingerprinter Fingerprint builder.
-	 * @param AttachmentClockInterface          $clock Clock.
+	 * @param QueueInterface                       $queue Queue adapter.
+	 * @param AttachmentMetaStoreInterface         $meta Meta store.
+	 * @param DerivativeRepository                 $repository Repository.
+	 * @param SourceCollector                      $collector Source collector.
+	 * @param AttachmentFingerprintBuilder         $fingerprinter Fingerprint builder.
+	 * @param AttachmentClockInterface             $clock Clock.
 	 * @param QueueControlStateStoreInterface|null $controls Optional queue control state store.
 	 */
 	public function __construct(
@@ -90,13 +90,13 @@ final class AttachmentQueueService {
 		AttachmentClockInterface $clock,
 		?QueueControlStateStoreInterface $controls = null
 	) {
-		$this->queue        = $queue;
-		$this->meta         = $meta;
-		$this->repository   = $repository;
-		$this->collector    = $collector;
+		$this->queue         = $queue;
+		$this->meta          = $meta;
+		$this->repository    = $repository;
+		$this->collector     = $collector;
 		$this->fingerprinter = $fingerprinter;
-		$this->clock        = $clock;
-		$this->controls     = $controls;
+		$this->clock         = $clock;
+		$this->controls      = $controls;
 	}
 
 	/**

@@ -49,7 +49,7 @@ final class SettingsScopePolicyTest extends TestCase {
 			'src/Admin/WordPressAdminRuntime.php'      => array(
 				'admin submenu page',
 			),
-			'src/Admin/Assets.php'                    => array(
+			'src/Admin/Assets.php'                     => array(
 				'global admin asset hook',
 			),
 			'src/Admin/MediaLibrary/MediaLibraryAssets.php' => array(
@@ -66,16 +66,16 @@ final class SettingsScopePolicyTest extends TestCase {
 				'stylesheet enqueue',
 				'script enqueue',
 			),
-			'src/Admin/Rest/RestApi.php'             => array(
+			'src/Admin/Rest/RestApi.php'               => array(
 				'REST API hook',
 			),
-			'src/Admin/Rest/WordPressRestRuntime.php' => array(
+			'src/Admin/Rest/WordPressRestRuntime.php'  => array(
 				'REST route registration',
 			),
-			'src/Infrastructure/LifecyclePolicy.php' => array(
+			'src/Infrastructure/LifecyclePolicy.php'   => array(
 				'optimization queue action',
 			),
-			'src/Queue/ActionSchedulerQueue.php'     => array(
+			'src/Queue/ActionSchedulerQueue.php'       => array(
 				'async queue scheduling',
 				'single queue scheduling',
 			),
@@ -83,10 +83,10 @@ final class SettingsScopePolicyTest extends TestCase {
 				'async queue scheduling',
 				'single queue scheduling',
 			),
-			'src/Queue/NewUploadIntegration.php'     => array(
+			'src/Queue/NewUploadIntegration.php'       => array(
 				'new-upload media hook',
 			),
-			'src/Delivery/DeliveryManager.php'       => array(
+			'src/Delivery/DeliveryManager.php'         => array(
 				'frontend image hook',
 				'frontend content hook',
 			),

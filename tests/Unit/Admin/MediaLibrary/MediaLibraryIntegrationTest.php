@@ -77,7 +77,9 @@ final class MediaLibraryIntegrationTest extends TestCase {
 		self::assertSame( 'queued', $response['hwlio']['state'] );
 		self::assertSame( array( 'exclude', 'view-details' ), $response['hwlio']['allowedActions'] );
 		self::assertArrayNotHasKey( 'manifest', $response['hwlio'] );
-		self::assertStringNotContainsString( 'C:/', json_encode( $response['hwlio'] ) ?: '' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test assertion for serialized payload safety.
+		$json = json_encode( $response['hwlio'] );
+		self::assertStringNotContainsString( 'C:/', is_string( $json ) ? $json : '' );
 	}
 
 	/**
@@ -194,6 +196,7 @@ final class MediaLibraryIntegrationTest extends TestCase {
 	/**
 	 * Build the provider fixture.
 	 *
+	 * @param array<string,mixed> $settings_overrides Settings overrides.
 	 * @return array<string,mixed>
 	 */
 	private function provider( array $settings_overrides = array() ): array {

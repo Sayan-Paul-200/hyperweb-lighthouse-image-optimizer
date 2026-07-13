@@ -74,10 +74,10 @@ final class JobsController implements RestControllerInterface {
 		BulkQueueService $queues,
 		QueueControlService $queue_control
 	) {
-		$this->runtime = $runtime;
-		$this->errors  = $errors;
-		$this->scans   = $scans;
-		$this->queues  = $queues;
+		$this->runtime       = $runtime;
+		$this->errors        = $errors;
+		$this->scans         = $scans;
+		$this->queues        = $queues;
 		$this->queue_control = $queue_control;
 	}
 
@@ -96,27 +96,27 @@ final class JobsController implements RestControllerInterface {
 					'callback'            => array( $this, 'scan_jobs' ),
 					'permission_callback' => array( $this, 'can_manage_options' ),
 					'args'                => array(
-						'scan_token' => array(
+						'scan_token'     => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_scan_token' ),
 							'validate_callback' => array( $this, 'validate_scan_token' ),
 						),
-						'scan_scope' => array(
+						'scan_scope'     => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_scan_scope' ),
 							'validate_callback' => array( $this, 'validate_scan_scope' ),
 						),
-						'target_format' => array(
+						'target_format'  => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_target_format' ),
 							'validate_callback' => array( $this, 'validate_target_format' ),
 						),
-						'date_from' => array(
+						'date_from'      => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_date' ),
 							'validate_callback' => array( $this, 'validate_date' ),
 						),
-						'date_to' => array(
+						'date_to'        => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_date' ),
 							'validate_callback' => array( $this, 'validate_date' ),
@@ -512,6 +512,7 @@ final class JobsController implements RestControllerInterface {
 	 * Build the normalized response payload.
 	 *
 	 * @param BulkScanSession $session Session.
+	 * @param string          $action Action label.
 	 * @return array<string,mixed>
 	 */
 	private function payload( BulkScanSession $session, string $action = 'scan' ): array {

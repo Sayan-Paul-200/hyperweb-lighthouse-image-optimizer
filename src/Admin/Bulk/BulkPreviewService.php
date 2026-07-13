@@ -81,6 +81,8 @@ final class BulkPreviewService {
 	 * @param int    $owner_user_id Owning user ID.
 	 * @param int    $page Page number.
 	 * @param int    $per_page Page size.
+	 * @throws BulkScanSessionNotFoundException When the session does not exist.
+	 * @throws BulkScanSessionAccessDeniedException When the current user does not own the session.
 	 * @return BulkScanResultPage
 	 */
 	public function preview( string $token, int $owner_user_id, int $page, int $per_page ): BulkScanResultPage {

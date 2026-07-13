@@ -80,13 +80,23 @@ final class ActionSchedulerAttachmentJobControlTest extends TestCase {
 			static function ( array $query ): array {
 				if ( 'optimize' === $query['hook'] ) {
 					return array(
-						array( 'args' => array( 'attachment_id' => 10, 'format' => 'webp' ) ),
+						array(
+							'args' => array(
+								'attachment_id' => 10,
+								'format'        => 'webp',
+							),
+						),
 					);
 				}
 
 				if ( 'reconcile' === $query['hook'] ) {
 					return array(
-						array( 'args' => array( 'attachment_id' => 11, 'fingerprint' => 'abc' ) ),
+						array(
+							'args' => array(
+								'attachment_id' => 11,
+								'fingerprint'   => 'abc',
+							),
+						),
 					);
 				}
 

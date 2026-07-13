@@ -44,7 +44,7 @@ final class EnvironmentScopePolicyTest extends TestCase {
 			'automatic memory limit raise' => '/\bini_set\s*\(/',
 		);
 		$allowed_patterns   = array(
-			'src/Admin/Rest/RestApi.php'             => array(
+			'src/Admin/Rest/RestApi.php'              => array(
 				'REST API hook',
 			),
 			'src/Admin/Rest/WordPressRestRuntime.php' => array(
@@ -63,10 +63,10 @@ final class EnvironmentScopePolicyTest extends TestCase {
 				'media row actions',
 				'media attachment fields',
 			),
-			'src/Infrastructure/LifecyclePolicy.php' => array(
+			'src/Infrastructure/LifecyclePolicy.php'  => array(
 				'optimization queue action',
 			),
-			'src/Queue/ActionSchedulerQueue.php'     => array(
+			'src/Queue/ActionSchedulerQueue.php'      => array(
 				'async queue scheduling',
 				'single queue scheduling',
 			),
@@ -74,10 +74,10 @@ final class EnvironmentScopePolicyTest extends TestCase {
 				'async queue scheduling',
 				'single queue scheduling',
 			),
-			'src/Queue/NewUploadIntegration.php'     => array(
+			'src/Queue/NewUploadIntegration.php'      => array(
 				'new-upload media hook',
 			),
-			'src/Delivery/DeliveryManager.php'       => array(
+			'src/Delivery/DeliveryManager.php'        => array(
 				'frontend image hook',
 				'frontend content hook',
 			),

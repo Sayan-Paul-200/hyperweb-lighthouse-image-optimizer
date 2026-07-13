@@ -47,13 +47,13 @@ final class StatisticsCache {
 	/**
 	 * Create statistics cache.
 	 *
-	 * @param string                      $generated_at_gmt Cache generation timestamp in GMT.
-	 * @param array<string,int>           $attachment_states Attachment state counts.
-	 * @param array<string,int|float>     $totals Aggregate totals.
+	 * @param string                          $generated_at_gmt Cache generation timestamp in GMT.
+	 * @param array<string,int>               $attachment_states Attachment state counts.
+	 * @param array<string,int|float>         $totals Aggregate totals.
 	 * @param array<string,array<string,int>> $formats Per-format totals.
 	 */
 	public function __construct( string $generated_at_gmt, array $attachment_states, array $totals, array $formats ) {
-		$this->generated_at_gmt = $this->normalize_timestamp( $generated_at_gmt );
+		$this->generated_at_gmt  = $this->normalize_timestamp( $generated_at_gmt );
 		$this->attachment_states = $this->normalize_attachment_states( $attachment_states );
 		$this->totals            = $this->normalize_totals( $totals );
 		$this->formats           = $this->normalize_formats( $formats );
@@ -142,9 +142,7 @@ final class StatisticsCache {
 		$normalized = array();
 
 		foreach ( AttachmentStatus::states() as $state ) {
-			$normalized[ $state ] = isset( $attachment_states[ $state ] ) && is_numeric( $attachment_states[ $state ] )
-				? max( 0, (int) $attachment_states[ $state ] )
-				: 0;
+			$normalized[ $state ] = max( 0, (int) ( $attachment_states[ $state ] ?? 0 ) );
 		}
 
 		return $normalized;
@@ -158,23 +156,21 @@ final class StatisticsCache {
 	 */
 	private function normalize_totals( array $totals ): array {
 		$normalized = array(
-			'attachments_considered'           => 0,
+			'attachments_considered'             => 0,
 			'attachments_with_ready_derivatives' => 0,
-			'sources_represented'              => 0,
-			'source_bytes'                     => 0,
-			'generated_bytes'                  => 0,
-			'savings_bytes'                    => 0,
-			'savings_percent'                  => 0.0,
+			'sources_represented'                => 0,
+			'source_bytes'                       => 0,
+			'generated_bytes'                    => 0,
+			'savings_bytes'                      => 0,
+			'savings_percent'                    => 0.0,
 		);
 
 		foreach ( $normalized as $key => $default ) {
-			if ( ! isset( $totals[ $key ] ) || ! is_numeric( $totals[ $key ] ) ) {
-				continue;
-			}
+			$value = $totals[ $key ] ?? $default;
 
 			$normalized[ $key ] = 'savings_percent' === $key
-				? round( max( 0, (float) $totals[ $key ] ), 2 )
-				: max( 0, (int) $totals[ $key ] );
+				? round( max( 0, (float) $value ), 2 )
+				: max( 0, (int) $value );
 		}
 
 		return $normalized;
@@ -190,13 +186,13 @@ final class StatisticsCache {
 		$normalized = array();
 
 		foreach ( AttachmentStatus::formats() as $format ) {
-			$entry = isset( $formats[ $format ] ) && is_array( $formats[ $format ] ) ? $formats[ $format ] : array();
+			$entry = $formats[ $format ] ?? array();
 
 			$normalized[ $format ] = array(
-				'sources_ready'   => isset( $entry['sources_ready'] ) && is_numeric( $entry['sources_ready'] ) ? max( 0, (int) $entry['sources_ready'] ) : 0,
-				'source_bytes'    => isset( $entry['source_bytes'] ) && is_numeric( $entry['source_bytes'] ) ? max( 0, (int) $entry['source_bytes'] ) : 0,
-				'generated_bytes' => isset( $entry['generated_bytes'] ) && is_numeric( $entry['generated_bytes'] ) ? max( 0, (int) $entry['generated_bytes'] ) : 0,
-				'savings_bytes'   => isset( $entry['savings_bytes'] ) && is_numeric( $entry['savings_bytes'] ) ? max( 0, (int) $entry['savings_bytes'] ) : 0,
+				'sources_ready'   => max( 0, (int) ( $entry['sources_ready'] ?? 0 ) ),
+				'source_bytes'    => max( 0, (int) ( $entry['source_bytes'] ?? 0 ) ),
+				'generated_bytes' => max( 0, (int) ( $entry['generated_bytes'] ?? 0 ) ),
+				'savings_bytes'   => max( 0, (int) ( $entry['savings_bytes'] ?? 0 ) ),
 			);
 		}
 

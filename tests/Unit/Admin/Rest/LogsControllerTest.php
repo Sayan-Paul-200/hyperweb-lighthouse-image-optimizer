@@ -45,9 +45,9 @@ final class LogsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_permission_callback_requires_manage_options(): void {
-		$runtime                         = new FakeRestRuntime();
+		$runtime                                 = new FakeRestRuntime();
 		$runtime->capabilities['manage_options'] = false;
-		$controller                      = $this->fixture( $runtime )['controller'];
+		$controller                              = $this->fixture( $runtime )['controller'];
 
 		$result = $controller->can_manage_options();
 
@@ -82,9 +82,9 @@ final class LogsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_get_logs_returns_safe_paginated_payload(): void {
-		$runtime               = new FakeRestRuntime();
-		$fixture               = $this->fixture( $runtime );
-		$fixture['read']->rows = array(
+		$runtime                = new FakeRestRuntime();
+		$fixture                = $this->fixture( $runtime );
+		$fixture['read']->rows  = array(
 			array(
 				'created_at_gmt' => '2026-07-12 12:00:00',
 				'level'          => 'error',
@@ -109,7 +109,9 @@ final class LogsControllerTest extends TestCase {
 		self::assertSame( 'response', $response['type'] );
 		self::assertSame( 1, $response['data']['totalItems'] );
 		self::assertSame( 'worker_unexpected_error', $response['data']['items'][0]['code'] );
-		self::assertStringNotContainsString( 'context_json', json_encode( $response['data'] ) ?: '' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test assertion for serialized payload safety.
+		$json = json_encode( $response['data'] );
+		self::assertStringNotContainsString( 'context_json', is_string( $json ) ? $json : '' );
 	}
 
 	/**
@@ -118,9 +120,9 @@ final class LogsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_update_retention_returns_normalized_saved_value(): void {
-		$runtime    = new FakeRestRuntime();
-		$fixture    = $this->fixture( $runtime );
-		$response   = $fixture['controller']->update_retention(
+		$runtime  = new FakeRestRuntime();
+		$fixture  = $this->fixture( $runtime );
+		$response = $fixture['controller']->update_retention(
 			new FakeRestRequest(
 				array(
 					'retention_days' => 9000,
@@ -138,8 +140,8 @@ final class LogsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_delete_logs_returns_bounded_batch_progress(): void {
-		$runtime                       = new FakeRestRuntime();
-		$fixture                       = $this->fixture( $runtime );
+		$runtime                                  = new FakeRestRuntime();
+		$fixture                                  = $this->fixture( $runtime );
 		$fixture['database']->delete_batch_result = LogDeletionService::BATCH_SIZE;
 
 		$response = $fixture['controller']->delete_logs();
@@ -157,9 +159,9 @@ final class LogsControllerTest extends TestCase {
 	 * @return array<string,mixed>
 	 */
 	private function fixture( FakeRestRuntime $runtime ): array {
-		$read      = new FakeLogReadDatabase();
-		$database  = new FakeLogDatabase();
-		$options   = new FakeOptionStore(
+		$read     = new FakeLogReadDatabase();
+		$database = new FakeLogDatabase();
+		$options  = new FakeOptionStore(
 			array(
 				SettingsRepository::OPTION_NAME => array(
 					'log_retention_days' => 30,

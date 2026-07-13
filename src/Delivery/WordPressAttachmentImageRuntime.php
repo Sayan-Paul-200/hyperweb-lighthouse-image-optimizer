@@ -65,9 +65,9 @@ final class WordPressAttachmentImageRuntime implements AttachmentImageRuntimeInt
 	/**
 	 * Determine the most reliable known width for the current attachment image request.
 	 *
-	 * @param int                $attachment_id Attachment ID.
-	 * @param mixed              $size Requested size.
-	 * @param mixed              $attr Requested attributes.
+	 * @param int                 $attachment_id Attachment ID.
+	 * @param mixed               $size Requested size.
+	 * @param mixed               $attr Requested attributes.
 	 * @param array<string,mixed> $metadata Attachment metadata.
 	 * @return int|null
 	 */

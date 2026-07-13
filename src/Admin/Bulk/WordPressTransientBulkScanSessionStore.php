@@ -73,9 +73,9 @@ final class WordPressTransientBulkScanSessionStore implements BulkScanSessionSto
 	 * @return void
 	 */
 	public function delete( string $token ): void {
-		$token        = BulkScanSession::normalize_token( $token );
-		$chunk_count  = 0;
-		$stored       = BulkScanSession::from_array( $this->transients->get( $this->meta_key( $token ) ) );
+		$token       = BulkScanSession::normalize_token( $token );
+		$chunk_count = 0;
+		$stored      = BulkScanSession::from_array( $this->transients->get( $this->meta_key( $token ) ) );
 
 		if ( $stored instanceof BulkScanSession ) {
 			$chunk_count = $stored->progress()->candidate_chunk_count();
@@ -109,12 +109,12 @@ final class WordPressTransientBulkScanSessionStore implements BulkScanSessionSto
 			return $session;
 		}
 
-		$progress            = $session->progress();
-		$chunk_count         = $progress->candidate_chunk_count();
-		$total               = $progress->candidate_total();
-		$chunk_index         = max( 0, $chunk_count - 1 );
-		$buffer              = 0 < $chunk_count ? $this->read_chunk( $session->token(), $chunk_index ) : array();
-		$writing_partial     = 0 < $chunk_count && count( $buffer ) < self::CHUNK_SIZE;
+		$progress        = $session->progress();
+		$chunk_count     = $progress->candidate_chunk_count();
+		$total           = $progress->candidate_total();
+		$chunk_index     = max( 0, $chunk_count - 1 );
+		$buffer          = 0 < $chunk_count ? $this->read_chunk( $session->token(), $chunk_index ) : array();
+		$writing_partial = 0 < $chunk_count && count( $buffer ) < self::CHUNK_SIZE;
 
 		if ( ! $writing_partial ) {
 			$buffer      = array();
@@ -245,6 +245,7 @@ final class WordPressTransientBulkScanSessionStore implements BulkScanSessionSto
 	 * @param string $token Scan token.
 	 * @param int    $index Chunk index.
 	 * @param int[]  $chunk Candidate IDs.
+	 * @throws \RuntimeException When the candidate chunk cannot be persisted.
 	 * @return void
 	 */
 	private function write_chunk( string $token, int $index, array $chunk ): void {

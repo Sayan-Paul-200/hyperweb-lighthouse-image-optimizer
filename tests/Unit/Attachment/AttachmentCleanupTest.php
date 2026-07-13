@@ -210,9 +210,10 @@ final class AttachmentCleanupTest extends TestCase {
 	/**
 	 * Build the cleanup service.
 	 *
-	 * @param FakeAttachmentMetaStore  $store Meta store.
-	 * @param FakeFilesystem           $filesystem Filesystem.
-	 * @param FakeAttachmentJobCleaner $jobs Job cleaner.
+	 * @param FakeAttachmentMetaStore              $store Meta store.
+	 * @param FakeFilesystem                       $filesystem Filesystem.
+	 * @param FakeAttachmentJobCleaner             $jobs Job cleaner.
+	 * @param FakeCacheInvalidationDispatcher|null $dispatcher Cache invalidation dispatcher.
 	 * @return AttachmentCleanup
 	 */
 	private function cleanup_service(

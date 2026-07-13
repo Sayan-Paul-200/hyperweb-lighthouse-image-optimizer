@@ -33,26 +33,26 @@ final class BulkPreviewServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_preview_returns_lightweight_rows_only(): void {
-		$runtime            = new FakeBulkScannerRuntime();
+		$runtime              = new FakeBulkScannerRuntime();
 		$runtime->preview[44] = array(
 			'attachment_id'   => 44,
 			'title'           => 'Hero Image',
 			'filename'        => 'hero.jpg',
 			'uploaded_at_gmt' => '2026-07-11 12:00:00',
 		);
-		$store             = new FakeAttachmentMetaStore();
+		$store                = new FakeAttachmentMetaStore();
 		$store->meta[44][ LifecyclePolicy::META_STATUS ] = array(
 			'state'   => 'tampered-state',
 			'formats' => array( 'webp' ),
 		);
-		$sessions          = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
-		$session           = BulkScanSession::start(
+		$sessions                                        = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
+		$session = BulkScanSession::start(
 			'cafebabecafebabecafebabecafebabe',
 			7,
 			'2026-07-12 00:00:00',
 			new BulkScanFilters()
 		);
-		$session           = $sessions->append_candidate_ids( $session, array( 44 ) );
+		$session = $sessions->append_candidate_ids( $session, array( 44 ) );
 		$sessions->save( $session );
 		$service = new BulkPreviewService(
 			$sessions,
@@ -68,7 +68,9 @@ final class BulkPreviewServiceTest extends TestCase {
 		self::assertSame( 'Hero Image', $page['items'][0]['title'] );
 		self::assertSame( 'hero.jpg', $page['items'][0]['filename'] );
 		self::assertSame( 'unprocessed', $page['items'][0]['state'] );
-		self::assertStringNotContainsString( 'C:/', json_encode( $page ) ?: '' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test assertion for serialized payload safety.
+		$json = json_encode( $page );
+		self::assertStringNotContainsString( 'C:/', is_string( $json ) ? $json : '' );
 		self::assertArrayNotHasKey( 'manifest', $page['items'][0] );
 	}
 
@@ -105,7 +107,7 @@ final class BulkPreviewServiceTest extends TestCase {
 			new BulkScanFilters()
 		);
 		$sessions->save( $session );
-		$service  = new BulkPreviewService(
+		$service = new BulkPreviewService(
 			$sessions,
 			new FakeBulkScannerRuntime(),
 			new AttachmentStatusReader( new FakeAttachmentMetaStore() ),

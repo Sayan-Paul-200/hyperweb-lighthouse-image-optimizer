@@ -43,15 +43,15 @@ final class DerivativeUrlResolver {
 	/**
 	 * Create resolver.
 	 *
-	 * @param UploadsRuntimeInterface    $runtime Uploads runtime.
+	 * @param UploadsRuntimeInterface     $runtime Uploads runtime.
 	 * @param DerivativeManifestSanitizer $sanitizer Path sanitizer.
 	 */
 	public function __construct(
 		UploadsRuntimeInterface $runtime,
 		DerivativeManifestSanitizer $sanitizer
 	) {
-		$this->runtime    = $runtime;
-		$this->sanitizer  = $sanitizer;
+		$this->runtime   = $runtime;
+		$this->sanitizer = $sanitizer;
 	}
 
 	/**

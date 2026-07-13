@@ -78,13 +78,13 @@ final class BulkScanSession {
 	/**
 	 * Create a session.
 	 *
-	 * @param string           $token Scan token.
-	 * @param int              $owner_user_id Owning user ID.
-	 * @param string           $created_at_gmt Created timestamp.
-	 * @param string           $updated_at_gmt Updated timestamp.
-	 * @param BulkScanFilters  $filters Normalized filters.
-	 * @param BulkScanProgress $progress Resumable progress.
-	 * @param BulkScanSummary  $summary Cumulative summary.
+	 * @param string                 $token Scan token.
+	 * @param int                    $owner_user_id Owning user ID.
+	 * @param string                 $created_at_gmt Created timestamp.
+	 * @param string                 $updated_at_gmt Updated timestamp.
+	 * @param BulkScanFilters        $filters Normalized filters.
+	 * @param BulkScanProgress       $progress Resumable progress.
+	 * @param BulkScanSummary        $summary Cumulative summary.
 	 * @param BulkQueueProgress|null $queue_progress Queue progress.
 	 * @param BulkQueueSummary|null  $queue_summary Queue summary.
 	 */

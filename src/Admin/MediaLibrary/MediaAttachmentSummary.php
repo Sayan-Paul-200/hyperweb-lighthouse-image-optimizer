@@ -81,13 +81,13 @@ final class MediaAttachmentSummary {
 		array $allowed_actions,
 		bool $active
 	) {
-		$this->attachment_id  = max( 0, $attachment_id );
-		$this->state          = $state;
-		$this->status_label   = $status_label;
-		$this->ready_formats  = array_values( $ready_formats );
-		$this->excluded       = $excluded;
+		$this->attachment_id   = max( 0, $attachment_id );
+		$this->state           = $state;
+		$this->status_label    = $status_label;
+		$this->ready_formats   = array_values( $ready_formats );
+		$this->excluded        = $excluded;
 		$this->allowed_actions = array_values( $allowed_actions );
-		$this->active         = $active;
+		$this->active          = $active;
 	}
 
 	/**

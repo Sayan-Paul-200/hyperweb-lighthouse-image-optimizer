@@ -63,12 +63,12 @@ final class BulkScanService {
 	/**
 	 * Create the service.
 	 *
-	 * @param BulkScannerRuntimeInterface $runtime Scanner runtime.
+	 * @param BulkScannerRuntimeInterface   $runtime Scanner runtime.
 	 * @param BulkScanSessionStoreInterface $sessions Session store.
-	 * @param AttachmentStatusReader      $statuses Lightweight status reader.
-	 * @param SettingsRepositoryInterface $settings Settings repository.
-	 * @param callable|null               $now_gmt Optional GMT clock callback.
-	 * @param callable|null               $token_generator Optional token generator.
+	 * @param AttachmentStatusReader        $statuses Lightweight status reader.
+	 * @param SettingsRepositoryInterface   $settings Settings repository.
+	 * @param callable|null                 $now_gmt Optional GMT clock callback.
+	 * @param callable|null                 $token_generator Optional token generator.
 	 */
 	public function __construct(
 		BulkScannerRuntimeInterface $runtime,
@@ -95,6 +95,7 @@ final class BulkScanService {
 	 *
 	 * @param BulkScanFilters $filters Normalized filters.
 	 * @param int             $owner_user_id Owning user ID.
+	 * @throws \RuntimeException When the session cannot be created or persisted.
 	 * @return BulkScanSession
 	 */
 	public function start_scan( BulkScanFilters $filters, int $owner_user_id ): BulkScanSession {
@@ -134,6 +135,8 @@ final class BulkScanService {
 	 *
 	 * @param string $token Scan token.
 	 * @param int    $owner_user_id Owning user ID.
+	 * @throws BulkScanSessionNotFoundException When the session does not exist.
+	 * @throws BulkScanSessionAccessDeniedException When the current user does not own the session.
 	 * @return BulkScanSession
 	 */
 	public function load_owned_session( string $token, int $owner_user_id ): BulkScanSession {
@@ -154,19 +157,20 @@ final class BulkScanService {
 	 * Process one bounded scan page.
 	 *
 	 * @param BulkScanSession $session Stored session.
+	 * @throws \RuntimeException When session completion or persistence fails.
 	 * @return BulkScanSession
 	 */
 	private function process_page( BulkScanSession $session ): BulkScanSession {
-		$ids          = $this->runtime->scan_page(
+		$ids           = $this->runtime->scan_page(
 			$session->filters(),
 			$session->progress()->last_processed_id(),
 			self::SCAN_PAGE_SIZE
 		);
-		$updated_at   = (string) call_user_func( $this->now_gmt );
-		$summary      = $session->summary();
-		$progress     = $session->progress();
+		$updated_at    = (string) call_user_func( $this->now_gmt );
+		$summary       = $session->summary();
+		$progress      = $session->progress();
 		$candidate_ids = array();
-		$delta        = array(
+		$delta         = array(
 			'scanned'           => count( $ids ),
 			'eligible'          => 0,
 			'excluded'          => 0,

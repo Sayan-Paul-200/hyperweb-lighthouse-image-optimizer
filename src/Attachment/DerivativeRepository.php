@@ -66,9 +66,9 @@ final class DerivativeRepository {
 	/**
 	 * Create repository.
 	 *
-	 * @param AttachmentMetaStoreInterface $meta Meta store.
-	 * @param DerivativeManifestSanitizer  $sanitizer Manifest sanitizer.
-	 * @param AttachmentClockInterface     $clock Clock.
+	 * @param AttachmentMetaStoreInterface              $meta Meta store.
+	 * @param DerivativeManifestSanitizer               $sanitizer Manifest sanitizer.
+	 * @param AttachmentClockInterface                  $clock Clock.
 	 * @param CacheInvalidationDispatcherInterface|null $cache_invalidation Cache invalidation dispatcher.
 	 */
 	public function __construct(

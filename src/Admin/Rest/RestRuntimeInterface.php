@@ -15,12 +15,12 @@ interface RestRuntimeInterface {
 	/**
 	 * Register one REST route.
 	 *
-	 * @param string                $namespace Route namespace.
+	 * @param string                $rest_namespace Route namespace.
 	 * @param string                $route Route pattern.
 	 * @param array<string,mixed>[] $definitions Route definitions.
 	 * @return void
 	 */
-	public function register_route( string $namespace, string $route, array $definitions ): void;
+	public function register_route( string $rest_namespace, string $route, array $definitions ): void;
 
 	/**
 	 * Check whether the current user has a capability.

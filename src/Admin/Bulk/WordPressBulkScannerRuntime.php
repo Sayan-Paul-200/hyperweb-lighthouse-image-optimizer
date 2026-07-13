@@ -23,17 +23,17 @@ final class WordPressBulkScannerRuntime implements BulkScannerRuntimeInterface {
 	public function scan_page( BulkScanFilters $filters, int $after_id, int $limit ): array {
 		global $wpdb;
 
-		if ( ! isset( $wpdb ) || ! is_object( $wpdb ) || ! isset( $wpdb->posts ) || ! is_string( $wpdb->posts ) ) {
+		if ( ! $wpdb instanceof \wpdb || ! is_string( $wpdb->posts ) ) {
 			return array();
 		}
 
-		$limit        = max( 1, min( 100, $limit ) );
-		$after_id     = max( 0, $after_id );
-		$where        = array(
+		$limit      = max( 1, min( 100, $limit ) );
+		$after_id   = max( 0, $after_id );
+		$where      = array(
 			'post_type = %s',
 			'ID > %d',
 		);
-		$parameters   = array(
+		$parameters = array(
 			'attachment',
 			$after_id,
 		);
@@ -141,7 +141,7 @@ final class WordPressBulkScannerRuntime implements BulkScannerRuntimeInterface {
 		$records = array();
 
 		foreach ( $posts as $post ) {
-			if ( ! is_object( $post ) || ! isset( $post->ID ) || ! is_numeric( $post->ID ) ) {
+			if ( ! $post instanceof \WP_Post ) {
 				continue;
 			}
 
@@ -150,14 +150,14 @@ final class WordPressBulkScannerRuntime implements BulkScannerRuntimeInterface {
 			$filename      = is_string( $attached_file ) && '' !== $attached_file
 				? basename( str_replace( '\\', '/', $attached_file ) )
 				: '';
-			$created_at    = isset( $post->post_date_gmt ) && is_string( $post->post_date_gmt ) && '0000-00-00 00:00:00' !== $post->post_date_gmt
+			$created_at    = '0000-00-00 00:00:00' !== $post->post_date_gmt
 				? $post->post_date_gmt
-				: ( isset( $post->post_date ) && is_string( $post->post_date ) ? $post->post_date : '' );
+				: $post->post_date;
 
 			$records[ $attachment_id ] = array(
-				'attachment_id'  => $attachment_id,
-				'title'          => isset( $post->post_title ) && is_string( $post->post_title ) ? $post->post_title : '',
-				'filename'       => $filename,
+				'attachment_id'   => $attachment_id,
+				'title'           => $post->post_title,
+				'filename'        => $filename,
 				'uploaded_at_gmt' => $created_at,
 			);
 		}

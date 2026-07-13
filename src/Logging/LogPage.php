@@ -41,7 +41,7 @@ final class LogPage {
 	 * @param int          $total_items Total matching rows.
 	 */
 	public function __construct( array $items, LogQuery $query, int $total_items ) {
-		$this->items = array_values(
+		$this->items       = array_values(
 			array_filter(
 				$items,
 				static function ( $item ): bool {

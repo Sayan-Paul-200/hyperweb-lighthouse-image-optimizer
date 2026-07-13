@@ -38,9 +38,9 @@ final class MarkupEligibility {
 	/**
 	 * Create service.
 	 *
-	 * @param SettingsRepositoryInterface  $settings Settings repository.
+	 * @param SettingsRepositoryInterface     $settings Settings repository.
 	 * @param AttachmentImageRuntimeInterface $runtime Runtime seam.
-	 * @param ImageMarkupAnalyzerInterface $analyzer Markup analyzer.
+	 * @param ImageMarkupAnalyzerInterface    $analyzer Markup analyzer.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $settings,
@@ -55,8 +55,8 @@ final class MarkupEligibility {
 	/**
 	 * Whether delivery is enabled after developer override.
 	 *
-	 * @param int                $attachment_id Attachment ID.
-	 * @param string             $html Original HTML.
+	 * @param int                 $attachment_id Attachment ID.
+	 * @param string              $html Original HTML.
 	 * @param array<string,mixed> $context Request context.
 	 * @return bool
 	 */
@@ -79,8 +79,8 @@ final class MarkupEligibility {
 	/**
 	 * Whether markup may be transformed for this callback.
 	 *
-	 * @param int                $attachment_id Attachment ID.
-	 * @param string             $html Original HTML.
+	 * @param int                 $attachment_id Attachment ID.
+	 * @param string              $html Original HTML.
 	 * @param array<string,mixed> $context Request context.
 	 * @return bool
 	 */

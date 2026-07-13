@@ -36,8 +36,8 @@ final class DashboardEnvironmentSummaryService {
 	/**
 	 * Create the service.
 	 *
-	 * @param EnvironmentInspector         $inspector Environment inspector.
-	 * @param SettingsRepositoryInterface  $settings Settings repository.
+	 * @param EnvironmentInspector        $inspector Environment inspector.
+	 * @param SettingsRepositoryInterface $settings Settings repository.
 	 */
 	public function __construct( EnvironmentInspector $inspector, SettingsRepositoryInterface $settings ) {
 		$this->inspector = $inspector;

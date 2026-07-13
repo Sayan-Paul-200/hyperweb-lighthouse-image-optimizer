@@ -15,8 +15,8 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
  */
 final class Assets implements HookProviderInterface {
 
-	public const PRIORITY     = 10;
-	public const STYLE_HANDLE = 'hwlio-admin';
+	public const PRIORITY      = 10;
+	public const STYLE_HANDLE  = 'hwlio-admin';
 	public const SCRIPT_HANDLE = 'hwlio-admin';
 
 	/**
@@ -64,12 +64,12 @@ final class Assets implements HookProviderInterface {
 	/**
 	 * Create the provider.
 	 *
-	 * @param Menu                     $menu Menu helper.
+	 * @param Menu                       $menu Menu helper.
 	 * @param AdminScreenContextResolver $context_resolver Screen context resolver.
 	 * @param AdminAssetRuntimeInterface $runtime Asset runtime adapter.
-	 * @param NoticeManager            $notice_manager Notice manager.
-	 * @param string                   $asset_base_url Plugin base URL.
-	 * @param string                   $version Plugin version.
+	 * @param NoticeManager              $notice_manager Notice manager.
+	 * @param string                     $asset_base_url Plugin base URL.
+	 * @param string                     $version Plugin version.
 	 */
 	public function __construct(
 		Menu $menu,
@@ -149,6 +149,7 @@ final class Assets implements HookProviderInterface {
 		if ( function_exists( 'wp_json_encode' ) ) {
 			$json = wp_json_encode( $payload );
 		} else {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Fallback for non-WordPress test/runtime contexts.
 			$json = json_encode( $payload );
 		}
 

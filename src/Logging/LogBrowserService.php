@@ -48,16 +48,38 @@ final class LogBrowserService {
 
 		return new self(
 			new class() implements LogReadDatabaseInterface {
+				/**
+				 * Select recent log entries.
+				 *
+				 * @param string   $table Table name.
+				 * @param string[] $levels Log levels.
+				 * @param int      $limit Maximum row count.
+				 * @return array<int,array<string,mixed>>
+				 */
 				public function select_recent_entries( string $table, array $levels, int $limit ): array {
 					unset( $table, $levels, $limit );
 					return array();
 				}
 
+				/**
+				 * Select one bounded page of log entries.
+				 *
+				 * @param string   $table Table name.
+				 * @param LogQuery $query Log query.
+				 * @return array<int,array<string,mixed>>
+				 */
 				public function select_entries( string $table, LogQuery $query ): array {
 					unset( $table, $query );
 					return array();
 				}
 
+				/**
+				 * Count matching log entries.
+				 *
+				 * @param string   $table Table name.
+				 * @param LogQuery $query Log query.
+				 * @return int
+				 */
 				public function count_entries( string $table, LogQuery $query ): int {
 					unset( $table, $query );
 					return 0;

@@ -71,14 +71,14 @@ final class AttachmentActionResult {
 	/**
 	 * Create the result.
 	 *
-	 * @param bool                     $successful Whether successful.
-	 * @param string                   $action Action name.
-	 * @param int                      $attachment_id Attachment ID.
-	 * @param array<string,mixed>      $snapshot Snapshot payload.
+	 * @param bool                           $successful Whether successful.
+	 * @param string                         $action Action name.
+	 * @param int                            $attachment_id Attachment ID.
+	 * @param array<string,mixed>            $snapshot Snapshot payload.
 	 * @param array<int,array<string,mixed>> $queue Queue payloads.
-	 * @param string|null              $error_code Error code.
-	 * @param string|null              $error_message Error message.
-	 * @param int                      $status_code HTTP status code.
+	 * @param string|null                    $error_code Error code.
+	 * @param string|null                    $error_message Error message.
+	 * @param int                            $status_code HTTP status code.
 	 */
 	public function __construct(
 		bool $successful,
@@ -103,9 +103,9 @@ final class AttachmentActionResult {
 	/**
 	 * Build a successful result.
 	 *
-	 * @param string                   $action Action name.
-	 * @param int                      $attachment_id Attachment ID.
-	 * @param array<string,mixed>      $snapshot Snapshot payload.
+	 * @param string                         $action Action name.
+	 * @param int                            $attachment_id Attachment ID.
+	 * @param array<string,mixed>            $snapshot Snapshot payload.
 	 * @param array<int,array<string,mixed>> $queue Queue payloads.
 	 * @return self
 	 */
@@ -116,12 +116,12 @@ final class AttachmentActionResult {
 	/**
 	 * Build a failed result.
 	 *
-	 * @param string                   $action Action name.
-	 * @param int                      $attachment_id Attachment ID.
-	 * @param array<string,mixed>      $snapshot Snapshot payload.
-	 * @param string                   $error_code Stable error code.
-	 * @param string                   $error_message User-safe error message.
-	 * @param int                      $status_code HTTP status code.
+	 * @param string                         $action Action name.
+	 * @param int                            $attachment_id Attachment ID.
+	 * @param array<string,mixed>            $snapshot Snapshot payload.
+	 * @param string                         $error_code Stable error code.
+	 * @param string                         $error_message User-safe error message.
+	 * @param int                            $status_code HTTP status code.
 	 * @param array<int,array<string,mixed>> $queue Queue payloads.
 	 * @return self
 	 */

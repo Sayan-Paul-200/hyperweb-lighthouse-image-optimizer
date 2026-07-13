@@ -30,7 +30,7 @@ final class ScaffoldAssetPolicyTest extends TestCase {
 			'script enqueue'             => '/\bwp_enqueue_script\s*\(/',
 		);
 		$allowed_patterns   = array(
-			'src/Admin/Assets.php'                 => array(
+			'src/Admin/Assets.php'                     => array(
 				'global admin asset hook',
 			),
 			'src/Admin/MediaLibrary/MediaLibraryAssets.php' => array(

@@ -55,9 +55,9 @@ final class StatusControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_permission_callback_requires_manage_options(): void {
-		$runtime                         = new FakeRestRuntime();
+		$runtime                                 = new FakeRestRuntime();
 		$runtime->capabilities['manage_options'] = false;
-		$controller                      = $this->controller( $runtime );
+		$controller                              = $this->controller( $runtime );
 
 		$result = $controller->can_manage_options();
 
@@ -139,7 +139,7 @@ final class StatusControllerTest extends TestCase {
 	/**
 	 * Build the controller.
 	 *
-	 * @param FakeRestRuntime                 $runtime Fake runtime.
+	 * @param FakeRestRuntime                $runtime Fake runtime.
 	 * @param FakeSingleActionScheduler|null $scheduler Optional scheduler.
 	 * @return StatusController
 	 */
@@ -161,9 +161,13 @@ final class StatusControllerTest extends TestCase {
 				new RecentFailureLogReader( new FakeLogReadDatabase(), 'wp_hwlio_logs' ),
 				new StatusRefreshService( $scheduler ),
 				new QueueControlService(
-					new QueueControlStateStore( new FakeOptionStore(), 'hwlio_queue_control_state', static function (): string {
-						return '2026-07-12 00:00:00';
-					} ),
+					new QueueControlStateStore(
+						new FakeOptionStore(),
+						'hwlio_queue_control_state',
+						static function (): string {
+							return '2026-07-12 00:00:00';
+						}
+					),
 					new FakeAttachmentJobControl()
 				)
 			),

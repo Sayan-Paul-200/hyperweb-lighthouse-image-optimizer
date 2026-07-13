@@ -87,12 +87,12 @@ final class AttachmentLockRecoveryResult {
 		array $sample_attachment_ids = array(),
 		array $recovered_attachment_ids = array()
 	) {
-		$this->scanned               = max( 0, $scanned );
-		$this->active                = max( 0, $active );
-		$this->stale_recovered       = max( 0, $stale_recovered );
-		$this->invalid_recovered     = max( 0, $invalid_recovered );
-		$this->failed                = max( 0, $failed );
-		$this->sample_attachment_ids = $this->normalize_ids( $sample_attachment_ids, 10 );
+		$this->scanned                  = max( 0, $scanned );
+		$this->active                   = max( 0, $active );
+		$this->stale_recovered          = max( 0, $stale_recovered );
+		$this->invalid_recovered        = max( 0, $invalid_recovered );
+		$this->failed                   = max( 0, $failed );
+		$this->sample_attachment_ids    = $this->normalize_ids( $sample_attachment_ids, 10 );
 		$this->recovered_attachment_ids = $this->normalize_ids( $recovered_attachment_ids, 100 );
 	}
 
@@ -215,15 +215,15 @@ final class AttachmentLockRecoveryResult {
 	 */
 	public function to_array(): array {
 		return array(
-			'successful'            => $this->is_successful(),
-			'warnings'              => $this->has_warnings(),
-			'codes'                 => $this->codes(),
-			'scanned'               => $this->scanned,
-			'active'                => $this->active,
-			'stale_recovered'       => $this->stale_recovered,
-			'invalid_recovered'     => $this->invalid_recovered,
-			'failed'                => $this->failed,
-			'sample_attachment_ids' => $this->sample_attachment_ids,
+			'successful'               => $this->is_successful(),
+			'warnings'                 => $this->has_warnings(),
+			'codes'                    => $this->codes(),
+			'scanned'                  => $this->scanned,
+			'active'                   => $this->active,
+			'stale_recovered'          => $this->stale_recovered,
+			'invalid_recovered'        => $this->invalid_recovered,
+			'failed'                   => $this->failed,
+			'sample_attachment_ids'    => $this->sample_attachment_ids,
 			'recovered_attachment_ids' => $this->recovered_attachment_ids,
 		);
 	}

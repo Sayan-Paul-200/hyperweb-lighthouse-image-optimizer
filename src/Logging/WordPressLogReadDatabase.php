@@ -60,14 +60,16 @@ final class WordPressLogReadDatabase implements LogReadDatabaseInterface {
 		try {
 			$placeholders = implode( ', ', array_fill( 0, count( $levels ), '%s' ) );
 			$args         = array_merge( $levels, array( $limit ) );
-			$sql          = $this->wpdb->prepare(
+			// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Variadic placeholders are built dynamically from normalized level filters.
+			$sql = $this->wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				"SELECT created_at_gmt, level, code, message, attachment_id FROM {$table} WHERE level IN ({$placeholders}) ORDER BY created_at_gmt DESC, id DESC LIMIT %d",
-				$args
+				...$args
 			);
+			// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-			$rows = $this->wpdb->get_results( $sql, ARRAY_A );
+			$rows = $this->wpdb->get_results( $sql, 'ARRAY_A' );
 		} catch ( \Throwable $throwable ) {
 			unset( $throwable );
 
@@ -95,14 +97,15 @@ final class WordPressLogReadDatabase implements LogReadDatabaseInterface {
 		$args[]    = $query->offset();
 
 		try {
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Variadic placeholders are assembled from normalized query state.
 			$sql = $this->wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				"SELECT created_at_gmt, level, code, message, attachment_id, job_id FROM {$table} {$where_sql} ORDER BY created_at_gmt DESC, id DESC LIMIT %d OFFSET %d",
-				$args
+				...$args
 			);
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-			$rows = $this->wpdb->get_results( $sql, ARRAY_A );
+			$rows = $this->wpdb->get_results( $sql, 'ARRAY_A' );
 		} catch ( \Throwable $throwable ) {
 			unset( $throwable );
 
@@ -128,14 +131,17 @@ final class WordPressLogReadDatabase implements LogReadDatabaseInterface {
 		$where_sql = $this->where_sql( $query, $args );
 
 		try {
-			$sql = "SELECT COUNT(*) FROM {$table} {$where_sql}";
-
-			if ( array() !== $args ) {
+			if ( array() === $args ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Safe table name and static WHERE clause were validated earlier.
+				$sql = "SELECT COUNT(*) FROM {$table} {$where_sql}";
+			} else {
+				// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Placeholder-bearing WHERE clause is assembled separately with matching args.
 				$sql = $this->wpdb->prepare(
 					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$sql,
-					$args
+					"SELECT COUNT(*) FROM {$table} {$where_sql}",
+					...$args
 				);
+				// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 			}
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
@@ -162,7 +168,7 @@ final class WordPressLogReadDatabase implements LogReadDatabaseInterface {
 	/**
 	 * Build a prepared WHERE clause for a log query.
 	 *
-	 * @param LogQuery             $query Query object.
+	 * @param LogQuery              $query Query object.
 	 * @param array<int,string|int> $args Prepared-statement arguments.
 	 * @return string
 	 */

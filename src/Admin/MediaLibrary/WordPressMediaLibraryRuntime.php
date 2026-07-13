@@ -59,7 +59,7 @@ final class WordPressMediaLibraryRuntime implements MediaLibraryRuntimeInterface
 
 		$screen = \get_current_screen();
 
-		if ( is_object( $screen ) && isset( $screen->id ) && is_string( $screen->id ) ) {
+		if ( $screen instanceof \WP_Screen && '' !== $screen->id ) {
 			return $screen->id;
 		}
 
@@ -75,7 +75,7 @@ final class WordPressMediaLibraryRuntime implements MediaLibraryRuntimeInterface
 		if ( function_exists( 'get_current_screen' ) ) {
 			$screen = \get_current_screen();
 
-			if ( is_object( $screen ) && isset( $screen->post_type ) && is_string( $screen->post_type ) ) {
+			if ( $screen instanceof \WP_Screen && '' !== $screen->post_type ) {
 				return $screen->post_type;
 			}
 		}
@@ -88,10 +88,11 @@ final class WordPressMediaLibraryRuntime implements MediaLibraryRuntimeInterface
 			return is_string( $type ) ? $type : '';
 		}
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen scoping.
 		if ( isset( $_REQUEST['post_type'] ) && is_string( $_REQUEST['post_type'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen scoping.
 			return trim( wp_unslash( $_REQUEST['post_type'] ) );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		return '';
 	}
@@ -102,12 +103,13 @@ final class WordPressMediaLibraryRuntime implements MediaLibraryRuntimeInterface
 	 * @return int
 	 */
 	public function current_post_id(): int {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen scoping.
 		if ( ! isset( $_REQUEST['post'] ) ) {
 			return 0;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen scoping.
 		$value = function_exists( 'wp_unslash' ) ? wp_unslash( $_REQUEST['post'] ) : $_REQUEST['post'];
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		return is_numeric( $value ) ? max( 0, (int) $value ) : 0;
 	}

@@ -73,13 +73,13 @@ final class BulkQueueService {
 	/**
 	 * Create the service.
 	 *
-	 * @param BulkScanSessionStoreInterface $sessions Session store.
-	 * @param BulkScanService               $scans Bulk scan service.
-	 * @param AttachmentStatusReader        $statuses Status reader.
-	 * @param AttachmentQueueService        $queue Attachment queue service.
-	 * @param SettingsRepositoryInterface   $settings Settings repository.
+	 * @param BulkScanSessionStoreInterface   $sessions Session store.
+	 * @param BulkScanService                 $scans Bulk scan service.
+	 * @param AttachmentStatusReader          $statuses Status reader.
+	 * @param AttachmentQueueService          $queue Attachment queue service.
+	 * @param SettingsRepositoryInterface     $settings Settings repository.
 	 * @param QueueControlStateStoreInterface $controls Queue control state store.
-	 * @param callable|null                 $now_gmt Optional GMT clock callback.
+	 * @param callable|null                   $now_gmt Optional GMT clock callback.
 	 */
 	public function __construct(
 		BulkScanSessionStoreInterface $sessions,
@@ -129,6 +129,7 @@ final class BulkQueueService {
 	 * @param string $token Scan token.
 	 * @param int    $owner_user_id Owner user ID.
 	 * @param string $mode Queue mode.
+	 * @throws BulkScanSessionIncompleteException When the scan session is not complete.
 	 * @return BulkScanSession
 	 */
 	private function process( string $token, int $owner_user_id, string $mode ): BulkScanSession {
@@ -287,8 +288,8 @@ final class BulkQueueService {
 	/**
 	 * Resolve the selected queue formats for the current attachment state.
 	 *
-	 * @param BulkScanFilters   $filters Stored scan filters.
-	 * @param AttachmentStatus  $status Current status.
+	 * @param BulkScanFilters  $filters Stored scan filters.
+	 * @param AttachmentStatus $status Current status.
 	 * @return string[]
 	 */
 	private function formats_for_status( BulkScanFilters $filters, AttachmentStatus $status ): array {

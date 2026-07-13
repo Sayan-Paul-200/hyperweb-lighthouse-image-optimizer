@@ -101,15 +101,15 @@ final class AttachmentActionService {
 	/**
 	 * Create the service.
 	 *
-	 * @param QueueInterface               $queue Queue adapter.
-	 * @param SettingsRepositoryInterface  $settings Settings repository.
-	 * @param AttachmentMetaStoreInterface $meta Attachment meta store.
-	 * @param DerivativeRepository         $repository Derivative repository.
-	 * @param SourceCollector              $collector Source collector.
-	 * @param AttachmentFingerprintBuilder $fingerprinter Fingerprint builder.
-	 * @param AttachmentClockInterface     $clock Clock.
-	 * @param AttachmentDetailsService     $details Details service.
-	 * @param AttachmentQueueService|null  $queueing Shared attachment queue service.
+	 * @param QueueInterface                       $queue Queue adapter.
+	 * @param SettingsRepositoryInterface          $settings Settings repository.
+	 * @param AttachmentMetaStoreInterface         $meta Attachment meta store.
+	 * @param DerivativeRepository                 $repository Derivative repository.
+	 * @param SourceCollector                      $collector Source collector.
+	 * @param AttachmentFingerprintBuilder         $fingerprinter Fingerprint builder.
+	 * @param AttachmentClockInterface             $clock Clock.
+	 * @param AttachmentDetailsService             $details Details service.
+	 * @param AttachmentQueueService|null          $queueing Shared attachment queue service.
 	 * @param QueueControlStateStoreInterface|null $controls Queue control state store.
 	 */
 	public function __construct(
@@ -124,16 +124,16 @@ final class AttachmentActionService {
 		?AttachmentQueueService $queueing = null,
 		?QueueControlStateStoreInterface $controls = null
 	) {
-		$this->queue        = $queue;
-		$this->settings     = $settings;
-		$this->meta         = $meta;
-		$this->repository   = $repository;
+		$this->queue         = $queue;
+		$this->settings      = $settings;
+		$this->meta          = $meta;
+		$this->repository    = $repository;
 		$this->collector     = $collector;
 		$this->fingerprinter = $fingerprinter;
-		$this->clock        = $clock;
-		$this->details      = $details;
-		$this->controls     = $controls;
-		$this->queueing     = $queueing ?? new AttachmentQueueService(
+		$this->clock         = $clock;
+		$this->details       = $details;
+		$this->controls      = $controls;
+		$this->queueing      = $queueing ?? new AttachmentQueueService(
 			$queue,
 			$meta,
 			$repository,

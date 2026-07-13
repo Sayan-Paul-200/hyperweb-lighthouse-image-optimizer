@@ -42,25 +42,25 @@ final class RequestData {
 	 *
 	 * @param mixed  $request Request object or array.
 	 * @param string $key Parameter name.
-	 * @param mixed  $default Default value.
+	 * @param mixed  $fallback Fallback value.
 	 * @return mixed
 	 */
-	public static function param( $request, string $key, $default = null ) {
+	public static function param( $request, string $key, $fallback = null ) {
 		if ( is_array( $request ) ) {
-			return array_key_exists( $key, $request ) ? $request[ $key ] : $default;
+			return array_key_exists( $key, $request ) ? $request[ $key ] : $fallback;
 		}
 
 		if ( is_object( $request ) && method_exists( $request, 'get_param' ) ) {
 			$value = $request->get_param( $key );
 
-			return null !== $value ? $value : $default;
+			return null !== $value ? $value : $fallback;
 		}
 
 		if ( is_object( $request ) && isset( $request->{$key} ) ) {
 			return $request->{$key};
 		}
 
-		return $default;
+		return $fallback;
 	}
 
 	/**

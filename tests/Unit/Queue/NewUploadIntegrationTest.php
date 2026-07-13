@@ -298,7 +298,7 @@ final class NewUploadIntegrationTest extends TestCase {
 				return '2026-07-12 00:00:00';
 			}
 		);
-		$runtime = $this->build_runtime( array(), null, null, $controls );
+		$runtime  = $this->build_runtime( array(), null, null, $controls );
 
 		$runtime['integration']->handle_generated_metadata( array( 'file' => '2026/07/hero.jpg' ), 123, 'create' );
 

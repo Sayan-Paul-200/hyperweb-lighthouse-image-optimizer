@@ -38,8 +38,8 @@ final class DiagnosticsController implements RestControllerInterface {
 	/**
 	 * Create the controller.
 	 *
-	 * @param RestRuntimeInterface       $runtime REST runtime.
-	 * @param RestErrorFactory           $errors Error factory.
+	 * @param RestRuntimeInterface        $runtime REST runtime.
+	 * @param RestErrorFactory            $errors Error factory.
 	 * @param DiagnosticsServiceInterface $diagnostics Diagnostics service.
 	 */
 	public function __construct(

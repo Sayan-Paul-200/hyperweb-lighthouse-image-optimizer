@@ -162,18 +162,18 @@ final class ReconciliationWorker implements HookProviderInterface {
 	/**
 	 * Create worker.
 	 *
-	 * @param QueueInterface               $queue Queue adapter.
-	 * @param AttachmentLockManager        $locks Lock manager.
-	 * @param SourceCollector              $collector Source collector.
-	 * @param AttachmentFingerprintBuilder $fingerprinter Fingerprint builder.
-	 * @param DerivativeRepository         $repository Derivative repository.
-	 * @param AttachmentProcessorInterface $processor Attachment processor.
-	 * @param SettingsRepositoryInterface  $settings Settings repository.
-	 * @param DerivativeFileCleaner        $files Derivative file cleaner.
-	 * @param LoggerInterface              $logger Logger.
-	 * @param AttachmentClockInterface     $clock Clock.
-	 * @param QueueControlStateStoreInterface|null $controls Queue control state store.
-	 * @param SingleActionSchedulerInterface|null $single_actions Single action scheduler.
+	 * @param QueueInterface                            $queue Queue adapter.
+	 * @param AttachmentLockManager                     $locks Lock manager.
+	 * @param SourceCollector                           $collector Source collector.
+	 * @param AttachmentFingerprintBuilder              $fingerprinter Fingerprint builder.
+	 * @param DerivativeRepository                      $repository Derivative repository.
+	 * @param AttachmentProcessorInterface              $processor Attachment processor.
+	 * @param SettingsRepositoryInterface               $settings Settings repository.
+	 * @param DerivativeFileCleaner                     $files Derivative file cleaner.
+	 * @param LoggerInterface                           $logger Logger.
+	 * @param AttachmentClockInterface                  $clock Clock.
+	 * @param QueueControlStateStoreInterface|null      $controls Queue control state store.
+	 * @param SingleActionSchedulerInterface|null       $single_actions Single action scheduler.
 	 * @param CacheInvalidationDispatcherInterface|null $cache_invalidation Cache invalidation dispatcher.
 	 */
 	public function __construct(
@@ -276,7 +276,7 @@ final class ReconciliationWorker implements HookProviderInterface {
 			return;
 		}
 
-		$acquired       = $this->locks->acquire( $attachment_id );
+		$acquired = $this->locks->acquire( $attachment_id );
 
 		if ( ! $acquired->is_successful() ) {
 			$this->save_status( $attachment_id, AttachmentStatus::STATE_STALE, 'lock_unavailable', $current_status );

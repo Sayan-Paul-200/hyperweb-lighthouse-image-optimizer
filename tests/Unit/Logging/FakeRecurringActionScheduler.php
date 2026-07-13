@@ -79,7 +79,7 @@ final class FakeRecurringActionScheduler implements RecurringActionSchedulerInte
 	): bool {
 		++$this->schedule_calls;
 
-		$this->scheduled = array(
+		$this->scheduled           = array(
 			'timestamp' => $timestamp,
 			'interval'  => $interval,
 			'hook'      => $hook,

@@ -123,7 +123,7 @@ final class PictureRenderer {
 	/**
 	 * Allow filters to rewrite picture sources conservatively.
 	 *
-	 * @param PictureRenderRequest         $request Render request.
+	 * @param PictureRenderRequest          $request Render request.
 	 * @param array<string,FormatSourceSet> $formats Ordered formats.
 	 * @return array<string,FormatSourceSet>
 	 */

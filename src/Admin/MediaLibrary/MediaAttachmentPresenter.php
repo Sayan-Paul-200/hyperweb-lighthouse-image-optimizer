@@ -78,6 +78,7 @@ final class MediaAttachmentPresenter {
 		$text = $labels[ $state ] ?? $labels[ AttachmentStatus::STATE_UNPROCESSED ];
 
 		if ( function_exists( '__' ) ) {
+			// phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Wrapper accepts only plugin-owned literals provided by calling code.
 			return __( $text, 'hyperweb-lighthouse-image-optimizer' );
 		}
 

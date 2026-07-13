@@ -152,41 +152,40 @@ final class Plugin {
 			? (int) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_SCHEMA_VERSION' )
 			: 1;
 
-		$hooks = new HookRegistrar();
-		$admin_runtime = new WordPressAdminRuntime();
-		$menu          = new Menu( $admin_runtime );
-		$query_provider = static function (): array {
-			if ( ! isset( $_GET ) || ! is_array( $_GET ) ) {
-				return array();
-			}
+		$hooks               = new HookRegistrar();
+		$admin_runtime       = new WordPressAdminRuntime();
+		$menu                = new Menu( $admin_runtime );
+		$query_provider      = static function (): array {
+			// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only tab routing for the current screen shell and bootstrap.
+			$query = $_GET;
 
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tab routing for the current screen shell and bootstrap.
-			return function_exists( 'wp_unslash' ) ? wp_unslash( $_GET ) : $_GET;
+			return function_exists( 'wp_unslash' ) ? wp_unslash( $query ) : $query;
+			// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		};
-		$notice_manager = new NoticeManager();
-		$context_resolver = new AdminScreenContextResolver( $menu, $query_provider );
-		$plugin_url = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_URL' )
+		$notice_manager      = new NoticeManager();
+		$context_resolver    = new AdminScreenContextResolver( $menu, $query_provider );
+		$plugin_url          = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_URL' )
 			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_URL' )
 			: '';
-		$rest_runtime = new WordPressRestRuntime();
-		$rest_errors  = new RestErrorFactory( $rest_runtime );
-		$settings     = SettingsRepository::for_wordpress();
-		$queue        = ActionSchedulerQueue::for_wordpress();
-		$single_actions = new ActionSchedulerSingleActionScheduler();
+		$rest_runtime        = new WordPressRestRuntime();
+		$rest_errors         = new RestErrorFactory( $rest_runtime );
+		$settings            = SettingsRepository::for_wordpress();
+		$queue               = ActionSchedulerQueue::for_wordpress();
+		$single_actions      = new ActionSchedulerSingleActionScheduler();
 		$queue_control_store = QueueControlStateStore::for_wordpress();
-		$attachment_jobs = ActionSchedulerAttachmentJobControl::for_wordpress();
-		$queue_control   = new QueueControlService( $queue_control_store, $attachment_jobs );
-		$meta         = new WordPressAttachmentMetaStore();
-		$clock        = new SystemAttachmentClock();
-		$cache_invalidation = new WordPressCacheInvalidationDispatcher();
-		$repository   = new DerivativeRepository(
+		$attachment_jobs     = ActionSchedulerAttachmentJobControl::for_wordpress();
+		$queue_control       = new QueueControlService( $queue_control_store, $attachment_jobs );
+		$meta                = new WordPressAttachmentMetaStore();
+		$clock               = new SystemAttachmentClock();
+		$cache_invalidation  = new WordPressCacheInvalidationDispatcher();
+		$repository          = new DerivativeRepository(
 			$meta,
 			new DerivativeManifestSanitizer(),
 			$clock,
 			$cache_invalidation
 		);
-		$details      = new AttachmentDetailsService( $repository );
-		$attachment_queue = new AttachmentQueueService(
+		$details             = new AttachmentDetailsService( $repository );
+		$attachment_queue    = new AttachmentQueueService(
 			$queue,
 			$meta,
 			$repository,
@@ -195,26 +194,26 @@ final class Plugin {
 			$clock,
 			$queue_control_store
 		);
-		$media_runtime = new WordPressMediaLibraryRuntime();
-		$media_renderer = new MediaAttachmentRenderer();
-		$media_presenter = new MediaAttachmentPresenter( new AttachmentActionAvailability() );
-		$media_reader   = new AttachmentStatusReader( $meta );
-		$bulk_sessions  = new WordPressTransientBulkScanSessionStore( new WordPressTransientStore() );
-		$bulk_runtime   = new WordPressBulkScannerRuntime();
-		$bulk_scans     = new BulkScanService(
+		$media_runtime       = new WordPressMediaLibraryRuntime();
+		$media_renderer      = new MediaAttachmentRenderer();
+		$media_presenter     = new MediaAttachmentPresenter( new AttachmentActionAvailability() );
+		$media_reader        = new AttachmentStatusReader( $meta );
+		$bulk_sessions       = new WordPressTransientBulkScanSessionStore( new WordPressTransientStore() );
+		$bulk_runtime        = new WordPressBulkScannerRuntime();
+		$bulk_scans          = new BulkScanService(
 			$bulk_runtime,
 			$bulk_sessions,
 			$media_reader,
 			$settings
 		);
-		$bulk_preview   = new BulkPreviewService(
+		$bulk_preview        = new BulkPreviewService(
 			$bulk_sessions,
 			$bulk_runtime,
 			$media_reader,
 			$media_presenter,
 			$settings
 		);
-		$bulk_queue     = new BulkQueueService(
+		$bulk_queue          = new BulkQueueService(
 			$bulk_sessions,
 			$bulk_scans,
 			$media_reader,
@@ -222,8 +221,8 @@ final class Plugin {
 			$settings,
 			$queue_control_store
 		);
-		$status_refresh = new StatusRefreshService( $single_actions );
-		$status_summary = new StatusSummaryService(
+		$status_refresh      = new StatusRefreshService( $single_actions );
+		$status_summary      = new StatusSummaryService(
 			$queue,
 			new StatisticsCacheReader( new WordPressOptionStore() ),
 			$settings,
@@ -232,15 +231,15 @@ final class Plugin {
 			$status_refresh,
 			$queue_control
 		);
-		$admin_pages = array(
+		$admin_pages         = array(
 			new DashboardPage(),
 			new BulkPage(),
 			new SettingsPage(),
 			new DiagnosticsPage(),
 			new LogsPage(),
 		);
-		$delivery_runtime  = new WordPressAttachmentImageRuntime();
-		$delivery_analyzer = new WordPressImageMarkupAnalyzer();
+		$delivery_runtime    = new WordPressAttachmentImageRuntime();
+		$delivery_analyzer   = new WordPressImageMarkupAnalyzer();
 
 		return new self(
 			$version,
@@ -364,7 +363,7 @@ final class Plugin {
 					\HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentProcessor::for_wordpress(),
 					$settings,
 					new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeFileCleaner(
-						(function (): string {
+						( function (): string {
 							if ( function_exists( 'wp_get_upload_dir' ) ) {
 								$uploads = wp_get_upload_dir();
 								if ( is_array( $uploads ) && ! empty( $uploads['basedir'] ) && is_string( $uploads['basedir'] ) ) {
@@ -373,7 +372,7 @@ final class Plugin {
 							}
 
 							return '';
-						})(),
+						} )(),
 						new \HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressFilesystem()
 					),
 					\HyperWeb\LighthouseImageOptimizer\Logging\Logger::for_wordpress(),

@@ -199,6 +199,7 @@ final class MediaLibraryAssets implements HookProviderInterface {
 		if ( function_exists( 'wp_json_encode' ) ) {
 			$json = wp_json_encode( $payload );
 		} else {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Fallback for non-WordPress test/runtime contexts.
 			$json = json_encode( $payload );
 		}
 

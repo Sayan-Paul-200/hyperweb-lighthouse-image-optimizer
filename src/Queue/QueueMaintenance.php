@@ -167,7 +167,7 @@ final class QueueMaintenance implements HookProviderInterface {
 			return;
 		}
 
-		$repaired = 0;
+		$repaired        = 0;
 		$repair_failures = 0;
 
 		foreach ( $result->recovered_attachment_ids() as $attachment_id ) {
@@ -202,15 +202,15 @@ final class QueueMaintenance implements HookProviderInterface {
 		}
 
 		$context = array(
-			'codes'                   => $result->codes(),
-			'scanned'                 => $result->scanned(),
-			'active'                  => $result->active(),
-			'stale_recovered'         => $result->stale_recovered(),
-			'invalid_recovered'       => $result->invalid_recovered(),
-			'failed'                  => $result->failed(),
-			'status_repairs'          => $repaired,
-			'status_repair_failures'  => $repair_failures,
-			'sample_attachment_ids'   => $result->sample_attachment_ids(),
+			'codes'                    => $result->codes(),
+			'scanned'                  => $result->scanned(),
+			'active'                   => $result->active(),
+			'stale_recovered'          => $result->stale_recovered(),
+			'invalid_recovered'        => $result->invalid_recovered(),
+			'failed'                   => $result->failed(),
+			'status_repairs'           => $repaired,
+			'status_repair_failures'   => $repair_failures,
+			'sample_attachment_ids'    => $result->sample_attachment_ids(),
 			'recovered_attachment_ids' => $result->recovered_attachment_ids(),
 		);
 

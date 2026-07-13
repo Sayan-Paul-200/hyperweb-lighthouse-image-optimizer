@@ -43,10 +43,10 @@ final class FormatSourceSet {
 	/**
 	 * Create source set.
 	 *
-	 * @param string                        $format Format.
-	 * @param string                        $mime MIME type.
-	 * @param array<int|string,mixed>       $sources Sources.
-	 * @param string|null                   $srcset Optional prebuilt srcset.
+	 * @param string                  $format Format.
+	 * @param string                  $mime MIME type.
+	 * @param array<int|string,mixed> $sources Sources.
+	 * @param string|null             $srcset Optional prebuilt srcset.
 	 */
 	public function __construct( string $format, string $mime, array $sources, ?string $srcset = null ) {
 		$this->format  = strtolower( trim( $format ) );
@@ -107,10 +107,10 @@ final class FormatSourceSet {
 	 */
 	public function to_array(): array {
 		return array(
-			'format' => $this->format,
-			'mime'   => $this->mime,
+			'format'  => $this->format,
+			'mime'    => $this->mime,
 			'sources' => $this->sources,
-			'srcset' => $this->srcset,
+			'srcset'  => $this->srcset,
 		);
 	}
 
@@ -128,9 +128,9 @@ final class FormatSourceSet {
 				continue;
 			}
 
-			$url = isset( $source['url'] ) && is_scalar( $source['url'] ) ? trim( (string) $source['url'] ) : '';
+			$url        = isset( $source['url'] ) && is_scalar( $source['url'] ) ? trim( (string) $source['url'] ) : '';
 			$descriptor = isset( $source['descriptor'] ) && is_scalar( $source['descriptor'] ) ? trim( (string) $source['descriptor'] ) : '';
-			$value = isset( $source['value'] ) && is_numeric( $source['value'] ) ? (int) $source['value'] : 0;
+			$value      = isset( $source['value'] ) && is_numeric( $source['value'] ) ? (int) $source['value'] : 0;
 
 			if ( '' === $url || 'w' !== $descriptor || $value < 1 || isset( $normalized[ $value ] ) ) {
 				continue;

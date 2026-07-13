@@ -46,13 +46,13 @@ final class DerivativeUrlResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function test_resolution_follows_runtime_domain_and_scheme_changes(): void {
-		$runtime            = new FakeUploadsUrlRuntime();
-		$runtime->base_url  = 'http://old.example.test/wp-content/uploads';
-		$resolver           = $this->resolver( $runtime );
-		$request            = new DerivativeUrlRequest( '2026/07/hero.jpg.hwlio.avif', 123, 'full', 'avif' );
-		$first              = $resolver->resolve( $request );
-		$runtime->base_url  = 'https://cdn.example.test/wp-content/uploads';
-		$second             = $resolver->resolve( $request );
+		$runtime           = new FakeUploadsUrlRuntime();
+		$runtime->base_url = 'http://old.example.test/wp-content/uploads';
+		$resolver          = $this->resolver( $runtime );
+		$request           = new DerivativeUrlRequest( '2026/07/hero.jpg.hwlio.avif', 123, 'full', 'avif' );
+		$first             = $resolver->resolve( $request );
+		$runtime->base_url = 'https://cdn.example.test/wp-content/uploads';
+		$second            = $resolver->resolve( $request );
 
 		self::assertSame(
 			'http://old.example.test/wp-content/uploads/2026/07/hero.jpg.hwlio.avif',
@@ -127,8 +127,8 @@ final class DerivativeUrlResolverTest extends TestCase {
 				basename( $url )
 			);
 		};
-		$resolver = $this->resolver( $runtime );
-		$result   = $resolver->resolve(
+		$resolver                 = $this->resolver( $runtime );
+		$result                   = $resolver->resolve(
 			new DerivativeUrlRequest( '2026/07/hero.jpg.hwlio.avif', 88, 'full', 'avif' )
 		);
 
@@ -161,8 +161,11 @@ final class DerivativeUrlResolverTest extends TestCase {
 			'https://example.test/wp-content/uploads/2026/07/hero.jpg.hwlio.webp',
 			$payload['url']
 		);
-		self::assertStringNotContainsString( 'C:/', json_encode( $payload ) ?: '' );
-		self::assertStringNotContainsString( '/var/www/', json_encode( $payload ) ?: '' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test assertion for serialized payload safety.
+		$json       = json_encode( $payload );
+		$serialized = is_string( $json ) ? $json : '';
+		self::assertStringNotContainsString( 'C:/', $serialized );
+		self::assertStringNotContainsString( '/var/www/', $serialized );
 	}
 
 	/**

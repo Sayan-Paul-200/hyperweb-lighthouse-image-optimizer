@@ -12,8 +12,8 @@ namespace HyperWeb\LighthouseImageOptimizer\Queue;
  */
 final class AttachmentJobControlResult {
 
-	public const CODE_CANCELLED = 'attachment_jobs_cancelled';
-	public const CODE_UNAVAILABLE = 'attachment_jobs_unavailable';
+	public const CODE_CANCELLED     = 'attachment_jobs_cancelled';
+	public const CODE_UNAVAILABLE   = 'attachment_jobs_unavailable';
 	public const CODE_CANCEL_FAILED = 'attachment_job_cancel_failed';
 
 	/**

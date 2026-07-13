@@ -234,8 +234,11 @@ final class PictureRendererTest extends TestCase {
 			new PictureRenderRequest( 123, '<img src="hero.jpg" alt="Hero">', $this->source_sets() )
 		)->to_array();
 
-		self::assertStringNotContainsString( 'C:/', json_encode( $payload ) ?: '' );
-		self::assertStringNotContainsString( '/var/www/', json_encode( $payload ) ?: '' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test assertion for serialized payload safety.
+		$json       = json_encode( $payload );
+		$serialized = is_string( $json ) ? $json : '';
+		self::assertStringNotContainsString( 'C:/', $serialized );
+		self::assertStringNotContainsString( '/var/www/', $serialized );
 	}
 
 	/**

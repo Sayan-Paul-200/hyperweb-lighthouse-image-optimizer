@@ -19,13 +19,13 @@ use HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe;
  */
 final class DerivativeHealthDiagnostics {
 
-	private const PAGE_SIZE             = 100;
-	private const MAX_ATTACHMENTS       = 1000;
-	private const SAMPLE_LIMIT          = 20;
-	private const ID_DELIVERY_FILES     = 'delivery_derivative_files';
-	private const CODE_OK               = 'delivery_derivatives_ok';
-	private const CODE_MISSING          = 'delivery_derivatives_missing';
-	private const CODE_NONE             = 'delivery_derivatives_none';
+	private const PAGE_SIZE           = 100;
+	private const MAX_ATTACHMENTS     = 1000;
+	private const SAMPLE_LIMIT        = 20;
+	private const ID_DELIVERY_FILES   = 'delivery_derivative_files';
+	private const CODE_OK             = 'delivery_derivatives_ok';
+	private const CODE_MISSING        = 'delivery_derivatives_missing';
+	private const CODE_NONE           = 'delivery_derivatives_none';
 	private const CODE_SCAN_TRUNCATED = 'delivery_derivatives_scan_truncated';
 
 	/**
@@ -247,7 +247,7 @@ final class DerivativeHealthDiagnostics {
 			return false;
 		}
 
-		$candidate = $this->normalize_path( rtrim( $base_dir, "\\/" ) . '/' . $relative_path );
+		$candidate = $this->normalize_path( rtrim( $base_dir, '\\/' ) . '/' . $relative_path );
 
 		if ( ! $this->files->exists( $candidate ) || ! $this->files->is_file( $candidate ) ) {
 			return false;

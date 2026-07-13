@@ -57,11 +57,11 @@ final class MediaLibraryIntegration implements HookProviderInterface {
 	/**
 	 * Create the provider.
 	 *
-	 * @param SettingsRepositoryInterface $settings Settings repository.
+	 * @param SettingsRepositoryInterface  $settings Settings repository.
 	 * @param MediaLibraryRuntimeInterface $runtime Media runtime.
-	 * @param AttachmentStatusReader      $reader Status reader.
-	 * @param MediaAttachmentPresenter    $presenter Attachment presenter.
-	 * @param MediaAttachmentRenderer     $renderer Markup renderer.
+	 * @param AttachmentStatusReader       $reader Status reader.
+	 * @param MediaAttachmentPresenter     $presenter Attachment presenter.
+	 * @param MediaAttachmentRenderer      $renderer Markup renderer.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $settings,
@@ -246,6 +246,7 @@ final class MediaLibraryIntegration implements HookProviderInterface {
 	 */
 	private function translate( string $text ): string {
 		if ( function_exists( '__' ) ) {
+			// phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Wrapper accepts only plugin-owned literals provided by calling code.
 			return __( $text, 'hyperweb-lighthouse-image-optimizer' );
 		}
 

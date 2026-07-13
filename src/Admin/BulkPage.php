@@ -7,6 +7,9 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Admin;
 
+/**
+ * Renders the bulk optimization admin tab shell.
+ */
 final class BulkPage extends AbstractAdminPage {
 
 	/**
@@ -34,6 +37,7 @@ final class BulkPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	public function render(): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<div class="hwlio-bulk" data-hwlio-bulk="root">';
 		echo '<div class="hwlio-bulk__header">';
 		echo '<div class="hwlio-bulk__intro">';
@@ -140,6 +144,7 @@ final class BulkPage extends AbstractAdminPage {
 		echo '</div>';
 		echo '</section>';
 		echo '</div>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -151,6 +156,7 @@ final class BulkPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	private function render_select_field( string $name, string $label, array $options ): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<label class="hwlio-bulk__field">';
 		echo '<span class="hwlio-bulk__field-label">' . $this->escape_html( $label ) . '</span>';
 		echo '<select name="' . $this->escape_attr( $name ) . '">';
@@ -159,6 +165,7 @@ final class BulkPage extends AbstractAdminPage {
 		}
 		echo '</select>';
 		echo '</label>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -169,10 +176,12 @@ final class BulkPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	private function render_date_field( string $name, string $label ): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<label class="hwlio-bulk__field">';
 		echo '<span class="hwlio-bulk__field-label">' . $this->escape_html( $label ) . '</span>';
 		echo '<input type="date" name="' . $this->escape_attr( $name ) . '" />';
 		echo '</label>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -184,11 +193,13 @@ final class BulkPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	private function render_text_field( string $name, string $label, string $description ): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<label class="hwlio-bulk__field hwlio-bulk__field--wide">';
 		echo '<span class="hwlio-bulk__field-label">' . $this->escape_html( $label ) . '</span>';
 		echo '<input type="text" name="' . $this->escape_attr( $name ) . '" placeholder="' . $this->escape_attr( $description ) . '" />';
 		echo '<span class="description">' . $this->escape_html( $description ) . '</span>';
 		echo '</label>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -196,12 +207,15 @@ final class BulkPage extends AbstractAdminPage {
 	 *
 	 * @param string $key Summary key.
 	 * @param string $label Visible label.
+	 * @param string $group Summary group.
 	 * @return void
 	 */
 	private function render_summary_card( string $key, string $label, string $group = 'scan' ): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<div class="hwlio-bulk__summary-card" data-hwlio-bulk-summary-card="' . $this->escape_attr( $group . ':' . $key ) . '">';
 		echo '<span class="hwlio-bulk__summary-label">' . $this->escape_html( $label ) . '</span>';
 		echo '<span class="hwlio-bulk__summary-value" data-hwlio-bulk-summary-value="' . $this->escape_attr( $group . ':' . $key ) . '">0</span>';
 		echo '</div>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 }

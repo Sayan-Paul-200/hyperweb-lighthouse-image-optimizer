@@ -68,13 +68,13 @@ final class DeliveryManager implements HookProviderInterface {
 	/**
 	 * Create provider.
 	 *
-	 * @param SettingsRepositoryInterface  $settings Settings repository.
+	 * @param SettingsRepositoryInterface     $settings Settings repository.
 	 * @param AttachmentImageRuntimeInterface $runtime Runtime seam.
-	 * @param MarkupEligibility            $eligibility Eligibility service.
-	 * @param AttachmentImageSourceExtractor $extractor Source extractor.
-	 * @param SourceSetBuilder             $builder Source-set builder.
-	 * @param PictureRenderer              $renderer Picture renderer.
-	 * @param TransformedMarkupRegistry    $registry Request-local registry.
+	 * @param MarkupEligibility               $eligibility Eligibility service.
+	 * @param AttachmentImageSourceExtractor  $extractor Source extractor.
+	 * @param SourceSetBuilder                $builder Source-set builder.
+	 * @param PictureRenderer                 $renderer Picture renderer.
+	 * @param TransformedMarkupRegistry       $registry Request-local registry.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $settings,
@@ -158,10 +158,10 @@ final class DeliveryManager implements HookProviderInterface {
 	/**
 	 * Transform one attachment-backed image fragment through the shared delivery pipeline.
 	 *
-	 * @param string             $html Image HTML.
-	 * @param int                $attachment_id Attachment ID.
+	 * @param string              $html Image HTML.
+	 * @param int                 $attachment_id Attachment ID.
 	 * @param array<string,mixed> $context Shared delivery context.
-	 * @param int|null           $known_width Known width hint.
+	 * @param int|null            $known_width Known width hint.
 	 * @return string
 	 */
 	private function transform_markup( string $html, int $attachment_id, array $context, ?int $known_width ): string {
@@ -178,8 +178,8 @@ final class DeliveryManager implements HookProviderInterface {
 				return $html;
 			}
 
-			$image_meta  = $this->runtime->attachment_metadata( $attachment_id );
-			$extraction  = $this->extractor->extract( $html, $known_width );
+			$image_meta = $this->runtime->attachment_metadata( $attachment_id );
+			$extraction = $this->extractor->extract( $html, $known_width );
 
 			if ( ! $extraction->has_sources() || array() === $image_meta ) {
 				return $html;

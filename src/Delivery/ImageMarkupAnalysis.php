@@ -41,9 +41,9 @@ final class ImageMarkupAnalysis {
 	 * @param string|null $sizes Sizes attribute value.
 	 */
 	public function __construct( bool $renderable_img, bool $already_picture, ?string $sizes = null ) {
-		$this->renderable_img = $renderable_img;
+		$this->renderable_img  = $renderable_img;
 		$this->already_picture = $already_picture;
-		$this->sizes          = null === $sizes ? null : trim( $sizes );
+		$this->sizes           = null === $sizes ? null : trim( $sizes );
 	}
 
 	/**
@@ -108,9 +108,9 @@ final class ImageMarkupAnalysis {
 	 */
 	public function to_array(): array {
 		return array(
-			'renderable_img' => $this->renderable_img,
+			'renderable_img'  => $this->renderable_img,
 			'already_picture' => $this->already_picture,
-			'sizes'          => $this->sizes,
+			'sizes'           => $this->sizes,
 		);
 	}
 }

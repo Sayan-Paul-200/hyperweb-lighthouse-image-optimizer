@@ -110,7 +110,7 @@ final class AttachmentActionServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_optimize_surfaces_already_queued_as_success(): void {
-		$runtime = $this->build_runtime();
+		$runtime                   = $this->build_runtime();
 		$runtime['queue']->results = array(
 			QueueStatus::already_queued( array( 'Already queued.' ) ),
 			QueueStatus::already_queued( array( 'Already queued.' ) ),
@@ -250,7 +250,7 @@ final class AttachmentActionServiceTest extends TestCase {
 		);
 		$probe      = new FakeImageFileProbe( array( 'C:/site/wp-content/uploads' ) );
 		$probe->add_file( 'C:/site/wp-content/uploads/2026/07/hero.jpg', 5000, 1783526400, 'image/jpeg', 2400, 1600 );
-		$collector  = new SourceCollector(
+		$collector = new SourceCollector(
 			new FakeAttachmentSourceProvider(
 				'C:/site/wp-content/uploads/2026/07/hero.jpg',
 				array(
@@ -263,8 +263,8 @@ final class AttachmentActionServiceTest extends TestCase {
 			),
 			$probe
 		);
-		$details    = new AttachmentDetailsService( $repository );
-		$controls   = new QueueControlStateStore(
+		$details   = new AttachmentDetailsService( $repository );
+		$controls  = new QueueControlStateStore(
 			new FakeOptionStore(
 				! empty( $overrides['paused'] )
 					? array(
@@ -281,7 +281,7 @@ final class AttachmentActionServiceTest extends TestCase {
 				return '2026-07-12 00:00:00';
 			}
 		);
-		$queueing   = new AttachmentQueueService(
+		$queueing  = new AttachmentQueueService(
 			$queue,
 			$store,
 			$repository,
@@ -290,7 +290,7 @@ final class AttachmentActionServiceTest extends TestCase {
 			$clock,
 			$controls
 		);
-		$service    = new AttachmentActionService(
+		$service   = new AttachmentActionService(
 			$queue,
 			$settings,
 			$store,

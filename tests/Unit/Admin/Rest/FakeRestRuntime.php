@@ -66,14 +66,14 @@ final class FakeRestRuntime implements RestRuntimeInterface {
 	/**
 	 * Register one route.
 	 *
-	 * @param string                $namespace Route namespace.
+	 * @param string                $rest_namespace Route namespace.
 	 * @param string                $route Route pattern.
 	 * @param array<string,mixed>[] $definitions Route definitions.
 	 * @return void
 	 */
-	public function register_route( string $namespace, string $route, array $definitions ): void {
+	public function register_route( string $rest_namespace, string $route, array $definitions ): void {
 		$this->routes[] = array(
-			'namespace'   => $namespace,
+			'namespace'   => $rest_namespace,
 			'route'       => $route,
 			'definitions' => $definitions,
 		);

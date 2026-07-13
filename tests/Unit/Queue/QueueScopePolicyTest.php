@@ -50,11 +50,11 @@ final class QueueScopePolicyTest extends TestCase {
 		);
 
 		$allowed_patterns = array(
-			'src/Queue/ActionSchedulerQueue.php' => array(
+			'src/Queue/ActionSchedulerQueue.php'      => array(
 				'async queue scheduling',
 				'single queue scheduling',
 			),
-			'src/Admin/Rest/RestApi.php'         => array(
+			'src/Admin/Rest/RestApi.php'              => array(
 				'REST API hook',
 			),
 			'src/Admin/Rest/WordPressRestRuntime.php' => array(
@@ -70,17 +70,17 @@ final class QueueScopePolicyTest extends TestCase {
 				'media row actions',
 				'media attachment fields',
 			),
-			'src/Queue/NewUploadIntegration.php' => array(
+			'src/Queue/NewUploadIntegration.php'      => array(
 				'new-upload media hook',
 				'runtime hook registration',
 			),
-			'src/Queue/OptimizationWorker.php'   => array(
+			'src/Queue/OptimizationWorker.php'        => array(
 				'runtime hook registration',
 			),
-			'src/Queue/QueueMaintenance.php'     => array(
+			'src/Queue/QueueMaintenance.php'          => array(
 				'runtime hook registration',
 			),
-			'src/Queue/ReconciliationWorker.php' => array(
+			'src/Queue/ReconciliationWorker.php'      => array(
 				'runtime hook registration',
 			),
 		);

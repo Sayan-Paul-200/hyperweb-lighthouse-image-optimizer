@@ -60,10 +60,10 @@ final class ImageScopePolicyTest extends TestCase {
 		);
 
 		$allowed_patterns = array(
-			'src/Admin/Rest/RestApi.php'                => array(
+			'src/Admin/Rest/RestApi.php'                  => array(
 				'REST API hook',
 			),
-			'src/Admin/Rest/WordPressRestRuntime.php'  => array(
+			'src/Admin/Rest/WordPressRestRuntime.php'     => array(
 				'REST route registration',
 			),
 			'src/Admin/MediaLibrary/MediaLibraryAssets.php' => array(
@@ -84,7 +84,7 @@ final class ImageScopePolicyTest extends TestCase {
 				'WordPress file delete',
 				'file delete operation',
 			),
-			'src/Delivery/DeliveryManager.php' => array(
+			'src/Delivery/DeliveryManager.php'            => array(
 				'frontend image hook',
 				'frontend content hook',
 			),

@@ -45,10 +45,6 @@ final class WordPressImageMarkupAnalyzer implements ImageMarkupAnalyzerInterface
 			return ImageMarkupAnalysis::invalid();
 		}
 
-		if ( $processor->next_tag() || $this->paused_at_incomplete_token( $processor ) ) {
-			return ImageMarkupAnalysis::invalid();
-		}
-
 		return ImageMarkupAnalysis::renderable( $this->extract_attribute_value( $html, 'sizes' ) );
 	}
 

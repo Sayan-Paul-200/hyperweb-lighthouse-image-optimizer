@@ -176,7 +176,8 @@ final class BulkScanFilters {
 		$values = array();
 
 		if ( is_string( $value ) ) {
-			$values = preg_split( '/[\s,]+/', trim( $value ) ) ?: array();
+			$split  = preg_split( '/[\s,]+/', trim( $value ) );
+			$values = is_array( $split ) ? $split : array();
 		} elseif ( is_array( $value ) ) {
 			$values = $value;
 		}

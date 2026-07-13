@@ -72,6 +72,7 @@ final class WordPressAdminRuntime implements AdminRuntimeInterface {
 	 * @return void
 	 */
 	public function forbid( string $message, string $title = '', array $args = array() ): void {
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_die handles escaped admin error output.
 		\wp_die( $message, $title, $args );
 	}
 }

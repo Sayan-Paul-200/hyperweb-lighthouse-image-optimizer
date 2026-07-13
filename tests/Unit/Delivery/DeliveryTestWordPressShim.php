@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile Universal.Files.SeparateFunctionsFromOO.Mixed, Generic.Files.OneObjectStructurePerFile.MultipleFound -- Test shim intentionally mixes procedural functions and a lightweight class.
 /**
  * WordPress function shims for delivery tests.
  *
@@ -153,7 +154,7 @@ if ( ! class_exists( 'WP_HTML_Tag_Processor' ) ) {
 				$offset = $position + strlen( $full );
 			}
 
-			$remaining = substr( $this->html, $offset );
+			$remaining    = substr( $this->html, $offset );
 			$this->paused = false !== strpos( $remaining, '<' ) && false === strpos( $remaining, '>' );
 		}
 

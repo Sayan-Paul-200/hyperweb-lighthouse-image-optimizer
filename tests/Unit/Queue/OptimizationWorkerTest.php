@@ -440,11 +440,11 @@ final class OptimizationWorkerTest extends TestCase {
 	/**
 	 * Build worker runtime with real collection/fingerprint services and fake orchestration seams.
 	 *
-	 * @param array<string,mixed>             $config Runtime config.
-	 * @param FakeQueue|null                  $queue Queue override.
-	 * @param FakeSettingsRepository|null     $settings Settings override.
-	 * @param QueueControlStateStore|null     $controls Queue control store.
-	 * @param FakeSingleActionScheduler|null  $scheduler Single action scheduler.
+	 * @param array<string,mixed>            $config Runtime config.
+	 * @param FakeQueue|null                 $queue Queue override.
+	 * @param FakeSettingsRepository|null    $settings Settings override.
+	 * @param QueueControlStateStore|null    $controls Queue control store.
+	 * @param FakeSingleActionScheduler|null $scheduler Single action scheduler.
 	 * @return array<string,mixed>
 	 */
 	private function build_runtime(

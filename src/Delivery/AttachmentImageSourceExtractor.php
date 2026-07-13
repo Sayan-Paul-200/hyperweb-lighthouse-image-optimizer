@@ -42,7 +42,7 @@ final class AttachmentImageSourceExtractor {
 			return new AttachmentImageSourceExtraction( array() );
 		}
 
-		$srcset = $this->attribute_value( $html, 'srcset' );
+		$srcset  = $this->attribute_value( $html, 'srcset' );
 		$sources = $this->parse_srcset( $srcset );
 
 		if ( array() === $sources ) {
@@ -97,7 +97,7 @@ final class AttachmentImageSourceExtractor {
 			}
 
 			$url   = trim( $matches[1] );
-			$width = isset( $matches[2] ) ? (int) $matches[2] : 0;
+			$width = (int) $matches[2];
 
 			if ( '' === $url || $width < 1 || isset( $sources[ $width ] ) ) {
 				continue;

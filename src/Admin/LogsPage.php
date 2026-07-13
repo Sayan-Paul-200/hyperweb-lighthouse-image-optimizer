@@ -7,6 +7,9 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Admin;
 
+/**
+ * Renders the logs admin tab shell.
+ */
 final class LogsPage extends AbstractAdminPage {
 
 	/**
@@ -44,6 +47,7 @@ final class LogsPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	public function render(): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<div class="hwlio-logs" data-hwlio-logs="root">';
 		echo '<div class="hwlio-logs__header">';
 		echo '<div class="hwlio-logs__intro">';
@@ -116,5 +120,6 @@ final class LogsPage extends AbstractAdminPage {
 		echo '</div>';
 		echo '</section>';
 		echo '</div>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 }

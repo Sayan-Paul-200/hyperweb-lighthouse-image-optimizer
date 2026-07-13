@@ -12,10 +12,10 @@ namespace HyperWeb\LighthouseImageOptimizer\Delivery;
  */
 final class SourceSetBuildResult {
 
-	public const CODE_BUILT                     = 'built';
-	public const CODE_NO_CANDIDATES             = 'no_candidates';
-	public const CODE_INVALID_IMAGE_META        = 'invalid_image_meta';
-	public const CODE_MANIFEST_EMPTY            = 'manifest_empty';
+	public const CODE_BUILT                      = 'built';
+	public const CODE_NO_CANDIDATES              = 'no_candidates';
+	public const CODE_INVALID_IMAGE_META         = 'invalid_image_meta';
+	public const CODE_MANIFEST_EMPTY             = 'manifest_empty';
 	public const CODE_PARTIAL_CANDIDATES_OMITTED = 'partial_candidates_omitted';
 
 	/**

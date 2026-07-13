@@ -88,11 +88,11 @@ final class AttachmentCleanup implements HookProviderInterface {
 	/**
 	 * Create provider.
 	 *
-	 * @param DerivativeRepository          $repository Derivative repository.
-	 * @param AttachmentMetaStoreInterface  $meta Attachment meta store.
-	 * @param DerivativeFileCleaner         $files Shared derivative file cleaner.
-	 * @param AttachmentJobCleanerInterface $jobs Pending job cleaner.
-	 * @param SourceCollector               $collector Source collector.
+	 * @param DerivativeRepository                      $repository Derivative repository.
+	 * @param AttachmentMetaStoreInterface              $meta Attachment meta store.
+	 * @param DerivativeFileCleaner                     $files Shared derivative file cleaner.
+	 * @param AttachmentJobCleanerInterface             $jobs Pending job cleaner.
+	 * @param SourceCollector                           $collector Source collector.
 	 * @param CacheInvalidationDispatcherInterface|null $cache_invalidation Cache invalidation dispatcher.
 	 */
 	public function __construct(

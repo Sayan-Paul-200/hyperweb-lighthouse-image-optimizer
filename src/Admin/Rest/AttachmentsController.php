@@ -56,11 +56,11 @@ final class AttachmentsController implements RestControllerInterface {
 	/**
 	 * Create the controller.
 	 *
-	 * @param RestRuntimeInterface    $runtime REST runtime.
-	 * @param RestErrorFactory        $errors Error factory.
+	 * @param RestRuntimeInterface     $runtime REST runtime.
+	 * @param RestErrorFactory         $errors Error factory.
 	 * @param AttachmentDetailsService $details Details service.
-	 * @param AttachmentActionService $actions Action service.
-	 * @param BulkPreviewService      $preview Bulk preview service.
+	 * @param AttachmentActionService  $actions Action service.
+	 * @param BulkPreviewService       $preview Bulk preview service.
 	 */
 	public function __construct(
 		RestRuntimeInterface $runtime,
@@ -105,12 +105,12 @@ final class AttachmentsController implements RestControllerInterface {
 							'sanitize_callback' => array( $this, 'sanitize_scan_token' ),
 							'validate_callback' => array( $this, 'validate_scan_token' ),
 						),
-						'page' => array(
+						'page'       => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_pagination_number' ),
 							'validate_callback' => array( $this, 'validate_pagination_number' ),
 						),
-						'per_page' => array(
+						'per_page'   => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_pagination_number' ),
 							'validate_callback' => array( $this, 'validate_pagination_number' ),
@@ -303,7 +303,7 @@ final class AttachmentsController implements RestControllerInterface {
 			return $this->errors->invalid_force_flag();
 		}
 
-		return $this->action_response( $this->actions->optimize( $attachment_id, true === RequestData::boolean( $request, 'force' ) ) );
+		return $this->action_response( $this->actions->optimize( $attachment_id, RequestData::boolean( $request, 'force' ) === true ) );
 	}
 
 	/**

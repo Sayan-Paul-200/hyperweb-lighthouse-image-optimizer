@@ -7,6 +7,9 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Admin;
 
+/**
+ * Renders the dashboard admin tab shell.
+ */
 final class DashboardPage extends AbstractAdminPage {
 
 	/**
@@ -34,6 +37,7 @@ final class DashboardPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	public function render(): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<div class="hwlio-dashboard" data-hwlio-dashboard="root">';
 		echo '<div class="hwlio-dashboard__header">';
 		echo '<div class="hwlio-dashboard__intro">';
@@ -75,6 +79,7 @@ final class DashboardPage extends AbstractAdminPage {
 		);
 		echo '</div>';
 		echo '</div>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -86,11 +91,13 @@ final class DashboardPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	private function render_panel( string $panel, string $title, string $message ): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<section class="card hwlio-dashboard__panel" data-hwlio-dashboard-panel="' . $this->escape_attr( $panel ) . '">';
 		echo '<h3>' . $this->escape_html( $title ) . '</h3>';
 		echo '<div class="hwlio-dashboard__panel-body" data-hwlio-dashboard-body="' . $this->escape_attr( $panel ) . '">';
 		echo '<p class="description">' . $this->escape_html( $message ) . '</p>';
 		echo '</div>';
 		echo '</section>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 }

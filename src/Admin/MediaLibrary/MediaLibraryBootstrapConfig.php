@@ -87,20 +87,20 @@ final class MediaLibraryBootstrapConfig {
 	 */
 	public function to_array(): array {
 		return array(
-			'version'  => $this->version,
-			'rest'     => array(
+			'version'   => $this->version,
+			'rest'      => array(
 				'root'  => $this->rest_root,
 				'nonce' => $this->rest_nonce,
 			),
-			'settings' => array(
-				'automaticOptimization'  => $this->automatic_optimization,
-				'mediaLibraryControls'   => $this->controls_enabled,
+			'settings'  => array(
+				'automaticOptimization'    => $this->automatic_optimization,
+				'mediaLibraryControls'     => $this->controls_enabled,
 				'allowAttachmentExclusion' => $this->exclusion_allowed,
 			),
-			'polling'  => array(
+			'polling'   => array(
 				'activeMs' => 5000,
 			),
-			'labels'   => array(
+			'labels'    => array(
 				'states'  => array(
 					'unprocessed' => $this->translate( 'Unprocessed' ),
 					'queued'      => $this->translate( 'Queued' ),
@@ -122,16 +122,16 @@ final class MediaLibraryBootstrapConfig {
 					'view-details' => $this->translate( 'View Details' ),
 				),
 			),
-			'strings'  => array(
-				'bootstrapError'  => $this->translate( 'The Media Library controls could not initialize on this screen.' ),
-				'requestError'    => $this->translate( 'A Media Library request failed before it could complete.' ),
-				'detailsLoading'  => $this->translate( 'Loading attachment details...' ),
-				'detailsEmpty'    => $this->translate( 'No attachment optimization details are available yet.' ),
+			'strings'   => array(
+				'bootstrapError'    => $this->translate( 'The Media Library controls could not initialize on this screen.' ),
+				'requestError'      => $this->translate( 'A Media Library request failed before it could complete.' ),
+				'detailsLoading'    => $this->translate( 'Loading attachment details...' ),
+				'detailsEmpty'      => $this->translate( 'No attachment optimization details are available yet.' ),
 				'reoptimizeConfirm' => $this->translate( 'Re-optimize this attachment using the current quality settings?' ),
-				'exclusionNotice' => $this->translate( 'Exclusion prevents future queueing but does not cancel work that is already queued.' ),
-				'queuedNotice'    => $this->translate( 'Attachment work has been queued.' ),
-				'includeNotice'   => $this->translate( 'Attachment included in optimization.' ),
-				'excludeNotice'   => $this->translate( 'Attachment excluded from future optimization queueing.' ),
+				'exclusionNotice'   => $this->translate( 'Exclusion prevents future queueing but does not cancel work that is already queued.' ),
+				'queuedNotice'      => $this->translate( 'Attachment work has been queued.' ),
+				'includeNotice'     => $this->translate( 'Attachment included in optimization.' ),
+				'excludeNotice'     => $this->translate( 'Attachment excluded from future optimization queueing.' ),
 			),
 			'selectors' => array(
 				'noticeContainerId' => 'hwlio-media-notices',
@@ -149,6 +149,7 @@ final class MediaLibraryBootstrapConfig {
 	 */
 	private function translate( string $text ): string {
 		if ( function_exists( '__' ) ) {
+			// phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Wrapper accepts only plugin-owned literals provided by calling code.
 			return __( $text, 'hyperweb-lighthouse-image-optimizer' );
 		}
 

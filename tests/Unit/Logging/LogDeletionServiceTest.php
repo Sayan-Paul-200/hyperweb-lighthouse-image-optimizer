@@ -21,9 +21,9 @@ final class LogDeletionServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_clear_all_reports_incomplete_when_full_batch_deleted(): void {
-		$database                    = new FakeLogDatabase();
+		$database                      = new FakeLogDatabase();
 		$database->delete_batch_result = LogDeletionService::BATCH_SIZE;
-		$service                     = new LogDeletionService( $database, 'wp_hwlio_logs' );
+		$service                       = new LogDeletionService( $database, 'wp_hwlio_logs' );
 
 		$result = $service->clear_all()->to_array();
 
@@ -39,9 +39,9 @@ final class LogDeletionServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_clear_all_reports_complete_for_short_batch(): void {
-		$database                    = new FakeLogDatabase();
+		$database                      = new FakeLogDatabase();
 		$database->delete_batch_result = 12;
-		$service                     = new LogDeletionService( $database, 'wp_hwlio_logs' );
+		$service                       = new LogDeletionService( $database, 'wp_hwlio_logs' );
 
 		$result = $service->clear_all()->to_array();
 

@@ -148,18 +148,18 @@ final class OptimizationWorker implements HookProviderInterface {
 	/**
 	 * Create worker.
 	 *
-	 * @param QueueInterface               $queue Queue adapter.
-	 * @param AttachmentLockManager        $locks Lock manager.
-	 * @param SourceCollector              $collector Source collector.
-	 * @param AttachmentFingerprintBuilder $fingerprinter Fingerprint builder.
-	 * @param DerivativeRepository         $repository Derivative repository.
-	 * @param AttachmentProcessorInterface $processor Attachment processor.
-	 * @param SettingsRepositoryInterface  $settings Settings repository.
-	 * @param LoggerInterface              $logger Logger.
-	 * @param OptimizationRetryPolicy      $retry_policy Retry policy.
-	 * @param AttachmentClockInterface     $clock Clock.
+	 * @param QueueInterface                       $queue Queue adapter.
+	 * @param AttachmentLockManager                $locks Lock manager.
+	 * @param SourceCollector                      $collector Source collector.
+	 * @param AttachmentFingerprintBuilder         $fingerprinter Fingerprint builder.
+	 * @param DerivativeRepository                 $repository Derivative repository.
+	 * @param AttachmentProcessorInterface         $processor Attachment processor.
+	 * @param SettingsRepositoryInterface          $settings Settings repository.
+	 * @param LoggerInterface                      $logger Logger.
+	 * @param OptimizationRetryPolicy              $retry_policy Retry policy.
+	 * @param AttachmentClockInterface             $clock Clock.
 	 * @param QueueControlStateStoreInterface|null $controls Queue control state store.
-	 * @param SingleActionSchedulerInterface|null $single_actions Single action scheduler.
+	 * @param SingleActionSchedulerInterface|null  $single_actions Single action scheduler.
 	 */
 	public function __construct(
 		QueueInterface $queue,
@@ -175,17 +175,17 @@ final class OptimizationWorker implements HookProviderInterface {
 		?QueueControlStateStoreInterface $controls = null,
 		?SingleActionSchedulerInterface $single_actions = null
 	) {
-		$this->queue         = $queue;
-		$this->locks         = $locks;
-		$this->collector     = $collector;
-		$this->fingerprinter = $fingerprinter;
-		$this->repository    = $repository;
-		$this->processor     = $processor;
-		$this->settings      = $settings;
-		$this->logger        = $logger;
-		$this->retry_policy  = $retry_policy;
-		$this->clock         = $clock;
-		$this->controls      = $controls;
+		$this->queue          = $queue;
+		$this->locks          = $locks;
+		$this->collector      = $collector;
+		$this->fingerprinter  = $fingerprinter;
+		$this->repository     = $repository;
+		$this->processor      = $processor;
+		$this->settings       = $settings;
+		$this->logger         = $logger;
+		$this->retry_policy   = $retry_policy;
+		$this->clock          = $clock;
+		$this->controls       = $controls;
 		$this->single_actions = $single_actions;
 	}
 
@@ -267,7 +267,7 @@ final class OptimizationWorker implements HookProviderInterface {
 			return;
 		}
 
-		$acquired       = $this->locks->acquire( $attachment_id );
+		$acquired = $this->locks->acquire( $attachment_id );
 
 		if ( ! $acquired->is_successful() ) {
 			$this->handle_lock_unavailable( $job, $current_status, $job_id, $max_retries, $acquired->messages() );

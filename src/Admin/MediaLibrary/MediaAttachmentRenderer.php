@@ -150,12 +150,12 @@ final class MediaAttachmentRenderer {
 	 */
 	private function action_label( string $action ): string {
 		$labels = array(
-			AttachmentActionAvailability::ACTION_OPTIMIZE     => 'Optimize Now',
-			AttachmentActionAvailability::ACTION_RETRY        => 'Retry',
-			AttachmentActionAvailability::ACTION_REOPTIMIZE   => 'Re-optimize',
-			AttachmentActionAvailability::ACTION_RECONCILE    => 'Reconcile Files',
-			AttachmentActionAvailability::ACTION_EXCLUDE      => 'Exclude from Optimization',
-			AttachmentActionAvailability::ACTION_INCLUDE      => 'Include in Optimization',
+			AttachmentActionAvailability::ACTION_OPTIMIZE  => 'Optimize Now',
+			AttachmentActionAvailability::ACTION_RETRY     => 'Retry',
+			AttachmentActionAvailability::ACTION_REOPTIMIZE => 'Re-optimize',
+			AttachmentActionAvailability::ACTION_RECONCILE => 'Reconcile Files',
+			AttachmentActionAvailability::ACTION_EXCLUDE   => 'Exclude from Optimization',
+			AttachmentActionAvailability::ACTION_INCLUDE   => 'Include in Optimization',
 			AttachmentActionAvailability::ACTION_VIEW_DETAILS => 'View Details',
 		);
 
@@ -170,6 +170,7 @@ final class MediaAttachmentRenderer {
 	 */
 	private function translate( string $text ): string {
 		if ( function_exists( '__' ) ) {
+			// phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Wrapper accepts only plugin-owned literals provided by calling code.
 			return __( $text, 'hyperweb-lighthouse-image-optimizer' );
 		}
 

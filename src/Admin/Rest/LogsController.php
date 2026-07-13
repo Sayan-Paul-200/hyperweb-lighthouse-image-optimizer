@@ -93,12 +93,12 @@ final class LogsController implements RestControllerInterface {
 					'callback'            => array( $this, 'get_logs' ),
 					'permission_callback' => array( $this, 'can_manage_options' ),
 					'args'                => array(
-						'level' => array(
+						'level'         => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_level' ),
 							'validate_callback' => array( $this, 'validate_level' ),
 						),
-						'code' => array(
+						'code'          => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_code' ),
 							'validate_callback' => array( $this, 'validate_code' ),
@@ -108,12 +108,12 @@ final class LogsController implements RestControllerInterface {
 							'sanitize_callback' => array( $this, 'sanitize_attachment_id' ),
 							'validate_callback' => array( $this, 'validate_attachment_id' ),
 						),
-						'page' => array(
+						'page'          => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_page' ),
 							'validate_callback' => array( $this, 'validate_page' ),
 						),
-						'per_page' => array(
+						'per_page'      => array(
 							'required'          => false,
 							'sanitize_callback' => array( $this, 'sanitize_per_page' ),
 							'validate_callback' => array( $this, 'validate_per_page' ),

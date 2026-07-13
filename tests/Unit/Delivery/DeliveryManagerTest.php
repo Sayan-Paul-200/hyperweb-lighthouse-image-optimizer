@@ -152,10 +152,10 @@ final class DeliveryManagerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_non_image_attachments_and_icon_requests_return_original_markup(): void {
-		$html          = $this->img_html();
-		$non_image     = $this->runtime();
+		$html                = $this->img_html();
+		$non_image           = $this->runtime();
 		$non_image->is_image = false;
-		$manager       = $this->manager( $non_image );
+		$manager             = $this->manager( $non_image );
 
 		self::assertSame( $html, $manager->filter_attachment_image( $html, self::ATTACHMENT_ID, 'full', false, array() ) );
 		self::assertSame( $html, $manager->filter_attachment_image( $html, self::ATTACHMENT_ID, 'full', true, array() ) );
@@ -170,9 +170,9 @@ final class DeliveryManagerTest extends TestCase {
 		$html = $this->img_html();
 
 		foreach ( array( 'is_admin', 'is_feed', 'is_ajax', 'is_rest' ) as $flag ) {
-			$runtime = $this->runtime();
+			$runtime                           = $this->runtime();
 			$runtime->request_context[ $flag ] = true;
-			$manager = $this->manager( $runtime );
+			$manager                           = $this->manager( $runtime );
 
 			self::assertSame( $html, $manager->filter_attachment_image( $html, self::ATTACHMENT_ID, 'full', false, array() ), $flag );
 		}
@@ -389,9 +389,9 @@ final class DeliveryManagerTest extends TestCase {
 	/**
 	 * Build manager.
 	 *
-	 * @param FakeAttachmentImageRuntime $runtime Runtime seam.
+	 * @param FakeAttachmentImageRuntime  $runtime Runtime seam.
 	 * @param FakeSettingsRepository|null $settings Settings repository.
-	 * @param bool                       $with_derivatives Whether derivatives exist.
+	 * @param bool                        $with_derivatives Whether derivatives exist.
 	 * @return DeliveryManager
 	 */
 	private function manager(
@@ -399,14 +399,14 @@ final class DeliveryManagerTest extends TestCase {
 		?FakeSettingsRepository $settings = null,
 		bool $with_derivatives = true
 	): DeliveryManager {
-		$settings = $settings ?? new FakeSettingsRepository( array( 'delivery_enabled' => true ) );
+		$settings          = $settings ?? new FakeSettingsRepository( array( 'delivery_enabled' => true ) );
 		$runtime->metadata = $this->image_meta();
 		$uploads           = new FakeUploadsUrlRuntime();
 		$uploads->base_url = 'https://example.test/wp-content/uploads';
 		$uploads->base_dir = self::UPLOADS;
 		$store             = new FakeAttachmentMetaStore();
 		$store->meta[ self::ATTACHMENT_ID ][ LifecyclePolicy::META_DERIVATIVES ] = $with_derivatives ? $this->stored_manifest() : array();
-		$analyzer          = new WordPressImageMarkupAnalyzer();
+		$analyzer = new WordPressImageMarkupAnalyzer();
 
 		return new DeliveryManager(
 			$settings,

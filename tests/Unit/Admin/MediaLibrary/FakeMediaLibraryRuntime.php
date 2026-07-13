@@ -20,7 +20,7 @@ final class FakeMediaLibraryRuntime implements MediaLibraryRuntimeInterface {
 	 * @var array<string,bool>
 	 */
 	public $capabilities = array(
-		'upload_files' => true,
+		'upload_files'  => true,
 		'edit_post:123' => true,
 	);
 

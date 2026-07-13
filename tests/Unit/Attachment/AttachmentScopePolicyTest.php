@@ -62,7 +62,7 @@ final class AttachmentScopePolicyTest extends TestCase {
 		);
 
 		$allowed_patterns = array(
-			'src/Admin/Rest/RestApi.php' => array(
+			'src/Admin/Rest/RestApi.php'              => array(
 				'REST API hook',
 			),
 			'src/Admin/Rest/WordPressRestRuntime.php' => array(
@@ -78,14 +78,14 @@ final class AttachmentScopePolicyTest extends TestCase {
 				'media row actions',
 				'media attachment fields',
 			),
-			'src/Attachment/AttachmentCleanup.php' => array(
+			'src/Attachment/AttachmentCleanup.php'    => array(
 				'runtime hook registration',
 			),
 			'src/Attachment/WordPressAttachmentMetaStore.php' => array(
 				'attachment metadata read',
 				'attachment metadata write',
 			),
-			'src/Delivery/DeliveryManager.php' => array(
+			'src/Delivery/DeliveryManager.php'        => array(
 				'frontend image hook',
 				'frontend content hook',
 			),

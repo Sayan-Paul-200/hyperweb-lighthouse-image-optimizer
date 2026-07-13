@@ -127,15 +127,15 @@ final class AttachmentCleanupResult {
 		array $orphan_file_samples = array(),
 		array $deleted_relative_paths = array()
 	) {
-		$this->severity             = in_array( $severity, array( self::SEVERITY_SUCCESS, self::SEVERITY_WARNING, self::SEVERITY_FAILURE ), true )
+		$this->severity               = in_array( $severity, array( self::SEVERITY_SUCCESS, self::SEVERITY_WARNING, self::SEVERITY_FAILURE ), true )
 			? $severity
 			: self::SEVERITY_FAILURE;
-		$this->codes                = $this->normalize_codes( $codes );
-		$this->messages             = $this->normalize_messages( $messages );
-		$this->deleted_files        = max( 0, $deleted_files );
-		$this->cancelled_actions    = max( 0, $cancelled_actions );
-		$this->deleted_meta         = max( 0, $deleted_meta );
-		$this->orphan_files         = max( 0, $orphan_files );
+		$this->codes                  = $this->normalize_codes( $codes );
+		$this->messages               = $this->normalize_messages( $messages );
+		$this->deleted_files          = max( 0, $deleted_files );
+		$this->cancelled_actions      = max( 0, $cancelled_actions );
+		$this->deleted_meta           = max( 0, $deleted_meta );
+		$this->orphan_files           = max( 0, $orphan_files );
 		$this->deleted_file_samples   = $this->normalize_relative_paths( $deleted_file_samples );
 		$this->deleted_relative_paths = $this->normalize_relative_paths(
 			array() === $deleted_relative_paths ? $deleted_file_samples : $deleted_relative_paths,
@@ -268,13 +268,13 @@ final class AttachmentCleanupResult {
 	 * @return self
 	 */
 	public static function combine( self ...$results ): self {
-		$severity             = self::SEVERITY_SUCCESS;
-		$codes                = array();
-		$messages             = array();
-		$deleted_files        = 0;
-		$cancelled_actions    = 0;
-		$deleted_meta         = 0;
-		$orphan_files         = 0;
+		$severity               = self::SEVERITY_SUCCESS;
+		$codes                  = array();
+		$messages               = array();
+		$deleted_files          = 0;
+		$cancelled_actions      = 0;
+		$deleted_meta           = 0;
+		$orphan_files           = 0;
 		$deleted_file_samples   = array();
 		$orphan_file_samples    = array();
 		$deleted_relative_paths = array();
@@ -286,12 +286,12 @@ final class AttachmentCleanupResult {
 				$severity = self::SEVERITY_WARNING;
 			}
 
-			$codes                = array_merge( $codes, $result->codes() );
-			$messages             = array_merge( $messages, $result->messages() );
-			$deleted_files       += $result->deleted_files();
-			$cancelled_actions   += $result->cancelled_actions();
-			$deleted_meta        += $result->deleted_meta();
-			$orphan_files        += $result->orphan_files();
+			$codes                  = array_merge( $codes, $result->codes() );
+			$messages               = array_merge( $messages, $result->messages() );
+			$deleted_files         += $result->deleted_files();
+			$cancelled_actions     += $result->cancelled_actions();
+			$deleted_meta          += $result->deleted_meta();
+			$orphan_files          += $result->orphan_files();
 			$deleted_file_samples   = array_merge( $deleted_file_samples, $result->deleted_file_samples() );
 			$orphan_file_samples    = array_merge( $orphan_file_samples, $result->orphan_file_samples() );
 			$deleted_relative_paths = array_merge( $deleted_relative_paths, $result->deleted_relative_paths() );
@@ -436,14 +436,14 @@ final class AttachmentCleanupResult {
 	 */
 	public function to_array(): array {
 		return array(
-			'successful'           => $this->is_successful(),
-			'warnings'             => $this->has_warnings(),
-			'codes'                => $this->codes,
-			'messages'             => $this->messages,
-			'deleted_files'        => $this->deleted_files,
-			'cancelled_actions'    => $this->cancelled_actions,
-			'deleted_meta'         => $this->deleted_meta,
-			'orphan_files'         => $this->orphan_files,
+			'successful'             => $this->is_successful(),
+			'warnings'               => $this->has_warnings(),
+			'codes'                  => $this->codes,
+			'messages'               => $this->messages,
+			'deleted_files'          => $this->deleted_files,
+			'cancelled_actions'      => $this->cancelled_actions,
+			'deleted_meta'           => $this->deleted_meta,
+			'orphan_files'           => $this->orphan_files,
 			'deleted_file_samples'   => $this->deleted_file_samples,
 			'deleted_relative_paths' => $this->deleted_relative_paths,
 			'orphan_file_samples'    => $this->orphan_file_samples,

@@ -25,9 +25,7 @@ final class WordPressDerivativeHealthRuntime implements DerivativeHealthRuntimeI
 		global $wpdb;
 
 		if (
-			! isset( $wpdb )
-			|| ! is_object( $wpdb )
-			|| ! isset( $wpdb->posts, $wpdb->postmeta )
+			! $wpdb instanceof \wpdb
 			|| ! is_string( $wpdb->posts )
 			|| ! is_string( $wpdb->postmeta )
 		) {

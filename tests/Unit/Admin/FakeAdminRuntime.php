@@ -115,6 +115,7 @@ final class FakeAdminRuntime implements AdminRuntimeInterface {
 	 * @param string              $message Error message.
 	 * @param string              $title Error title.
 	 * @param array<string,mixed> $args Error arguments.
+	 * @throws AdminAccessDenied Always thrown to simulate a denied admin request.
 	 * @return void
 	 */
 	public function forbid( string $message, string $title = '', array $args = array() ): void {
@@ -124,6 +125,7 @@ final class FakeAdminRuntime implements AdminRuntimeInterface {
 			'args'    => $args,
 		);
 
+		// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception text is asserted in tests, not rendered.
 		throw new AdminAccessDenied( $message );
 	}
 }

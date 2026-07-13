@@ -29,21 +29,21 @@ final class FakeSingleActionScheduler implements SingleActionSchedulerInterface 
 	public $enqueue_result = true;
 
 	/**
-	 * has_scheduled_action() calls.
+	 * Has-scheduled-action() calls.
 	 *
 	 * @var array<int,array<string,mixed>>
 	 */
 	public $has_calls = array();
 
 	/**
-	 * enqueue_async_action() calls.
+	 * Enqueue-async-action() calls.
 	 *
 	 * @var array<int,array<string,mixed>>
 	 */
 	public $enqueue_calls = array();
 
 	/**
-	 * schedule_single_action() calls.
+	 * Schedule-single-action() calls.
 	 *
 	 * @var array<int,array<string,mixed>>
 	 */

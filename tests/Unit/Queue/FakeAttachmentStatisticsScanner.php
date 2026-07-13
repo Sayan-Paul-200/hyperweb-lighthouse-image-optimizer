@@ -56,6 +56,7 @@ final class FakeAttachmentStatisticsScanner implements AttachmentStatisticsScann
 	 *
 	 * @param int $page Page number.
 	 * @param int $page_size Page size.
+	 * @throws \Throwable When the fake scanner is configured to throw.
 	 * @return int[]
 	 */
 	public function scan_page( int $page, int $page_size ): array {

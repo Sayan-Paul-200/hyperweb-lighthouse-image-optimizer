@@ -12,10 +12,10 @@ namespace HyperWeb\LighthouseImageOptimizer\Queue;
  */
 final class StatisticsReconciliationResult {
 
-	public const CODE_RECONCILED             = 'statistics_reconciled';
-	public const CODE_WRITE_FAILED           = 'statistics_cache_write_failed';
-	public const CODE_SCAN_FAILED            = 'statistics_cache_scan_failed';
-	public const CODE_METADATA_IGNORED       = 'statistics_metadata_ignored';
+	public const CODE_RECONCILED       = 'statistics_reconciled';
+	public const CODE_WRITE_FAILED     = 'statistics_cache_write_failed';
+	public const CODE_SCAN_FAILED      = 'statistics_cache_scan_failed';
+	public const CODE_METADATA_IGNORED = 'statistics_metadata_ignored';
 
 	/**
 	 * Whether reconciliation succeeded.

@@ -60,22 +60,47 @@ final class RecentFailureLogReader {
 			);
 		}
 
-		return new self( new class() implements LogReadDatabaseInterface {
-			public function select_recent_entries( string $table, array $levels, int $limit ): array {
-				unset( $table, $levels, $limit );
-				return array();
-			}
+		return new self(
+			new class() implements LogReadDatabaseInterface {
+				/**
+				 * Select recent log entries.
+				 *
+				 * @param string   $table Table name.
+				 * @param string[] $levels Log levels.
+				 * @param int      $limit Maximum row count.
+				 * @return array<int,array<string,mixed>>
+				 */
+				public function select_recent_entries( string $table, array $levels, int $limit ): array {
+					unset( $table, $levels, $limit );
+					return array();
+				}
 
-			public function select_entries( string $table, LogQuery $query ): array {
-				unset( $table, $query );
-				return array();
-			}
+				/**
+				 * Select one bounded page of log entries.
+				 *
+				 * @param string   $table Table name.
+				 * @param LogQuery $query Log query.
+				 * @return array<int,array<string,mixed>>
+				 */
+				public function select_entries( string $table, LogQuery $query ): array {
+					unset( $table, $query );
+					return array();
+				}
 
-			public function count_entries( string $table, LogQuery $query ): int {
-				unset( $table, $query );
-				return 0;
-			}
-		}, LogTableSchema::TABLE_SUFFIX );
+				/**
+				 * Count matching log entries.
+				 *
+				 * @param string   $table Table name.
+				 * @param LogQuery $query Log query.
+				 * @return int
+				 */
+				public function count_entries( string $table, LogQuery $query ): int {
+					unset( $table, $query );
+					return 0;
+				}
+			},
+			LogTableSchema::TABLE_SUFFIX
+		);
 	}
 
 	/**
@@ -97,7 +122,7 @@ final class RecentFailureLogReader {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function read(): array {
-		$rows = $this->database->select_recent_entries(
+		$rows    = $this->database->select_recent_entries(
 			$this->table_name,
 			array( LogLevel::WARNING, LogLevel::ERROR ),
 			$this->limit

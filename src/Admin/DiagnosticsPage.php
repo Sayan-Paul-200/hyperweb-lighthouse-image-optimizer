@@ -7,6 +7,9 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Admin;
 
+/**
+ * Renders the diagnostics admin tab shell.
+ */
 final class DiagnosticsPage extends AbstractAdminPage {
 
 	/**
@@ -34,6 +37,7 @@ final class DiagnosticsPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	public function render(): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<div class="hwlio-diagnostics" data-hwlio-diagnostics="root">';
 		echo '<div class="hwlio-diagnostics__header">';
 		echo '<div class="hwlio-diagnostics__intro">';
@@ -61,6 +65,7 @@ final class DiagnosticsPage extends AbstractAdminPage {
 		echo '</div>';
 		echo '</section>';
 		echo '</div>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -71,9 +76,11 @@ final class DiagnosticsPage extends AbstractAdminPage {
 	 * @return void
 	 */
 	private function render_summary_card( string $key, string $label ): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through inherited wrapper methods.
 		echo '<div class="hwlio-diagnostics__summary-card" data-hwlio-diagnostics-summary-card="' . $this->escape_attr( $key ) . '">';
 		echo '<span class="hwlio-diagnostics__summary-label">' . $this->escape_html( $label ) . '</span>';
 		echo '<span class="hwlio-diagnostics__summary-value" data-hwlio-diagnostics-summary-value="' . $this->escape_attr( $key ) . '">0</span>';
 		echo '</div>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 }

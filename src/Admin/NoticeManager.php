@@ -96,9 +96,11 @@ final class NoticeManager {
 	 * @return void
 	 */
 	public function render_containers(): void {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is escaped through local wrapper methods.
 		echo '<div id="' . $this->escape_attr( $this->notice_container_id() ) . '" class="hwlio-admin-notices" aria-live="polite"></div>';
 		echo '<div id="' . $this->escape_attr( $this->polite_region_id() ) . '" class="hwlio-admin-live-region" aria-live="polite" aria-atomic="true"></div>';
 		echo '<div id="' . $this->escape_attr( $this->assertive_region_id() ) . '" class="hwlio-admin-live-region" aria-live="assertive" aria-atomic="true"></div>';
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**

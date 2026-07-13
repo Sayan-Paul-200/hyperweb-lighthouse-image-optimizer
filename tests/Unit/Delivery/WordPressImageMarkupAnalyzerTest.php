@@ -71,6 +71,8 @@ final class WordPressImageMarkupAnalyzerTest extends TestCase {
 		)->to_array();
 
 		self::assertSame( '100vw', $payload['sizes'] );
-		self::assertStringNotContainsString( 'C:/secret', json_encode( $payload ) ?: '' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test assertion for serialized payload safety.
+		$json = json_encode( $payload );
+		self::assertStringNotContainsString( 'C:/secret', is_string( $json ) ? $json : '' );
 	}
 }

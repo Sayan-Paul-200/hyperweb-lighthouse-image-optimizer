@@ -93,7 +93,7 @@ final class PluginTest extends TestCase {
 	 * @return void
 	 */
 	public function test_create_composes_admin_and_only_one_delivery_provider(): void {
-		$plugin = Plugin::create();
+		$plugin         = Plugin::create();
 		$found_admin    = false;
 		$delivery_count = 0;
 

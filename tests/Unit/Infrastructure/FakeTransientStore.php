@@ -71,7 +71,7 @@ final class FakeTransientStore implements TransientStoreInterface {
 			return false;
 		}
 
-		$this->values[ $key ]      = $value;
+		$this->values[ $key ]     = $value;
 		$this->expires_at[ $key ] = $this->now + max( 1, $expiration );
 
 		return true;
