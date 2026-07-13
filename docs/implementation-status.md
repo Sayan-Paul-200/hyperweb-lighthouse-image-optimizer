@@ -141,7 +141,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 5.3 - New-upload integration
   - [x] Subphase 5.4 - Regeneration and edit reconciliation
   - [x] Subphase 5.5 - Maintenance actions
-- [ ] Phase 6 - Admin Screens, REST API, and Bulk Processing
+- [x] Phase 6 - Admin Screens, REST API, and Bulk Processing
   - [x] Subphase 6.1 - Menu and screen shell
   - [x] Subphase 6.2 - Admin assets and REST client
   - [x] Subphase 6.3 - REST controllers
@@ -149,7 +149,8 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 6.5 - Dashboard
   - [x] Subphase 6.6 - Bulk scanner
   - [x] Subphase 6.7 - Bulk queue controls
-- [ ] Phase 7 - Frontend Modern-Format Delivery
+  - [x] Subphase 6.8 - Logs and diagnostics screens
+- [x] Phase 7 - Frontend Modern-Format Delivery
   - [x] Subphase 7.1 - Derivative URL resolver
   - [x] Subphase 7.2 - Responsive source-set builder
   - [x] Subphase 7.3 - Picture renderer

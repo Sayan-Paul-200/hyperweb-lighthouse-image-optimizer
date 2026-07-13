@@ -29,8 +29,9 @@ final class DashboardEnvironmentSummaryServiceTest extends TestCase {
 			new EnvironmentInspector( $probe, '7.4', '6.5' ),
 			new FakeSettingsRepository(
 				array(
-					'delivery_enabled' => true,
-					'enabled_formats'  => array( 'webp', 'avif' ),
+					'automatic_optimization' => true,
+					'delivery_enabled'       => true,
+					'enabled_formats'        => array( 'webp', 'avif' ),
 				)
 			)
 		);

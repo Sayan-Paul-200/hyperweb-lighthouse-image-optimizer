@@ -178,11 +178,12 @@ final class JobsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_queue_jobs_rejects_incomplete_scan_sessions(): void {
-		$runtime                   = new FakeRestRuntime();
-		$fixture                   = $this->fixture( $runtime );
-		$fixture['bulk']->pages[0] = array( 10, 11 );
+		$runtime                     = new FakeRestRuntime();
+		$fixture                     = $this->fixture( $runtime );
+		$fixture['bulk']->pages[0]   = range( 1, 100 );
+		$fixture['bulk']->pages[100] = array( 101 );
 
-		$first = $fixture['controller']->scan_jobs( new FakeRestRequest() );
+		$first    = $fixture['controller']->scan_jobs( new FakeRestRequest() );
 		$response = $fixture['controller']->queue_jobs(
 			new FakeRestRequest(
 				array(

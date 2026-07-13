@@ -96,7 +96,7 @@ final class SourceSetBuilderTest extends TestCase {
 		self::assertTrue( $result->has_code( SourceSetBuildResult::CODE_BUILT ) );
 		self::assertNull( $result->format( 'gif' ) );
 		self::assertSame( array( 150, 2400 ), array_keys( $result->format( 'webp' )->sources() ) );
-		self::assertSame( array( 150 ), array_keys( $result->format( 'avif' )->sources() ) );
+		self::assertSame( array( 2400 ), array_keys( $result->format( 'avif' )->sources() ) );
 	}
 
 	/**

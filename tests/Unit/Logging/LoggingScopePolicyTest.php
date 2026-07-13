@@ -48,6 +48,9 @@ final class LoggingScopePolicyTest extends TestCase {
 			'src/Admin/Rest/WordPressRestRuntime.php' => array(
 				'REST route registration',
 			),
+			'src/Admin/Assets.php'                    => array(
+				'global admin asset hook',
+			),
 			'src/Admin/MediaLibrary/MediaLibraryAssets.php' => array(
 				'global admin asset hook',
 				'media modal hook',

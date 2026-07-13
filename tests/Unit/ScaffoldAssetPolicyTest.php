@@ -100,7 +100,7 @@ final class ScaffoldAssetPolicyTest extends TestCase {
 				continue;
 			}
 
-			$sources[ str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) ] = $contents;
+			$sources[ str_replace( '\\', '/', str_replace( $root . DIRECTORY_SEPARATOR, '', $path ) ) ] = $contents;
 		}
 
 		return $sources;

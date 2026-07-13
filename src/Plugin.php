@@ -237,7 +237,7 @@ final class Plugin {
 			new BulkPage(),
 			new SettingsPage(),
 			new DiagnosticsPage(),
-			new LogsPage( $settings->log_retention_days() ),
+			new LogsPage(),
 		);
 		$delivery_runtime  = new WordPressAttachmentImageRuntime();
 		$delivery_analyzer = new WordPressImageMarkupAnalyzer();
