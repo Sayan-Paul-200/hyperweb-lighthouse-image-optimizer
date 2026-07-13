@@ -37,6 +37,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added non-blocking new-upload integration that watches generated attachment metadata, respects exclusion and automatic-optimization settings, queues enabled formats asynchronously, and fires an internal attachment-status refresh hook.
 - Added attachment regeneration and edit reconciliation with stale-derivative detection on metadata updates, dedicated reconcile queue/worker flows, manifest reset semantics, safe sidecar replacement, and conservative obsolete-sidecar cleanup.
 - Added recurring queue maintenance for hourly stale-lock recovery, daily internal statistics-cache reconciliation, and a shared infrastructure Action Scheduler recurring-action seam.
+- Added Phase 8.1 core-loading preservation guards so picture delivery now preserves non-conflicting core loading attributes and skips wrapping lazy-loaded high-priority fallback images.
 
 ### Removed
 

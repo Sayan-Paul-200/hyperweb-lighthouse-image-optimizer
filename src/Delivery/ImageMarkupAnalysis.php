@@ -34,26 +34,68 @@ final class ImageMarkupAnalysis {
 	private $sizes;
 
 	/**
+	 * Original loading attribute value, normalized when present.
+	 *
+	 * @var string|null
+	 */
+	private $loading;
+
+	/**
+	 * Original fetchpriority attribute value, normalized when present.
+	 *
+	 * @var string|null
+	 */
+	private $fetchpriority;
+
+	/**
+	 * Original decoding attribute value, normalized when present.
+	 *
+	 * @var string|null
+	 */
+	private $decoding;
+
+	/**
 	 * Create analysis.
 	 *
 	 * @param bool        $renderable_img Whether the fragment is renderable.
 	 * @param bool        $already_picture Whether the fragment is already picture markup.
 	 * @param string|null $sizes Sizes attribute value.
+	 * @param string|null $loading Loading attribute value.
+	 * @param string|null $fetchpriority Fetch priority attribute value.
+	 * @param string|null $decoding Decoding attribute value.
 	 */
-	public function __construct( bool $renderable_img, bool $already_picture, ?string $sizes = null ) {
+	public function __construct(
+		bool $renderable_img,
+		bool $already_picture,
+		?string $sizes = null,
+		?string $loading = null,
+		?string $fetchpriority = null,
+		?string $decoding = null
+	) {
 		$this->renderable_img  = $renderable_img;
 		$this->already_picture = $already_picture;
 		$this->sizes           = null === $sizes ? null : trim( $sizes );
+		$this->loading         = $this->normalize_optional_attribute( $loading );
+		$this->fetchpriority   = $this->normalize_optional_attribute( $fetchpriority );
+		$this->decoding        = $this->normalize_optional_attribute( $decoding );
 	}
 
 	/**
 	 * Build a renderable image result.
 	 *
 	 * @param string|null $sizes Sizes attribute value.
+	 * @param string|null $loading Loading attribute value.
+	 * @param string|null $fetchpriority Fetch priority attribute value.
+	 * @param string|null $decoding Decoding attribute value.
 	 * @return self
 	 */
-	public static function renderable( ?string $sizes = null ): self {
-		return new self( true, false, $sizes );
+	public static function renderable(
+		?string $sizes = null,
+		?string $loading = null,
+		?string $fetchpriority = null,
+		?string $decoding = null
+	): self {
+		return new self( true, false, $sizes, $loading, $fetchpriority, $decoding );
 	}
 
 	/**
@@ -102,6 +144,42 @@ final class ImageMarkupAnalysis {
 	}
 
 	/**
+	 * Get normalized loading attribute value.
+	 *
+	 * @return string|null
+	 */
+	public function loading(): ?string {
+		return $this->loading;
+	}
+
+	/**
+	 * Get normalized fetchpriority attribute value.
+	 *
+	 * @return string|null
+	 */
+	public function fetchpriority(): ?string {
+		return $this->fetchpriority;
+	}
+
+	/**
+	 * Get normalized decoding attribute value.
+	 *
+	 * @return string|null
+	 */
+	public function decoding(): ?string {
+		return $this->decoding;
+	}
+
+	/**
+	 * Whether the fallback image carries the conflicting lazy/high combination.
+	 *
+	 * @return bool
+	 */
+	public function has_loading_priority_conflict(): bool {
+		return 'lazy' === $this->loading && 'high' === $this->fetchpriority;
+	}
+
+	/**
 	 * Serialize analysis.
 	 *
 	 * @return array<string,mixed>
@@ -111,6 +189,26 @@ final class ImageMarkupAnalysis {
 			'renderable_img'  => $this->renderable_img,
 			'already_picture' => $this->already_picture,
 			'sizes'           => $this->sizes,
+			'loading'         => $this->loading,
+			'fetchpriority'   => $this->fetchpriority,
+			'decoding'        => $this->decoding,
+			'has_conflict'    => $this->has_loading_priority_conflict(),
 		);
+	}
+
+	/**
+	 * Normalize one optional attribute value for conservative comparisons.
+	 *
+	 * @param string|null $value Attribute value.
+	 * @return string|null
+	 */
+	private function normalize_optional_attribute( ?string $value ): ?string {
+		if ( null === $value ) {
+			return null;
+		}
+
+		$value = strtolower( trim( $value ) );
+
+		return '' === $value ? null : $value;
 	}
 }

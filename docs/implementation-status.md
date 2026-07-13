@@ -158,6 +158,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 7.5 - Post-content image integration
   - [x] Subphase 7.6 - Delivery rollback and cache hooks
 - [ ] Phase 8 - Loading Optimization and Layout Stability
+  - [x] Subphase 8.1 - Preserve core loading attributes
 - [ ] Phase 9 - WooCommerce Integration
 - [ ] Phase 10 - Elementor and CSS Background Integration
 - [ ] Phase 11 - CDN, Offload, Multisite, and Conflict Adapters
@@ -4196,3 +4197,65 @@ Source scans: pass. Runtime hook registration is confined to `src/Queue/Optimiza
 - Reconcile scheduling and stale-lock recurring recovery remain deferred to Subphases 5.4 and 5.5.
 - Admin, REST, and bulk-processing exposure remain deferred to Phase 6.
 - Runtime WordPress smoke testing remains pending in this plugin-only workspace.
+
+## Subphase 8.1 - Preserve Core Loading Attributes
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Extend conservative fallback-image analysis with normalized `loading`, `fetchpriority`, and `decoding` facts.
+- [x] Detect the narrow `loading="lazy"` plus `fetchpriority="high"` conflict on standalone fallback `<img>` fragments.
+- [x] Refuse to generate plugin `<picture>` markup when that conflict already exists, while preserving the original fallback HTML unchanged.
+- [x] Keep the active frontend runtime surface unchanged: no new loading hooks, attribute filters, or rewrite logic.
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Delivery/ImageMarkupAnalysis.php
+src/Delivery/PictureRenderResult.php
+src/Delivery/PictureRenderer.php
+src/Delivery/WordPressImageMarkupAnalyzer.php
+tests/Unit/Delivery/DeliveryManagerTest.php
+tests/Unit/Delivery/PictureRendererTest.php
+tests/Unit/Delivery/WordPressImageMarkupAnalyzerTest.php
+```
+
+### Loading-Attribute Behavior
+
+- `WordPressImageMarkupAnalyzer` now captures normalized `loading`, `fetchpriority`, and `decoding` values alongside the existing `sizes` fact for exact standalone `<img>` fragments only.
+- `ImageMarkupAnalysis` exposes those values through typed getters and reports one narrow conflict state when a fallback image carries both `loading="lazy"` and `fetchpriority="high"`.
+- `PictureRenderer` now bails out conservatively on that conflict and returns the original fallback `<img>` unchanged with `conflicting_loading_attributes`.
+- Non-conflicting fallback images continue to be embedded verbatim inside generated `<picture>` markup, so core-generated `loading`, `fetchpriority`, `decoding`, classes, IDs, and other valid attributes remain intact.
+- Generated `<source>` elements remain limited to `type`, `srcset`, and optional `sizes`; 8.1 does not introduce attribute rewriting, new frontend hooks, or critical-image overrides.
+
+### Verification
+
+```text
+composer validate --strict: pass
+composer dump-autoload: pass
+composer run lint: pass
+composer run cs: pass
+composer run stan: pass
+composer run test: pass
+composer run quality: pass
+git diff --check: pass
+```
+
+Source scans: pass. Runtime delivery remains confined to `wp_get_attachment_image` and `wp_content_img_tag` in `src/Delivery/DeliveryManager.php`; `wp_get_loading_optimization_attributes` and `wp_get_attachment_image_attributes` remain absent from runtime code.
+
+### Acceptance Criteria
+
+- [x] Core-generated `loading`, `fetchpriority`, and `decoding` values remain intact for non-conflicting fallback images.
+- [x] The plugin no longer emits `<picture>` markup around fallback images that already carry the lazy/high conflict.
+- [x] No loading-related attributes are added to generated `<source>` elements.
+- [x] No new loading hooks, output buffering, JavaScript lazy loading, or critical-image policy were introduced in 8.1.
+
+### Deferred Work
+
+- Explicit critical-image registry, eager/high-priority overrides, and logo/per-post critical controls remain deferred to Subphase 8.2.
+- Preload behavior remains deferred to later Phase 8 work.
+- CLS-oriented width/height repair remains deferred to later Phase 8 subphases.

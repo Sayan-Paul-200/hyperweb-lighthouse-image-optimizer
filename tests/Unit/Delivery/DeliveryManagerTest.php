@@ -273,7 +273,7 @@ final class DeliveryManagerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_content_images_with_valid_attachments_render_picture_markup_and_preserve_fallback_image(): void {
-		$html    = '<img class="wp-image-123 alignnone size-full" src="https://example.test/wp-content/uploads/2026/07/hero.jpg" srcset="https://example.test/wp-content/uploads/2026/07/hero-150x100.jpg 150w, https://example.test/wp-content/uploads/2026/07/hero.jpg 2400w" sizes="100vw" width="2400" height="1600" alt="Hero" loading="lazy" fetchpriority="high" decoding="async" data-id="123">';
+		$html    = '<img class="wp-image-123 alignnone size-full" src="https://example.test/wp-content/uploads/2026/07/hero.jpg" srcset="https://example.test/wp-content/uploads/2026/07/hero-150x100.jpg 150w, https://example.test/wp-content/uploads/2026/07/hero.jpg 2400w" sizes="100vw" width="2400" height="1600" alt="Hero" loading="eager" fetchpriority="high" decoding="async" data-id="123">';
 		$runtime = $this->runtime();
 		$result  = $this->manager( $runtime )->filter_content_img_tag( $html, 'the_content', self::ATTACHMENT_ID );
 
@@ -283,6 +283,20 @@ final class DeliveryManagerTest extends TestCase {
 		self::assertStringContainsString( '<source type="image/webp"', $result );
 		self::assertStringContainsString( 'fetchpriority="high"', $result );
 		self::assertStringContainsString( 'decoding="async"', $result );
+	}
+
+	/**
+	 * Test conflicting loading and fetchpriority markup remains unchanged in attachment and content hook paths.
+	 *
+	 * @return void
+	 */
+	public function test_conflicting_loading_and_fetchpriority_markup_remains_unchanged_in_attachment_and_content_hook_paths(): void {
+		$html    = '<img class="wp-image-123 alignnone size-full" src="https://example.test/wp-content/uploads/2026/07/hero.jpg" srcset="https://example.test/wp-content/uploads/2026/07/hero-150x100.jpg 150w, https://example.test/wp-content/uploads/2026/07/hero.jpg 2400w" sizes="100vw" width="2400" height="1600" alt="Hero" loading="lazy" fetchpriority="high" decoding="async" data-id="123">';
+		$runtime = $this->runtime();
+		$manager = $this->manager( $runtime );
+
+		self::assertSame( $html, $manager->filter_attachment_image( $html, self::ATTACHMENT_ID, 'full', false, array() ) );
+		self::assertSame( $html, $manager->filter_content_img_tag( $html, 'the_content', self::ATTACHMENT_ID ) );
 	}
 
 	/**

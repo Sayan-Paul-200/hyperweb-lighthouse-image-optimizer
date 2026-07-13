@@ -54,6 +54,10 @@ final class PictureRenderer {
 			return PictureRenderResult::unchanged( $request, array( PictureRenderResult::CODE_INVALID_MARKUP ) );
 		}
 
+		if ( $analysis->has_loading_priority_conflict() ) {
+			return PictureRenderResult::unchanged( $request, array( PictureRenderResult::CODE_CONFLICTING_LOADING_ATTRIBUTES ) );
+		}
+
 		$available_formats = $this->ordered_formats( $request->source_sets(), $request->format_preference() );
 		$codes             = $this->base_codes( $request->source_sets() );
 

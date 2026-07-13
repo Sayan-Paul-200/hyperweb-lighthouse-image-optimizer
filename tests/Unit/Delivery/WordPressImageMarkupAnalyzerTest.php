@@ -24,12 +24,16 @@ final class WordPressImageMarkupAnalyzerTest extends TestCase {
 	 */
 	public function test_exact_standalone_image_fragments_are_accepted(): void {
 		$analysis = ( new WordPressImageMarkupAnalyzer() )->analyze(
-			" \n<img src=\"hero.jpg\" alt=\"Hero\" sizes=\"(max-width: 600px) 100vw, 600px\"> \n"
+			" \n<img src=\"hero.jpg\" alt=\"Hero\" sizes=\"(max-width: 600px) 100vw, 600px\" loading=\"eager\" fetchpriority=\"high\" decoding=\"async\"> \n"
 		);
 
 		self::assertTrue( $analysis->is_renderable_img() );
 		self::assertFalse( $analysis->is_picture() );
 		self::assertSame( '(max-width: 600px) 100vw, 600px', $analysis->sizes() );
+		self::assertSame( 'eager', $analysis->loading() );
+		self::assertSame( 'high', $analysis->fetchpriority() );
+		self::assertSame( 'async', $analysis->decoding() );
+		self::assertFalse( $analysis->has_loading_priority_conflict() );
 	}
 
 	/**
@@ -74,5 +78,24 @@ final class WordPressImageMarkupAnalyzerTest extends TestCase {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test assertion for serialized payload safety.
 		$json = json_encode( $payload );
 		self::assertStringNotContainsString( 'C:/secret', is_string( $json ) ? $json : '' );
+	}
+
+	/**
+	 * Test loading-priority conflict detection is narrow and conservative.
+	 *
+	 * @return void
+	 */
+	public function test_loading_priority_conflict_detection_is_narrow_and_conservative(): void {
+		$analyzer = new WordPressImageMarkupAnalyzer();
+
+		self::assertTrue(
+			$analyzer->analyze( '<img src="hero.jpg" loading="lazy" fetchpriority="high" decoding="async">' )->has_loading_priority_conflict()
+		);
+		self::assertFalse(
+			$analyzer->analyze( '<img src="hero.jpg" loading="eager" fetchpriority="high" decoding="async">' )->has_loading_priority_conflict()
+		);
+		self::assertFalse(
+			$analyzer->analyze( '<img src="hero.jpg" loading="lazy" decoding="async">' )->has_loading_priority_conflict()
+		);
 	}
 }

@@ -39,7 +39,7 @@ final class PictureRendererTest extends TestCase {
 		$result = PictureRenderer::for_wordpress()->render(
 			new PictureRenderRequest(
 				123,
-				'<img src="https://example.test/uploads/hero.jpg" srcset="https://example.test/uploads/hero-150x100.jpg 150w, https://example.test/uploads/hero.jpg 2400w" sizes="(max-width: 600px) 100vw, 600px" width="2400" height="1600" alt="Hero" loading="lazy" fetchpriority="high" decoding="async">',
+				'<img src="https://example.test/uploads/hero.jpg" srcset="https://example.test/uploads/hero-150x100.jpg 150w, https://example.test/uploads/hero.jpg 2400w" sizes="(max-width: 600px) 100vw, 600px" width="2400" height="1600" alt="Hero" loading="eager" fetchpriority="high" decoding="async">',
 				$this->source_sets(),
 				array( 'avif', 'webp' )
 			)
@@ -49,7 +49,7 @@ final class PictureRendererTest extends TestCase {
 		self::assertSame( array( 'avif', 'webp' ), $result->formats() );
 		self::assertTrue( $result->has_code( PictureRenderResult::CODE_RENDERED ) );
 		self::assertSame(
-			'<picture class="hwlio-picture"><source type="image/avif" srcset="https://example.test/uploads/hero-150x100.jpg.hwlio.avif 150w, https://example.test/uploads/hero.jpg.hwlio.avif 2400w" sizes="(max-width: 600px) 100vw, 600px"><source type="image/webp" srcset="https://example.test/uploads/hero-150x100.jpg.hwlio.webp 150w, https://example.test/uploads/hero.jpg.hwlio.webp 2400w" sizes="(max-width: 600px) 100vw, 600px"><img src="https://example.test/uploads/hero.jpg" srcset="https://example.test/uploads/hero-150x100.jpg 150w, https://example.test/uploads/hero.jpg 2400w" sizes="(max-width: 600px) 100vw, 600px" width="2400" height="1600" alt="Hero" loading="lazy" fetchpriority="high" decoding="async"></picture>',
+			'<picture class="hwlio-picture"><source type="image/avif" srcset="https://example.test/uploads/hero-150x100.jpg.hwlio.avif 150w, https://example.test/uploads/hero.jpg.hwlio.avif 2400w" sizes="(max-width: 600px) 100vw, 600px"><source type="image/webp" srcset="https://example.test/uploads/hero-150x100.jpg.hwlio.webp 150w, https://example.test/uploads/hero.jpg.hwlio.webp 2400w" sizes="(max-width: 600px) 100vw, 600px"><img src="https://example.test/uploads/hero.jpg" srcset="https://example.test/uploads/hero-150x100.jpg 150w, https://example.test/uploads/hero.jpg 2400w" sizes="(max-width: 600px) 100vw, 600px" width="2400" height="1600" alt="Hero" loading="eager" fetchpriority="high" decoding="async"></picture>',
 			$result->html()
 		);
 	}
@@ -60,13 +60,31 @@ final class PictureRendererTest extends TestCase {
 	 * @return void
 	 */
 	public function test_fallback_image_markup_is_preserved_verbatim(): void {
-		$img    = '<img src="hero.jpg" class="hero hero--wide" data-track="1" aria-hidden="true" loading="lazy" fetchpriority="high" decoding="async">';
+		$img    = '<img src="hero.jpg" class="hero hero--wide" data-track="1" aria-hidden="true" loading="eager" fetchpriority="high" decoding="async">';
 		$result = PictureRenderer::for_wordpress()->render(
 			new PictureRenderRequest( 123, $img, $this->source_sets() )
 		);
 
 		self::assertTrue( $result->is_rendered() );
 		self::assertStringContainsString( $img, $result->html() );
+	}
+
+	/**
+	 * Test conflicting loading and fetchpriority markup remains unchanged.
+	 *
+	 * @return void
+	 */
+	public function test_conflicting_loading_and_fetchpriority_markup_remains_unchanged(): void {
+		$request = new PictureRenderRequest(
+			123,
+			'<img src="hero.jpg" alt="Hero" loading="lazy" fetchpriority="high" decoding="async">',
+			$this->source_sets()
+		);
+		$result  = PictureRenderer::for_wordpress()->render( $request );
+
+		self::assertFalse( $result->is_rendered() );
+		self::assertSame( $request->img_html(), $result->html() );
+		self::assertTrue( $result->has_code( PictureRenderResult::CODE_CONFLICTING_LOADING_ATTRIBUTES ) );
 	}
 
 	/**
