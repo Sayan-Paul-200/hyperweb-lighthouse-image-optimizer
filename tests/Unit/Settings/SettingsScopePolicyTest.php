@@ -32,6 +32,11 @@ final class SettingsScopePolicyTest extends TestCase {
 			'script enqueue'            => '/\bwp_enqueue_script\s*\(/',
 			'REST route registration'   => '/\bregister_rest_route\s*\(/',
 			'REST API hook'             => '/\brest_api_init\b/',
+			'media modal hook'          => '/\bwp_enqueue_media\b/',
+			'media attachment payload'  => '/\bwp_prepare_attachment_for_js\b/',
+			'media list columns'        => '/\bmanage_media_columns\b/',
+			'media row actions'         => '/\bmedia_row_actions\b/',
+			'media attachment fields'   => '/\battachment_fields_to_edit\b/',
 			'new-upload media hook'     => '/\bwp_generate_attachment_metadata\b/',
 			'frontend image hook'       => '/\bwp_get_attachment_image\b/',
 			'frontend content hook'     => '/\bwp_content_img_tag\b/',
@@ -41,6 +46,32 @@ final class SettingsScopePolicyTest extends TestCase {
 			'single queue scheduling'   => '/\bas_schedule_single_action\s*\(/',
 		);
 		$allowed_patterns   = array(
+			'src/Admin/WordPressAdminRuntime.php'      => array(
+				'admin submenu page',
+			),
+			'src/Admin/Assets.php'                    => array(
+				'global admin asset hook',
+			),
+			'src/Admin/MediaLibrary/MediaLibraryAssets.php' => array(
+				'global admin asset hook',
+				'media modal hook',
+			),
+			'src/Admin/MediaLibrary/MediaLibraryIntegration.php' => array(
+				'media attachment payload',
+				'media list columns',
+				'media row actions',
+				'media attachment fields',
+			),
+			'src/Admin/WordPressAdminAssetRuntime.php' => array(
+				'stylesheet enqueue',
+				'script enqueue',
+			),
+			'src/Admin/Rest/RestApi.php'             => array(
+				'REST API hook',
+			),
+			'src/Admin/Rest/WordPressRestRuntime.php' => array(
+				'REST route registration',
+			),
 			'src/Infrastructure/LifecyclePolicy.php' => array(
 				'optimization queue action',
 			),
@@ -48,8 +79,16 @@ final class SettingsScopePolicyTest extends TestCase {
 				'async queue scheduling',
 				'single queue scheduling',
 			),
+			'src/Infrastructure/ActionSchedulerSingleActionScheduler.php' => array(
+				'async queue scheduling',
+				'single queue scheduling',
+			),
 			'src/Queue/NewUploadIntegration.php'     => array(
 				'new-upload media hook',
+			),
+			'src/Delivery/DeliveryManager.php'       => array(
+				'frontend image hook',
+				'frontend content hook',
 			),
 		);
 

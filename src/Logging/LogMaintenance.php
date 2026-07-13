@@ -7,16 +7,18 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Logging;
 
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\ActionSchedulerRecurringActionScheduler;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\RecurringActionSchedulerInterface;
 
 /**
  * Schedules and runs bounded log retention cleanup.
  */
 final class LogMaintenance implements HookProviderInterface {
 
-	public const CLEANUP_HOOK   = 'hwlio_cleanup_logs';
+	public const CLEANUP_HOOK   = LifecyclePolicy::ACTION_CLEANUP_LOGS;
 	public const DAILY_INTERVAL = 86400;
 	public const PRIORITY       = 10;
 

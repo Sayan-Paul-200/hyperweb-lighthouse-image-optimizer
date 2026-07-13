@@ -22,6 +22,7 @@ use HyperWeb\LighthouseImageOptimizer\Image\DestinationPath;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImage;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceMimePolicy;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeCacheInvalidationDispatcher;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -82,6 +83,29 @@ final class DerivativeRepositoryTest extends TestCase {
 		self::assertSame( AttachmentStatus::STATE_PARTIAL, $status['state'] );
 		self::assertSame( array( AttachmentStatus::FORMAT_WEBP ), $status['formats'] );
 		self::assertFalse( $store->wrote_core_metadata() );
+	}
+
+	/**
+	 * Test successful derivative writes request cache invalidation.
+	 *
+	 * @return void
+	 */
+	public function test_successful_derivative_writes_request_cache_invalidation(): void {
+		$store      = new FakeAttachmentMetaStore();
+		$dispatcher = new FakeCacheInvalidationDispatcher();
+
+		$this->repository( $store, $dispatcher )->save_results(
+			123,
+			$this->fingerprint(),
+			new ConversionResultCollection( array( $this->success_result() ) )
+		);
+
+		self::assertCount( 1, $dispatcher->requests );
+		self::assertSame( 'derivatives_saved', $dispatcher->requests[0]['event'] );
+		self::assertSame( 123, $dispatcher->requests[0]['attachment_id'] );
+		self::assertSame( array( '2026/07/hero.jpg.hwlio.webp' ), $dispatcher->requests[0]['relative_paths'] );
+		self::assertSame( array( 'webp' ), $dispatcher->requests[0]['formats'] );
+		self::assertSame( '2026-07-08 16:01:40', $dispatcher->requests[0]['timestamp_gmt'] );
 	}
 
 	/**
@@ -173,7 +197,8 @@ final class DerivativeRepositoryTest extends TestCase {
 	 */
 	public function test_skipped_and_failed_results_do_not_create_ready_derivative_entries(): void {
 		$store  = new FakeAttachmentMetaStore();
-		$result = $this->repository( $store )->save_results(
+		$dispatcher = new FakeCacheInvalidationDispatcher();
+		$result = $this->repository( $store, $dispatcher )->save_results(
 			123,
 			$this->fingerprint(),
 			new ConversionResultCollection(
@@ -202,6 +227,7 @@ final class DerivativeRepositoryTest extends TestCase {
 		self::assertArrayNotHasKey( LifecyclePolicy::META_DERIVATIVES, $store->meta[123] );
 		self::assertSame( AttachmentStatus::STATE_FAILED, $store->meta[123][ LifecyclePolicy::META_STATUS ]['state'] );
 		self::assertSame( ConversionResultCode::CONVERSION_FAILED, $store->meta[123][ LifecyclePolicy::META_STATUS ]['error_code'] );
+		self::assertSame( array(), $dispatcher->requests );
 	}
 
 	/**
@@ -316,14 +342,16 @@ final class DerivativeRepositoryTest extends TestCase {
 	 */
 	public function test_save_status_persists_status_summary_only(): void {
 		$store  = new FakeAttachmentMetaStore();
+		$dispatcher = new FakeCacheInvalidationDispatcher();
 		$status = new AttachmentStatus( AttachmentStatus::STATE_QUEUED, array( 'webp' ), self::NOW );
 
-		$result = $this->repository( $store )->save_status( 123, $status );
+		$result = $this->repository( $store, $dispatcher )->save_status( 123, $status );
 
 		self::assertTrue( $result->is_successful() );
 		self::assertSame( $status->to_array(), $store->meta[123][ LifecyclePolicy::META_STATUS ] );
 		self::assertArrayNotHasKey( LifecyclePolicy::META_DERIVATIVES, $store->meta[123] );
 		self::assertFalse( $store->wrote_core_metadata() );
+		self::assertSame( array(), $dispatcher->requests );
 	}
 
 	/**
@@ -351,11 +379,12 @@ final class DerivativeRepositoryTest extends TestCase {
 	 * @param FakeAttachmentMetaStore $store Store.
 	 * @return DerivativeRepository
 	 */
-	private function repository( FakeAttachmentMetaStore $store ): DerivativeRepository {
+	private function repository( FakeAttachmentMetaStore $store, ?FakeCacheInvalidationDispatcher $dispatcher = null ): DerivativeRepository {
 		return new DerivativeRepository(
 			$store,
 			new DerivativeManifestSanitizer(),
-			new FixedAttachmentClock( self::NOW )
+			new FixedAttachmentClock( self::NOW ),
+			$dispatcher
 		);
 	}
 

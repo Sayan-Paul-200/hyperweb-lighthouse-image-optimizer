@@ -92,12 +92,39 @@ final class FakeSettingsRepository implements SettingsRepositoryInterface {
 	}
 
 	/**
+	 * Whether Media Library controls are enabled.
+	 *
+	 * @return bool
+	 */
+	public function media_library_controls_enabled(): bool {
+		return (bool) $this->get( 'media_library_controls', true );
+	}
+
+	/**
+	 * Whether per-attachment exclusion is allowed.
+	 *
+	 * @return bool
+	 */
+	public function attachment_exclusion_allowed(): bool {
+		return (bool) $this->get( 'allow_attachment_exclusion', true );
+	}
+
+	/**
 	 * Whether frontend delivery is enabled.
 	 *
 	 * @return bool
 	 */
 	public function delivery_enabled(): bool {
 		return (bool) $this->get( 'delivery_enabled', false );
+	}
+
+	/**
+	 * Whether the emergency delivery rollback switch is active.
+	 *
+	 * @return bool
+	 */
+	public function delivery_emergency_disabled(): bool {
+		return (bool) $this->get( 'delivery_emergency_disabled', false );
 	}
 
 	/**

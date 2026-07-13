@@ -21,9 +21,11 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
 use HyperWeb\LighthouseImageOptimizer\Attachment\SystemAttachmentClock;
 use HyperWeb\LighthouseImageOptimizer\Image\ConversionResultCode;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\ActionSchedulerSingleActionScheduler;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\SingleActionSchedulerInterface;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
 use HyperWeb\LighthouseImageOptimizer\Logging\Logger;
 use HyperWeb\LighthouseImageOptimizer\Logging\LoggerInterface;
@@ -34,6 +36,8 @@ use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
  * Executes queued optimization jobs through the attachment processor.
  */
 final class OptimizationWorker implements HookProviderInterface {
+
+	private const PAUSE_DELAY_SECONDS = 60;
 
 	/**
 	 * Queue adapter.
@@ -106,6 +110,20 @@ final class OptimizationWorker implements HookProviderInterface {
 	private $clock;
 
 	/**
+	 * Queue control state store.
+	 *
+	 * @var QueueControlStateStoreInterface|null
+	 */
+	private $controls;
+
+	/**
+	 * Single action scheduler.
+	 *
+	 * @var SingleActionSchedulerInterface|null
+	 */
+	private $single_actions;
+
+	/**
 	 * Build the WordPress-backed worker.
 	 *
 	 * @return self
@@ -121,7 +139,9 @@ final class OptimizationWorker implements HookProviderInterface {
 			SettingsRepository::for_wordpress(),
 			Logger::for_wordpress(),
 			new OptimizationRetryPolicy(),
-			new SystemAttachmentClock()
+			new SystemAttachmentClock(),
+			QueueControlStateStore::for_wordpress(),
+			new ActionSchedulerSingleActionScheduler()
 		);
 	}
 
@@ -138,6 +158,8 @@ final class OptimizationWorker implements HookProviderInterface {
 	 * @param LoggerInterface              $logger Logger.
 	 * @param OptimizationRetryPolicy      $retry_policy Retry policy.
 	 * @param AttachmentClockInterface     $clock Clock.
+	 * @param QueueControlStateStoreInterface|null $controls Queue control state store.
+	 * @param SingleActionSchedulerInterface|null $single_actions Single action scheduler.
 	 */
 	public function __construct(
 		QueueInterface $queue,
@@ -149,7 +171,9 @@ final class OptimizationWorker implements HookProviderInterface {
 		SettingsRepositoryInterface $settings,
 		LoggerInterface $logger,
 		OptimizationRetryPolicy $retry_policy,
-		AttachmentClockInterface $clock
+		AttachmentClockInterface $clock,
+		?QueueControlStateStoreInterface $controls = null,
+		?SingleActionSchedulerInterface $single_actions = null
 	) {
 		$this->queue         = $queue;
 		$this->locks         = $locks;
@@ -161,6 +185,8 @@ final class OptimizationWorker implements HookProviderInterface {
 		$this->logger        = $logger;
 		$this->retry_policy  = $retry_policy;
 		$this->clock         = $clock;
+		$this->controls      = $controls;
+		$this->single_actions = $single_actions;
 	}
 
 	/**
@@ -235,6 +261,12 @@ final class OptimizationWorker implements HookProviderInterface {
 		$job_id         = $this->job_id( $job );
 		$max_retries    = $this->settings->max_retries();
 		$worker_budget  = $this->settings->worker_time_budget();
+
+		if ( $this->paused() ) {
+			$this->requeue_paused_job( $job, $job_id );
+			return;
+		}
+
 		$acquired       = $this->locks->acquire( $attachment_id );
 
 		if ( ! $acquired->is_successful() ) {
@@ -694,6 +726,63 @@ final class OptimizationWorker implements HookProviderInterface {
 			),
 			0,
 			191
+		);
+	}
+
+	/**
+	 * Determine whether queue execution is paused globally.
+	 *
+	 * @return bool
+	 */
+	private function paused(): bool {
+		return null !== $this->controls && $this->controls->read()->paused();
+	}
+
+	/**
+	 * Requeue one paused optimization job without consuming work.
+	 *
+	 * @param OptimizationJob $job Job.
+	 * @param string          $job_id Job identifier.
+	 * @return void
+	 */
+	private function requeue_paused_job( OptimizationJob $job, string $job_id ): void {
+		$scheduled = null !== $this->single_actions
+			&& $this->single_actions->schedule_single_action(
+				$this->clock->now() + self::PAUSE_DELAY_SECONDS,
+				LifecyclePolicy::ACTION_OPTIMIZE_ATTACHMENT_FORMAT,
+				$job->to_array(),
+				LifecyclePolicy::ACTION_GROUP,
+				false,
+				10
+			);
+
+		if ( $scheduled ) {
+			$this->logger->info(
+				LogCode::WORKER_CONTINUATION_QUEUED,
+				'Optimization worker re-queued a paused job without consuming work.',
+				array(
+					'attachment_id' => $job->attachment_id(),
+					'format'        => $job->format(),
+					'reason'        => $job->reason(),
+					'delay_seconds' => self::PAUSE_DELAY_SECONDS,
+				),
+				$job->attachment_id(),
+				$job_id
+			);
+
+			return;
+		}
+
+		$this->logger->warning(
+			LogCode::WORKER_LOCK_UNAVAILABLE,
+			'Optimization worker could not re-queue a paused job.',
+			array(
+				'attachment_id' => $job->attachment_id(),
+				'format'        => $job->format(),
+				'reason'        => $job->reason(),
+			),
+			$job->attachment_id(),
+			$job_id
 		);
 	}
 }

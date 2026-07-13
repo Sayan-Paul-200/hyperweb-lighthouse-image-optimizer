@@ -25,16 +25,18 @@ final class SettingsSanitizerTest extends TestCase {
 	public function test_booleans_and_format_lists_are_sanitized(): void {
 		$result   = $this->sanitizer()->sanitize(
 			array(
-				'automatic_optimization' => 'yes',
-				'delivery_enabled'       => '0',
-				'enabled_formats'        => array( 'webp', 'gif', 'webp', 'avif' ),
-				'format_preference'      => array( 'gif', 'avif', 'webp', 'avif' ),
+				'automatic_optimization'      => 'yes',
+				'delivery_enabled'            => '0',
+				'delivery_emergency_disabled' => 'yes',
+				'enabled_formats'             => array( 'webp', 'gif', 'webp', 'avif' ),
+				'format_preference'           => array( 'gif', 'avif', 'webp', 'avif' ),
 			)
 		);
 		$settings = $result->settings();
 
 		self::assertTrue( $settings['automatic_optimization'] );
 		self::assertFalse( $settings['delivery_enabled'] );
+		self::assertTrue( $settings['delivery_emergency_disabled'] );
 		self::assertSame( array( 'webp', 'avif' ), $settings['enabled_formats'] );
 		self::assertSame( array( 'avif', 'webp' ), $settings['format_preference'] );
 		self::assertTrue( $result->has_code( SettingsResult::CODE_SANITIZED ) );

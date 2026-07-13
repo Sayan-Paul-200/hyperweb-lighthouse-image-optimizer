@@ -1,0 +1,133 @@
+.hwlio-media-notices {
+	margin: 16px 0;
+}
+
+.hwlio-media-notice {
+	margin: 0 0 12px;
+	padding: 12px 14px;
+	border-left: 4px solid #2271b1;
+	background: #fff;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.hwlio-media-notice--success {
+	border-left-color: #00a32a;
+}
+
+.hwlio-media-notice--warning {
+	border-left-color: #dba617;
+}
+
+.hwlio-media-notice--error {
+	border-left-color: #d63638;
+}
+
+.hwlio-media-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.hwlio-media-summary__status,
+.hwlio-media-summary__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+}
+
+.hwlio-media-summary__details {
+	flex-basis: 100%;
+	margin-top: 8px;
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	background: #fff;
+}
+
+.hwlio-media-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: #f0f0f1;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.8;
+}
+
+.hwlio-media-badge--queued,
+.hwlio-media-badge--processing {
+	background: #e7f3ff;
+	color: #0a4b78;
+}
+
+.hwlio-media-badge--optimized,
+.hwlio-media-badge--skipped {
+	background: #edfaef;
+	color: #156b2f;
+}
+
+.hwlio-media-badge--partial,
+.hwlio-media-badge--stale {
+	background: #fff8e5;
+	color: #8a5a00;
+}
+
+.hwlio-media-badge--failed,
+.hwlio-media-badge--excluded {
+	background: #fbeaea;
+	color: #8c1f28;
+}
+
+.hwlio-media-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 7px;
+	border: 1px solid #dcdcde;
+	border-radius: 999px;
+	background: #fff;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.8;
+}
+
+.hwlio-media-action {
+	display: inline-flex;
+	align-items: center;
+	text-decoration: none;
+}
+
+.hwlio-media-action.is-busy {
+	pointer-events: none;
+	opacity: 0.65;
+}
+
+.hwlio-media-tile-badge {
+	position: absolute;
+	left: 8px;
+	bottom: 8px;
+	z-index: 3;
+	max-width: calc(100% - 16px);
+}
+
+.hwlio-media-detail-list {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.hwlio-media-detail-list li {
+	margin: 0 0 6px;
+}
+
+.hwlio-media-live-region {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(1px, 1px, 1px, 1px) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}

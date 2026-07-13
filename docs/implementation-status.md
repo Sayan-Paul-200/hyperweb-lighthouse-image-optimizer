@@ -95,7 +95,14 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A runtime optimization worker with lock orchestration, queued fingerprint freshness checks, continuation scheduling, retry scheduling, and queue-driven status transitions exists as of Subphase 5.2.
 - A runtime new-upload integration for asynchronous post-metadata queueing and lightweight status updates exists as of Subphase 5.3.
 - Attachment regeneration and edit reconciliation for stale optimized metadata updates exists as of Subphase 5.4.
-- No visible settings UI, diagnostics UI, REST diagnostics endpoint, or frontend delivery exists yet.
+- A runtime queue-maintenance provider for recurring stale-lock recovery, processing-state repair, and internal statistics-cache reconciliation exists as of Subphase 5.5.
+- A namespaced Media submenu shell with internal tab routing, capability checks, and captured screen IDs exists as of Subphase 6.1.
+- Screen-scoped admin CSS, footer JavaScript, REST bootstrap config, and accessible notice/live-region scaffolding exist as of Subphase 6.2.
+- Attachment-first REST controllers for status, diagnostics, attachment detail, and attachment actions exist as of Subphase 6.3.
+- Media Library list/grid/edit-screen controls, lightweight attachment payloads, and client-observed new-upload refresh now exist as of Subphase 6.4.
+- A cached dashboard, dry-run bulk scanner, and session-backed bulk queue controls with global pause/resume now exist as of Subphases 6.5 through 6.7.
+- A derivative URL resolver, responsive modern source-set builder, safe picture renderer, and active attachment-image plus post-content delivery integrations now exist as of Subphases 7.1 through 7.5.
+- Delivery now includes an internal emergency rollback switch, cache-invalidation request action, and missing-derivative diagnostics as of Subphase 7.6.
 
 ## Phase Status
 
@@ -133,8 +140,22 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 5.2 - Optimization worker
   - [x] Subphase 5.3 - New-upload integration
   - [x] Subphase 5.4 - Regeneration and edit reconciliation
+  - [x] Subphase 5.5 - Maintenance actions
 - [ ] Phase 6 - Admin Screens, REST API, and Bulk Processing
+  - [x] Subphase 6.1 - Menu and screen shell
+  - [x] Subphase 6.2 - Admin assets and REST client
+  - [x] Subphase 6.3 - REST controllers
+  - [x] Subphase 6.4 - Media Library and new-upload optimization controls
+  - [x] Subphase 6.5 - Dashboard
+  - [x] Subphase 6.6 - Bulk scanner
+  - [x] Subphase 6.7 - Bulk queue controls
 - [ ] Phase 7 - Frontend Modern-Format Delivery
+  - [x] Subphase 7.1 - Derivative URL resolver
+  - [x] Subphase 7.2 - Responsive source-set builder
+  - [x] Subphase 7.3 - Picture renderer
+  - [x] Subphase 7.4 - Attachment image integration
+  - [x] Subphase 7.5 - Post-content image integration
+  - [x] Subphase 7.6 - Delivery rollback and cache hooks
 - [ ] Phase 8 - Loading Optimization and Layout Stability
 - [ ] Phase 9 - WooCommerce Integration
 - [ ] Phase 10 - Elementor and CSS Background Integration
@@ -145,6 +166,523 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 
 Phase 0 implementation subphases are complete. The phase remains unchecked at the phase level until a supported WordPress 6.5+ activation smoke test is performed.
 Phase 1 implementation subphases are complete. The phase remains unchecked at the phase level until supported WordPress activation, deactivation, uninstall, Action Scheduler, and log-table smoke tests are performed.
+Phase 5 implementation subphases are complete. The phase remains unchecked at the phase level until supported WordPress queue execution and recurring-maintenance smoke tests are performed.
+Phase 6 now includes the admin menu shell, screen-scoped assets and REST bootstrap, attachment-first REST controllers, Media Library controls, dashboard, dry-run bulk scanning, and bounded bulk queue controls. The phase remains unchecked until supported WordPress admin and queue smoke tests are performed.
+Phase 7 now includes derivative URL resolution, responsive modern source-set building, safe picture rendering, active `wp_get_attachment_image` plus `wp_content_img_tag` delivery integrations, an internal emergency rollback switch, cache-invalidation request hooks, and missing-derivative diagnostics. The phase remains unchecked until supported WordPress frontend delivery and cache-integration smoke tests are performed.
+
+## Subphase 7.6 - Delivery Rollback and Cache Hooks
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Add a separate internal `delivery_emergency_disabled` setting that disables frontend delivery without changing `delivery_enabled` or deleting sidecars.
+- [x] Add `hwlio_cache_invalidation_requested` as a stable request action after successful derivative save/delete state changes.
+- [x] Add bounded derivative-health diagnostics for missing ready sidecars through the existing `/diagnostics` payload.
+- [x] Keep the active delivery hook surface unchanged at `wp_get_attachment_image` and `wp_content_img_tag`.
+
+### Files Added
+
+```text
+src/Admin/Rest/CompositeDiagnosticsService.php
+src/Diagnostics/DerivativeHealthDiagnostics.php
+src/Diagnostics/DerivativeHealthRuntimeInterface.php
+src/Diagnostics/WordPressDerivativeHealthRuntime.php
+src/Infrastructure/CacheInvalidationDispatcherInterface.php
+src/Infrastructure/CacheInvalidationRequest.php
+src/Infrastructure/WordPressCacheInvalidationDispatcher.php
+tests/Unit/Diagnostics/DerivativeHealthDiagnosticsTest.php
+tests/Unit/Infrastructure/FakeCacheInvalidationDispatcher.php
+```
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+src/Attachment/AttachmentCleanup.php
+src/Attachment/AttachmentCleanupResult.php
+src/Attachment/DerivativeRepository.php
+src/Delivery/MarkupEligibility.php
+src/Infrastructure/LifecyclePolicy.php
+src/Plugin.php
+src/Queue/ReconciliationWorker.php
+src/Settings/SettingsRepository.php
+src/Settings/SettingsRepositoryInterface.php
+src/Settings/SettingsSchema.php
+tests/Unit/Attachment/AttachmentCleanupTest.php
+tests/Unit/Attachment/DerivativeRepositoryTest.php
+tests/Unit/Admin/Rest/DiagnosticsControllerTest.php
+tests/Unit/Delivery/DeliveryManagerTest.php
+tests/Unit/Image/FakeSettingsRepository.php
+tests/Unit/Queue/ReconciliationWorkerTest.php
+tests/Unit/Settings/SettingsRepositoryTest.php
+tests/Unit/Settings/SettingsSanitizerTest.php
+tests/Unit/Settings/SettingsSchemaTest.php
+```
+
+### Delivery Rollback and Cache Behavior
+
+- `delivery_emergency_disabled` is an internal-only kill switch layered above `delivery_enabled`; it cannot be bypassed by `hwlio_delivery_is_enabled`.
+- `hwlio_cache_invalidation_requested` now receives adapter-safe payloads after successful derivative writes and after real derivative deletions during reconciliation or attachment cleanup.
+- Cache invalidation remains request-only in 7.6. No cache plugin, CDN, or offload adapter logic was added.
+- Derivative-health diagnostics scan attachment IDs in bounded pages, read sanitized manifests through `DerivativeRepository`, verify ready derivative files inside uploads, and report only safe aggregate counts and samples.
+- Missing derivative files continue to fail open during delivery through the existing source-set builder behavior; diagnostics add visibility without changing markup output.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+git diff --check
+rg -n "wp_get_attachment_image|wp_content_img_tag|wp_calculate_image_srcset|wp_get_attachment_image_attributes|wp_get_loading_optimization_attributes|ob_start" src tests/Unit -g "*.php"
+vendor/bin/phpunit tests/Unit/Delivery tests/Unit/Diagnostics tests/Unit/Attachment tests/Unit/Queue tests/Unit/Settings tests/Unit/Admin/Rest/DiagnosticsControllerTest.php tests/Unit/PluginTest.php
+vendor/bin/phpcs src/Delivery src/Diagnostics src/Attachment src/Queue src/Infrastructure src/Settings tests/Unit
+vendor/bin/phpstan analyse src/Delivery src/Diagnostics src/Attachment src/Queue src/Infrastructure src/Settings tests/Unit
+```
+
+Current workspace results:
+
+- `git diff --check`: pass
+- frontend-hook grep: pass; only `src/Delivery/DeliveryManager.php` references the active `wp_get_attachment_image` and `wp_content_img_tag` hooks, and source code still contains no `wp_calculate_image_srcset`, `wp_get_attachment_image_attributes`, `wp_get_loading_optimization_attributes`, or `ob_start`
+- `vendor/bin/phpunit`, `vendor/bin/phpcs`, and `vendor/bin/phpstan` remain pending until the normal project PHP toolchain is available on the shell `PATH`.
+
+Manual verification remains pending in a WordPress runtime:
+
+- enabling `delivery_emergency_disabled` should immediately return original frontend image markup without deleting sidecars
+- derivative create/delete operations should fire `hwlio_cache_invalidation_requested`
+- `/wp-json/hwlio/v1/diagnostics` should include the `delivery_derivative_files` result
+
+### Acceptance Criteria
+
+- [x] Disabling delivery with the emergency switch restores original markup without deleting sidecars.
+- [x] Cache invalidation request hooks fire only after real derivative save/delete changes.
+- [x] Missing ready sidecars are reported by diagnostics and continue not to produce broken source URLs.
+- [x] No new frontend delivery hooks, output buffering, frontend assets, or REST routes were introduced.
+
+### Deferred Work
+
+- Public/admin controls for the emergency delivery switch remain deferred.
+- Cache/CDN/offload adapters remain deferred to the later compatibility and adapter phases.
+- `wp_calculate_image_srcset`, `wp_get_attachment_image_attributes`, and `wp_get_loading_optimization_attributes` coordination remains deferred to later Phase 7 and Phase 8 work.
+
+## Subphase 7.5 - Post-Content Image Integration
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Extend the existing delivery manager to also hook `wp_content_img_tag`.
+- [x] Reuse the shared delivery pipeline for content images only when WordPress resolved a real attachment ID.
+- [x] Keep external or unresolvable content images unchanged and fail open on malformed or unsupported markup.
+- [x] Reuse the request-local transformed-markup registry across both attachment and content hook paths.
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+src/Delivery/DeliveryManager.php
+tests/Unit/Attachment/AttachmentScopePolicyTest.php
+tests/Unit/Delivery/DeliveryManagerTest.php
+tests/Unit/Delivery/DeliveryScopePolicyTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Image/ImageScopePolicyTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Delivery Integration Behavior
+
+- `DeliveryManager` now registers both `wp_get_attachment_image` and `wp_content_img_tag` while remaining the only active delivery provider.
+- Both hook paths now share one internal transform pipeline for eligibility checks, derivative source-set building, picture rendering, and request-local duplicate protection.
+- `wp_content_img_tag` transforms only when core passes a real attachment ID; the plugin performs no URL-to-ID lookup, database fallback, or arbitrary HTML resolution in this subphase.
+- Content-image requests enrich the existing developer-filter context with `hook = wp_content_img_tag` and `content_context` while preserving the existing filter names and argument order.
+- The final fallback `<img>` remains embedded verbatim inside rendered `<picture>` markup, preserving Gutenberg/core classes and loading-related attributes.
+- Duplicate protection now works across both hook paths in the same request, preventing plugin-generated double wrapping when the same attachment markup is seen again.
+- Hook-only 7.5 does not actively detect third-party or manually-authored pre-existing parent `<picture>` wrappers around content images; that compatibility edge case remains deferred.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+git diff --check
+rg -n "wp_get_attachment_image|wp_content_img_tag|wp_calculate_image_srcset|wp_get_loading_optimization_attributes" src tests/Unit -g "*.php"
+vendor/bin/phpunit tests/Unit/Delivery tests/Unit/PluginTest.php
+vendor/bin/phpcs src/Delivery tests/Unit/Delivery tests/Unit/PluginTest.php
+vendor/bin/phpstan analyse src/Delivery tests/Unit/Delivery tests/Unit/PluginTest.php
+```
+
+Current workspace results:
+
+- `git diff --check`: pending for this subphase
+- frontend-hook grep: pending for this subphase
+- `vendor/bin/phpunit`, `vendor/bin/phpcs`, and `vendor/bin/phpstan` remain pending until the normal project PHP toolchain is available on the shell `PATH`.
+
+Manual verification remains pending in a WordPress runtime:
+
+- Gutenberg Image blocks and classic post-content attachment images should render `<picture>` markup when delivery is enabled and valid derivatives exist
+- external or unresolved content images should remain unchanged
+- repeated same-request transforms across attachment and content hooks should not double wrap the same image markup
+
+### Acceptance Criteria
+
+- [x] `wp_content_img_tag` is now integrated through the existing delivery manager only when WordPress identifies an attachment.
+- [x] External and unresolvable content images remain unchanged.
+- [x] Shared request-local duplicate protection now covers both active delivery hook paths.
+- [x] Later frontend delivery hooks remain deferred and banned outside the delivery manager.
+
+### Deferred Work
+
+- `wp_calculate_image_srcset`, `wp_get_attachment_image_attributes`, and `wp_get_loading_optimization_attributes` coordination remain deferred to later Phase 7 and Phase 8 work.
+- Hook-only 7.5 does not actively detect third-party/manual parent `<picture>` wrappers around content images because `wp_content_img_tag` does not expose safe parent-markup context.
+- Emergency delivery rollback and cache invalidation hooks remain deferred to Subphase 7.6.
+
+## Subphase 7.4 - Attachment Image Integration
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Add `DeliveryManager` as the first active namespaced delivery hook provider and compose it in `Plugin::create()`.
+- [x] Add a delivery runtime seam, conservative eligibility service, and request-local transformed-markup registry for `wp_get_attachment_image` orchestration.
+- [x] Add conservative fallback-image source extraction from final `<img>` markup without changing the callable-only `SourceSetBuilder` contract.
+- [x] Activate delivery only for eligible frontend attachment-image requests, while preserving fail-open behavior and later-phase hook boundaries.
+
+### Files Added
+
+```text
+src/Delivery/AttachmentImageRuntimeInterface.php
+src/Delivery/AttachmentImageSourceExtraction.php
+src/Delivery/AttachmentImageSourceExtractor.php
+src/Delivery/DeliveryManager.php
+src/Delivery/MarkupEligibility.php
+src/Delivery/TransformedMarkupRegistry.php
+src/Delivery/WordPressAttachmentImageRuntime.php
+tests/Unit/Delivery/AttachmentImageSourceExtractorTest.php
+tests/Unit/Delivery/DeliveryManagerTest.php
+tests/Unit/Delivery/FakeAttachmentImageRuntime.php
+```
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+src/Plugin.php
+tests/Unit/Attachment/AttachmentScopePolicyTest.php
+tests/Unit/Delivery/DeliveryScopePolicyTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Image/ImageScopePolicyTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/PluginTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Delivery Integration Behavior
+
+- `DeliveryManager` is now the first active delivery provider and registers only `wp_get_attachment_image` with accepted args `5`.
+- `MarkupEligibility` gates delivery behind `delivery_enabled`, image-only requests, non-admin/feed/AJAX/REST contexts, non-icon requests, and fallback markup that the existing analyzer can preserve safely.
+- The new developer-facing delivery filters `hwlio_delivery_is_enabled` and `hwlio_markup_is_eligible` now receive the boolean result, attachment ID, original HTML, and a trailing context array with `size`, `icon`, `attr`, and request-context flags.
+- `AttachmentImageSourceExtractor` parses conservative core-style `w` descriptor candidates from the final fallback `<img>` markup and falls back to one `src` candidate only when no usable `srcset` survives and a width is known.
+- `DeliveryManager` reuses the callable-only `SourceSetBuilder` and `PictureRenderer` as the build/render primitives, failing open to the original HTML whenever metadata, parsing, derivative mapping, or rendering cannot complete safely.
+- `TransformedMarkupRegistry` records request-local signatures for both original input markup and successfully rendered `<picture>` output so duplicate or re-entrant wrapping is skipped without persisting anything across requests.
+- Later delivery hooks remain deferred: `wp_content_img_tag`, `wp_calculate_image_srcset`, `wp_get_attachment_image_attributes`, and `wp_get_loading_optimization_attributes` are still absent from runtime code in this subphase.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+git diff --check
+rg -n "wp_get_attachment_image|wp_content_img_tag|wp_calculate_image_srcset|wp_get_loading_optimization_attributes" src tests/Unit -g "*.php"
+vendor/bin/phpunit tests/Unit/Delivery tests/Unit/PluginTest.php
+vendor/bin/phpcs src/Delivery tests/Unit/Delivery tests/Unit/PluginTest.php
+vendor/bin/phpstan analyse src/Delivery tests/Unit/Delivery tests/Unit/PluginTest.php
+```
+
+Current workspace results:
+
+- `git diff --check`: pass
+- frontend-hook grep confirmed `src/Delivery/DeliveryManager.php` is the only runtime `wp_get_attachment_image` integration and that `wp_content_img_tag`, `wp_calculate_image_srcset`, and `wp_get_loading_optimization_attributes` remain absent from `src/Delivery`
+- `vendor/bin/phpunit`, `vendor/bin/phpcs`, and `vendor/bin/phpstan` remain pending until the normal project PHP toolchain is available on the shell `PATH`.
+
+Manual verification remains pending in a WordPress runtime:
+
+- eligible frontend `wp_get_attachment_image()` output should render `<picture>` markup with configured modern-format source order
+- delivery-disabled, admin/feed/AJAX/REST, icon, non-image, malformed, or no-derivative cases should return the original HTML unchanged
+- repeated same-request callbacks for the same attachment and exact original HTML should skip duplicate wrapping
+
+### Acceptance Criteria
+
+- [x] One active namespaced delivery provider now integrates only with `wp_get_attachment_image`.
+- [x] Delivery reuses the existing source-set builder and picture renderer rather than introducing parallel rendering logic.
+- [x] Request-local deduplication, conservative frontend-context gating, and developer-facing delivery filters are now in place.
+- [x] All later frontend delivery hooks remain deferred and banned outside the new delivery files.
+
+### Deferred Work
+
+- Broader compatibility handling for third-party or manually-authored parent `<picture>` wrappers remains deferred beyond Subphase 7.5.
+- `wp_calculate_image_srcset`, `wp_get_attachment_image_attributes`, and `wp_get_loading_optimization_attributes` coordination remain deferred to later Phase 7 and Phase 8 work.
+- Block-editor canvas, email, sitemap, oEmbed, and broader context-specific delivery refinements remain deferred to later delivery subphases.
+
+## Subphase 7.3 - Picture Renderer
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Add typed picture-render request and result value objects.
+- [x] Add a conservative image-markup analysis seam that accepts only one standalone `<img>` fragment and detects existing `<picture>` fragments.
+- [x] Add a callable-only `PictureRenderer` that wraps valid fallback image markup in ordered AVIF/WebP `<source>` elements.
+- [x] Preserve the original fallback `<img>` markup verbatim while escaping only generated `<picture>` and `<source>` attributes.
+- [x] Add the first renderer-level delivery filter `hwlio_picture_sources` without activating any frontend delivery hooks or runtime providers.
+
+### Files Added
+
+```text
+src/Delivery/ImageMarkupAnalysis.php
+src/Delivery/ImageMarkupAnalyzerInterface.php
+src/Delivery/PictureRenderRequest.php
+src/Delivery/PictureRenderResult.php
+src/Delivery/PictureRenderer.php
+src/Delivery/WordPressImageMarkupAnalyzer.php
+tests/Unit/Delivery/PictureRendererTest.php
+tests/Unit/Delivery/WordPressImageMarkupAnalyzerTest.php
+```
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+tests/Unit/Delivery/DeliveryTestWordPressShim.php
+```
+
+### Picture Renderer Behavior
+
+- `PictureRenderer` now consumes existing `SourceSetBuildResult` data only; it does not re-run derivative lookup, filesystem checks, or any frontend eligibility logic.
+- `WordPressImageMarkupAnalyzer` uses WordPress-style HTML tag processing plus conservative fragment validation to accept only exact standalone `<img>` fragments and reject malformed, multi-node, or already-`<picture>` markup.
+- Rendered `<picture>` markup is deterministic and compact: preferred modern formats become ordered `<source>` tags, while the original fallback `<img>` string is embedded unchanged.
+- The renderer preserves fallback attributes by never rebuilding the `<img>` node, so `src`, `srcset`, `sizes`, `loading`, `fetchpriority`, `decoding`, classes, IDs, `data-*`, `aria-*`, and other valid attributes remain intact.
+- Generated `<source>` elements copy the original `sizes` value when present, omit it when empty or missing, and include only formats that survived the source-set builder and any renderer-level filter rewrites.
+- The new `hwlio_picture_sources` filter can remove or rewrite normalized per-format picture-source payloads conservatively before markup is serialized.
+- Delivery remains inactive at runtime in this subphase: no frontend hooks, no request-local deduplication, no delivery-enabled/context gating, and no plugin composition changes were added.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+php -l src/Delivery/*.php
+php -l tests/Unit/Delivery/*.php
+vendor/bin/phpunit tests/Unit/Delivery tests/Unit/PluginTest.php
+vendor/bin/phpcs src/Delivery tests/Unit/Delivery
+vendor/bin/phpstan analyse src/Delivery tests/Unit/Delivery
+git diff --check
+```
+
+Current workspace results:
+
+- `git diff --check`: pass
+- Source-policy grep scans for frontend hooks, REST hooks, admin assets, queue scheduling, and output buffering inside `src/Delivery` and `tests/Unit/Delivery`: pass
+- `php`, `vendor/bin/phpunit`, `vendor/bin/phpcs`, and `vendor/bin/phpstan` were not available on the shell `PATH` in this workspace snapshot, so PHP-based automated verification remains pending in the normal project toolchain.
+
+Manual verification remains pending in a WordPress runtime:
+
+- Delivery runtime should remain inactive because `Plugin::create()` still composes no `\Delivery\` hook providers.
+- Rendered picture markup should preserve the fallback image node verbatim while adding only ordered modern-format `<source>` tags.
+- Malformed, multi-node, or already-`<picture>` fragments should return unchanged markup without warnings or malformed output.
+
+### Acceptance Criteria
+
+- [x] Safe callable-only `<picture>` rendering now exists without activating frontend delivery hooks.
+- [x] The original fallback `<img>` markup is preserved verbatim inside rendered picture markup.
+- [x] Malformed, ambiguous, and already-`<picture>` markup returns unchanged.
+- [x] Renderer-level tests now cover ordered sources, `sizes` preservation, filter rewrites, and fail-open behavior.
+
+### Deferred Work
+
+- Request-local deduplication and frontend-context gating remain deferred to Subphase 7.4.
+- `wp_get_attachment_image` and `wp_content_img_tag` integration remain deferred to Subphases 7.4 and 7.5.
+- Delivery-enabled checks, developer opt-out filters, and post-content attachment resolution remain deferred to later Phase 7 work.
+
+## Subphase 7.2 - Responsive Source-Set Builder
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Generalize the 7.1 uploads seam into a shared delivery uploads runtime exposing current uploads base URL and base directory.
+- [x] Add typed source-set build request, result, and per-format source-set value objects.
+- [x] Add a callable-only `SourceSetBuilder` that maps normalized WordPress width candidates to sanitized derivative manifest entries.
+- [x] Resolve derivative URLs through the 7.1 resolver and omit missing derivative files through uploads-base-directory plus file-probe checks.
+- [x] Keep the implementation internal-only with no delivery providers, frontend hooks, markup rendering, or picture output.
+
+### Files Added
+
+```text
+src/Delivery/FormatSourceSet.php
+src/Delivery/SourceSetBuildRequest.php
+src/Delivery/SourceSetBuildResult.php
+src/Delivery/SourceSetBuilder.php
+src/Delivery/UploadsRuntimeInterface.php
+src/Delivery/WordPressUploadsRuntime.php
+tests/Unit/Delivery/SourceSetBuilderTest.php
+tests/Unit/Delivery/WordPressUploadsRuntimeTest.php
+```
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+src/Delivery/DerivativeUrlResolver.php
+tests/Unit/Delivery/DerivativeUrlResolverTest.php
+tests/Unit/Delivery/DeliveryTestWordPressShim.php
+tests/Unit/Delivery/FakeUploadsUrlRuntime.php
+```
+
+### Files Removed
+
+```text
+src/Delivery/UploadsUrlRuntimeInterface.php
+src/Delivery/WordPressUploadsUrlRuntime.php
+tests/Unit/Delivery/WordPressUploadsUrlRuntimeTest.php
+```
+
+### Source-Set Builder Behavior
+
+- `SourceSetBuilder` now consumes already-generated WordPress-style width candidates, not raw `srcset` strings and not the full `wp_calculate_image_srcset()` algorithm.
+- The builder normalizes incoming candidates conservatively, preserving original order and width descriptors while skipping malformed, duplicate-width, or unsupported candidates.
+- `image_meta['file']`, `width`, `height`, and `sizes` are converted into metadata candidates using the same relative-directory rules WordPress core uses for basename-only subsize files.
+- Stored derivative state is read only through `DerivativeRepository::read()`, so invalid or tampered manifest data continues to be filtered through the existing sanitizer.
+- Each original candidate is matched back to a metadata candidate by relative file identity plus width, then to the derivative manifest by size name and source-file alignment.
+- Each modern candidate URL is resolved through `DerivativeUrlResolver`, and each derivative file must still exist under the current uploads base directory before it is included in a built format source set.
+- The output is typed and path-safe: each `FormatSourceSet` returns width-keyed `sources` plus a serialized `srcset`, with no absolute filesystem paths and no markup generation.
+- Delivery remains inactive at runtime in this subphase: no frontend hooks, no picture rendering, no request-local dedupe, and no plugin composition changes were added.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+php -l src/Delivery/*.php
+php -l tests/Unit/Delivery/*.php
+vendor/bin/phpunit tests/Unit/Delivery tests/Unit/PluginTest.php
+vendor/bin/phpcs src/Delivery tests/Unit/Delivery
+vendor/bin/phpstan analyse src/Delivery tests/Unit/Delivery
+git diff --check
+```
+
+Current workspace results:
+
+- `git diff --check`: pass
+- Source-policy grep scans for frontend hooks, REST hooks, admin assets, queue scheduling, and output buffering inside `src/Delivery` and `tests/Unit/Delivery`: pass
+- `php`, `vendor/bin/phpunit`, `vendor/bin/phpcs`, and `vendor/bin/phpstan` were not available on the shell `PATH` in this workspace snapshot, so PHP-based automated verification remains pending in the normal project toolchain.
+
+Manual verification remains pending in a WordPress runtime:
+
+- Delivery runtime should remain inactive because `Plugin::create()` still composes no `\Delivery\` hook providers.
+- Built AVIF/WebP source sets should preserve original WordPress width descriptors and omit any missing derivative file cleanly.
+- No generated source set should reference a nonexistent file after derivative removal or partial regeneration.
+
+### Acceptance Criteria
+
+- [x] Generated modern-format sources now preserve original candidate widths.
+- [x] Missing derivative files are omitted rather than referenced.
+- [x] The builder remains callable-only with no frontend delivery hooks or markup mutation.
+- [x] URL resolution still follows current uploads configuration after the shared uploads-runtime refactor.
+
+### Deferred Work
+
+- Picture rendering and original `<img>` preservation remain deferred to Subphase 7.3.
+- Frontend hook integration with `wp_get_attachment_image` and post-content delivery remain deferred to Subphases 7.4 and 7.5.
+- Loading-attribute preservation and critical-image policy remain deferred to Phase 8.
+
+## Subphase 7.1 - Derivative URL Resolver
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Add a new `src/Delivery/` slice with typed derivative URL request, result, resolver, and uploads-runtime seams.
+- [x] Convert validated uploads-relative derivative paths into runtime URLs using current uploads configuration only.
+- [x] Add generic delivery filter hooks for uploads base URL and final derivative URL rewriting.
+- [x] Keep the implementation callable-only with no plugin composition changes or frontend delivery hooks.
+- [x] Add unit and scope-policy tests that prove the delivery foundation remains internal-only and path-safe.
+
+### Files Added
+
+```text
+src/Delivery/DerivativeUrlRequest.php
+src/Delivery/DerivativeUrlResolutionResult.php
+src/Delivery/DerivativeUrlResolver.php
+src/Delivery/UploadsUrlRuntimeInterface.php
+src/Delivery/WordPressUploadsUrlRuntime.php
+tests/Unit/Delivery/DeliveryScopePolicyTest.php
+tests/Unit/Delivery/DeliveryTestWordPressShim.php
+tests/Unit/Delivery/DerivativeUrlResolverTest.php
+tests/Unit/Delivery/FakeUploadsUrlRuntime.php
+tests/Unit/Delivery/WordPressUploadsUrlRuntimeTest.php
+```
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+tests/Unit/Settings/SettingsTestFilterShim.php
+```
+
+### Delivery Resolver Behavior
+
+- `DerivativeUrlResolver` now converts only sanitized uploads-relative derivative paths into runtime URLs and rejects empty, URL-like, absolute, or dot-segmented paths through the existing `DerivativeManifestSanitizer::safe_relative_path()` rule.
+- The delivery uploads runtime reads `wp_upload_dir( null, false )` at resolve time, so domain migrations, HTTPS changes, and base uploads URL changes are reflected without changing stored metadata.
+- The new delivery filter hooks `hwlio_delivery_uploads_base_url` and `hwlio_delivery_derivative_url` allow future CDN/offload adapters to rewrite the uploads base URL or final derivative URL without binding core delivery code to any specific product.
+- The result payload is typed and path-safe: it exposes success state, final URL, relative path, code, and request context only, with no absolute filesystem paths or metadata writes.
+- Delivery remains inactive at runtime in this subphase: no frontend hooks, no picture rendering, no `srcset` building, no eligibility logic, and no plugin composition changes were added.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+php -l src/Delivery/*.php
+php -l tests/Unit/Delivery/*.php
+vendor/bin/phpunit tests/Unit/Delivery tests/Unit/PluginTest.php tests/Unit/Settings/SettingsSchemaTest.php
+vendor/bin/phpcs src/Delivery tests/Unit/Delivery tests/Unit/Settings/SettingsTestFilterShim.php
+vendor/bin/phpstan analyse src/Delivery tests/Unit/Delivery
+git diff --check
+```
+
+Current workspace results:
+
+- `git diff --check`: pass
+- Source-policy grep scans for frontend hooks, REST hooks, admin assets, queue scheduling, and output buffering inside `src/Delivery` and `tests/Unit/Delivery`: pass
+- `php`, `vendor/bin/phpunit`, `vendor/bin/phpcs`, and `vendor/bin/phpstan` were not available on the shell `PATH` in this workspace snapshot, so PHP-based automated verification remains pending in the normal project toolchain.
+
+Manual verification remains pending in a WordPress runtime:
+
+- Delivery runtime should remain inactive because `Plugin::create()` still composes no `\Delivery\` hook providers.
+- Stored derivative metadata should continue to contain uploads-relative paths only and no fixed domain values.
+- Future delivery consumers should resolve derivative URLs through current uploads configuration even after site-domain or scheme changes.
+
+### Acceptance Criteria
+
+- [x] Stored derivative metadata continues to contain no fixed domain values.
+- [x] URL resolution follows current `wp_upload_dir()` configuration instead of persisted domains or schemes.
+- [x] Generic CDN/offload rewrite hooks exist without introducing product-specific delivery adapters.
+- [x] No frontend delivery hooks, REST routes, admin assets, queue scheduling, or output buffering were introduced in Subphase 7.1.
+
+### Deferred Work
+
+- Responsive source-set mapping remains deferred to Subphase 7.2.
+- Picture rendering and fail-open markup preservation remain deferred to Subphases 7.3 through 7.5.
+- Formal CDN/offload adapter contracts remain deferred to Phase 11.
 
 ## Subphase 0.1 - Create the Development Baseline
 
@@ -2671,6 +3209,911 @@ composer run test: pass, 339 tests and 13390 assertions
 - Media Library refresh listeners, admin UI, and REST exposure remain deferred to Phase 6.
 - Frontend modern-format delivery remains deferred to Phase 7.
 - Runtime WordPress smoke testing remains pending in this plugin-only workspace.
+
+## Subphase 5.5 - Maintenance Actions
+
+**Status:** Complete
+**Completed:** 2026-07-11
+
+### Tasks
+
+- [x] Add a dedicated runtime maintenance provider for recurring stale-lock recovery and statistics reconciliation.
+- [x] Generalize the recurring Action Scheduler seam into reusable infrastructure-level adapters.
+- [x] Keep `hwlio_cleanup_logs` owned by `LogMaintenance` and preserve existing daily log pruning behavior.
+- [x] Schedule unique recurring `hwlio_recover_stale_locks` and `hwlio_reconcile_statistics` actions after `action_scheduler_init`.
+- [x] Extend stale-lock recovery results so maintenance can repair stuck `processing` statuses safely.
+- [x] Add a minimal internal statistics cache reconciler that scans bounded attachment ID pages and persists `hwlio_statistics_cache` with autoload disabled.
+- [x] Keep admin UI, REST routes, bulk scanning controls, and frontend delivery deferred.
+
+### Files Added
+
+```text
+src/Infrastructure/ActionSchedulerRecurringActionScheduler.php
+src/Infrastructure/RecurringActionSchedulerInterface.php
+src/Queue/AttachmentStatisticsScannerInterface.php
+src/Queue/QueueMaintenance.php
+src/Queue/StatisticsCache.php
+src/Queue/StatisticsReconciler.php
+src/Queue/StatisticsReconcilerInterface.php
+src/Queue/StatisticsReconciliationResult.php
+src/Queue/WordPressAttachmentStatisticsScanner.php
+tests/Unit/Queue/FakeAttachmentStatisticsScanner.php
+tests/Unit/Queue/FakeStatisticsReconciler.php
+tests/Unit/Queue/QueueMaintenanceTest.php
+tests/Unit/Queue/StatisticsCacheTest.php
+tests/Unit/Queue/StatisticsReconcilerTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Attachment/AttachmentLockManager.php
+src/Attachment/AttachmentLockRecoveryResult.php
+src/Infrastructure/LifecyclePolicy.php
+src/Logging/LogCode.php
+src/Logging/LogMaintenance.php
+src/Plugin.php
+tests/Unit/Attachment/AttachmentLockManagerTest.php
+tests/Unit/Infrastructure/FakeOptionStore.php
+tests/Unit/Logging/FakeRecurringActionScheduler.php
+tests/Unit/PluginTest.php
+tests/Unit/Queue/QueueScopePolicyTest.php
+```
+
+### Files Removed
+
+```text
+src/Logging/ActionSchedulerRecurringActionScheduler.php
+src/Logging/RecurringActionSchedulerInterface.php
+```
+
+### Maintenance Behavior
+
+- `QueueMaintenance` is composed into `Plugin::create()` and registers only `action_scheduler_init`, `hwlio_recover_stale_locks`, and `hwlio_reconcile_statistics`.
+- The shared recurring scheduler seam now lives under `src/Infrastructure/` and is reused by both `LogMaintenance` and `QueueMaintenance`.
+- `hwlio_cleanup_logs` remains owned by `LogMaintenance` and continues to schedule daily log-pruning work unchanged.
+- `hwlio_recover_stale_locks` is scheduled hourly in the `hwlio` Action Scheduler group, while `hwlio_reconcile_statistics` is scheduled daily in the same group.
+- Stale-lock recovery reuses `AttachmentLockManager::recover_stale()` and now exposes recovered attachment IDs in addition to bounded counts and samples.
+- When maintenance recovers a lock for an attachment still marked `processing`, `_hwlio_status` is rewritten to `stale` while preserving ready formats, `excluded`, and the existing error-code value.
+- Pure no-op stale-lock recovery runs remain silent; actual recoveries log an info entry and recovery/status-repair warnings log a warning entry through new maintenance log codes.
+- `StatisticsReconciler` scans bounded pages of attachment IDs owning plugin metadata, reads sanitized status/manifest state through `DerivativeRepository::read()`, and writes a schema-versioned `hwlio_statistics_cache` option with autoload disabled.
+- Internal statistics totals intentionally remain conservative: no filesystem validation, no Action Scheduler queue-state math, and overall generated-byte totals use the smallest ready derivative per source size so top-level totals do not double-count both WebP and AVIF.
+- Statistics cache write failures leave any previous cache value untouched and return a structured failed result for maintenance logging.
+
+### Verification
+
+```text
+Automated PHP syntax, PHPUnit, PHPStan, and Composer checks were not run in this shell because `php` and `composer` are unavailable on PATH in the current workspace snapshot.
+Source-level review completed for new runtime providers, recurring scheduler seams, queue maintenance tests, statistics reconciler tests, and status-document updates.
+```
+
+### Acceptance Criteria
+
+- [x] Maintenance actions are uniquely scheduled for stale-lock recovery and statistics reconciliation.
+- [x] Existing deactivation cleanup still targets all plugin-owned recurring maintenance hooks.
+- [x] Recovered stale locks can repair only attachments stuck in `processing` without touching originals or core attachment metadata.
+- [x] The internal statistics cache is schema-versioned, bounded, conservative, and stored with autoload disabled.
+- [x] Statistics reconciliation leaves the previous cache untouched when persistence fails.
+- [x] No admin UI, REST routes, bulk queue controls, or frontend delivery behavior were introduced.
+
+### Deferred Work
+
+- Dashboard rendering, statistics exposure, and recalculate controls remain deferred to Phase 6.
+- Pause, resume, and cancel queue controls remain deferred to Phase 6 bulk-processing work.
+- Frontend modern-format delivery remains deferred to Phase 7.
+- Runtime WordPress smoke testing remains pending in this plugin-only workspace.
+
+## Subphase 6.1 - Menu and Screen Shell
+
+**Status:** Complete
+**Completed:** 2026-07-11
+
+### Tasks
+
+- [x] Add the Media submenu shell under `upload.php`.
+- [x] Build internal tab routing for dashboard, bulk optimize, settings, diagnostics, and logs.
+- [x] Add explicit `manage_options` capability checks for direct screen access.
+- [x] Capture plugin screen IDs for later asset scoping.
+- [x] Keep plugin-owned admin assets, REST routes, and bulk execution deferred.
+
+### Files Added
+
+```text
+src/Admin/AbstractAdminPage.php
+src/Admin/AdminController.php
+src/Admin/AdminPageInterface.php
+src/Admin/AdminRuntimeInterface.php
+src/Admin/BulkPage.php
+src/Admin/DashboardPage.php
+src/Admin/DiagnosticsPage.php
+src/Admin/LogsPage.php
+src/Admin/Menu.php
+src/Admin/SettingsPage.php
+src/Admin/WordPressAdminRuntime.php
+tests/Unit/Admin/AdminAccessDenied.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Admin/FakeAdminRuntime.php
+tests/Unit/Admin/MenuTest.php
+```
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+src/Plugin.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/PluginTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Admin Shell Behavior
+
+- `AdminController` is composed into `Plugin::create()` and registers only the `admin_menu` hook through the shared `HookRegistrar`.
+- `Menu` owns the Phase 6.1 submenu contract: parent slug `upload.php`, menu slug `hwlio`, capability `manage_options`, ordered internal tabs, and the captured submenu hook suffix used as the only plugin screen ID.
+- The visible shell renders one Media submenu page with internal tab navigation for Dashboard, Bulk Optimize, Settings, Diagnostics, and Logs.
+- Direct screen rendering re-checks `manage_options` and aborts unauthorized access through the injected admin runtime seam instead of assuming menu visibility is sufficient.
+- Screen rendering intentionally stays shell-only in this subphase: no plugin CSS or JavaScript, no REST bootstrap data, no Settings API field rendering, no diagnostics execution UI, and no bulk controls.
+- The legacy non-namespaced `admin/` scaffold remains inert.
+
+### Verification
+
+```text
+Automated PHP syntax, PHPCS, PHPStan, and PHPUnit checks could not be run in this shell because `php`, `composer`, and `vendor/bin` tooling are unavailable in the current workspace snapshot.
+Source scans confirm `src/Admin/` introduces only the `admin_menu` hook, one submenu registration seam, and no plugin-owned admin assets, REST routes, settings-field rendering, or frontend delivery hooks.
+Manual WordPress verification was not performed in this plugin-only workspace snapshot.
+```
+
+### Acceptance Criteria
+
+- [x] A Media submenu shell exists with tab routing for the five planned admin sections.
+- [x] Unauthorized direct access is explicitly denied through a runtime capability check.
+- [x] Plugin screen IDs are captured for future asset scoping.
+- [x] Plugin-owned admin assets still do not load on unrelated screens because no asset hooks were introduced in 6.1.
+- [x] REST routes, bulk execution, and visible Media Library controls remain deferred.
+
+### Deferred Work
+
+- Admin CSS, JavaScript, REST bootstrap data, and accessible progress states remain deferred to Subphase 6.2.
+- Status, diagnostics, jobs, and attachment REST controllers remain deferred to Subphase 6.3.
+- Bulk scanning, queue actions, logs rendering, and Media Library controls remain deferred to later Phase 6 subphases.
+- Frontend modern-format delivery remains deferred to Phase 7.
+
+## Subphase 6.2 - Admin Assets and REST Client
+
+**Status:** Complete
+**Completed:** 2026-07-11
+
+### Tasks
+
+- [x] Add a dedicated admin asset hook provider scoped to plugin-owned screens only.
+- [x] Add minimal plugin-screen CSS and footer JavaScript with no build step.
+- [x] Add REST root and nonce bootstrap configuration for later admin requests.
+- [x] Add visible notice and live-region scaffolding for accessible progress and error messaging.
+- [x] Keep REST controllers, bulk actions, Media Library integration, and live polling deferred.
+
+### Files Added
+
+```text
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+src/Admin/AdminAssetRuntimeInterface.php
+src/Admin/AdminBootstrapConfig.php
+src/Admin/AdminScreenContext.php
+src/Admin/AdminScreenContextResolver.php
+src/Admin/Assets.php
+src/Admin/NoticeManager.php
+src/Admin/WordPressAdminAssetRuntime.php
+tests/Unit/Admin/AdminScreenContextResolverTest.php
+tests/Unit/Admin/AssetsTest.php
+tests/Unit/Admin/FakeAdminAssetRuntime.php
+```
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+src/Admin/AdminController.php
+src/Plugin.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/PluginTest.php
+tests/Unit/ScaffoldAssetPolicyTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Admin Asset Behavior
+
+- `Assets` is composed into `Plugin::create()` alongside the existing admin shell and shares the same `Menu`, request provider, and screen-context resolver as `AdminController`.
+- `Assets` registers only `admin_enqueue_scripts` and enqueues assets only when the current hook suffix matches the captured plugin screen ID.
+- The CSS remains intentionally small and screen-specific, covering only notice spacing, minimal state styling, and screen-reader live regions.
+- The JavaScript is loaded in the footer, depends only on `wp-api-fetch`, and receives its bootstrap payload through one inline `window.hwlioAdminConfig` assignment injected before the main script.
+- `AdminBootstrapConfig` provides the typed bootstrap shape for REST root, REST nonce, page slug, screen ID, current tab, version, conservative future polling defaults, selectors, and generic UI strings.
+- `NoticeManager` now defines shared PHP and JS identifiers for the notice stack, polite live region, assertive live region, and the stable app mount element.
+- `AdminController` renders the notice containers and one stable mount element but still does not render Settings API fields, diagnostics results, bulk controls, or attachment actions.
+- The admin client initializes `wp.apiFetch` middleware and exposes a small request wrapper plus visible JS/bootstrap error handling, but it does not call real plugin REST routes in this subphase.
+
+### Verification
+
+```text
+Automated PHP syntax, PHPCS, PHPStan, and PHPUnit checks could not be run in this shell because `php`, `composer`, and `vendor/bin` tooling are unavailable in the current workspace snapshot.
+Source scans confirm plugin-owned admin assets are now restricted to `src/Admin/Assets.php`, `src/Admin/WordPressAdminAssetRuntime.php`, and the new `admin/css` / `admin/js` files.
+Source scans also confirm no `register_rest_route()` or `rest_api_init` usage was introduced in this subphase, and the new admin JavaScript does not reference jQuery.
+Manual WordPress verification was not performed in this plugin-only workspace snapshot.
+```
+
+### Acceptance Criteria
+
+- [x] Plugin CSS and JavaScript are prepared for the admin screen shell only.
+- [x] The admin script is footer-loaded, `wp-api-fetch`-based, and does not request jQuery.
+- [x] REST root and nonce bootstrap data exist for later admin actions without introducing live routes yet.
+- [x] Generic bootstrap and request failures now have visible notice and live-region paths on the plugin screen.
+- [x] No plugin asset is intended to load on unrelated wp-admin screens.
+- [x] REST controllers, attachment actions, queue controls, and active polling remain deferred.
+
+### Deferred Work
+
+- Status, diagnostics, jobs, and attachment REST controllers remain deferred to Subphase 6.3.
+- Media Library controls, attachment actions, and upload-progress refresh remain deferred to Subphase 6.4.
+- Dashboard data rendering, diagnostics execution UI, and log browsing remain deferred to later Phase 6 subphases.
+- Frontend modern-format delivery remains deferred to Phase 7.
+
+## Subphase 6.3 - REST Controllers
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Add a dedicated REST provider under `src/Admin/Rest/` and compose it through `Plugin::create()`.
+- [x] Register attachment-first `hwlio/v1` routes for status, diagnostics, attachment detail, optimize, retry, reconcile, exclude, and include.
+- [x] Add a WordPress REST runtime seam plus focused services for cached status summaries, diagnostics payloads, sanitized attachment details, and attachment actions.
+- [x] Keep `GET /attachments` and bulk `/jobs/*` routes deferred to later Phase 6 bulk-processing subphases.
+
+### Files Added
+
+```text
+src/Admin/Rest/AttachmentActionResult.php
+src/Admin/Rest/AttachmentActionService.php
+src/Admin/Rest/AttachmentDetailsService.php
+src/Admin/Rest/AttachmentsController.php
+src/Admin/Rest/DiagnosticsController.php
+src/Admin/Rest/DiagnosticsServiceInterface.php
+src/Admin/Rest/DiagnosticsSummaryService.php
+src/Admin/Rest/RequestData.php
+src/Admin/Rest/RestApi.php
+src/Admin/Rest/RestControllerInterface.php
+src/Admin/Rest/RestErrorFactory.php
+src/Admin/Rest/RestRuntimeInterface.php
+src/Admin/Rest/StatisticsCacheReader.php
+src/Admin/Rest/StatusController.php
+src/Admin/Rest/StatusSummaryService.php
+src/Admin/Rest/WordPressRestRuntime.php
+tests/Unit/Admin/Rest/AttachmentActionServiceTest.php
+tests/Unit/Admin/Rest/AttachmentsControllerTest.php
+tests/Unit/Admin/Rest/DiagnosticsControllerTest.php
+tests/Unit/Admin/Rest/FakeRestRequest.php
+tests/Unit/Admin/Rest/FakeRestRuntime.php
+tests/Unit/Admin/Rest/RestApiTest.php
+tests/Unit/Admin/Rest/StatusControllerTest.php
+tests/Unit/Admin/Rest/StatusSummaryServiceTest.php
+```
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+src/Plugin.php
+tests/Unit/Attachment/AttachmentScopePolicyTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Image/ImageScopePolicyTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/PluginTest.php
+tests/Unit/Queue/QueueScopePolicyTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### REST Behavior
+
+- `RestApi` is the only provider that registers `rest_api_init`, and `WordPressRestRuntime` is the only runtime file that calls `register_rest_route()`.
+- `GET /status` returns queue availability, the normalized internal statistics cache, and minimal settings state without recalculating statistics.
+- `GET /diagnostics` returns the existing `EnvironmentDiagnostics` report shape unchanged through a thin adapter.
+- `GET /attachments/{id}` returns sanitized repository-backed manifest and status data only; no Media Library listing, filesystem validation, or bulk scanning was introduced.
+- `POST /attachments/{id}/optimize` accepts an optional `force` flag and doubles as the future re-optimize route.
+- `POST /attachments/{id}/retry`, `reconcile`, `exclude`, and `include` are attachment-scoped only and preserve plugin-owned derivative metadata.
+- Excluded attachments now reject manual optimize, retry, and reconcile until they are included again.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+php -l src/Admin/Rest/*.php
+vendor/bin/phpunit tests/Unit/Admin/Rest tests/Unit/PluginTest.php
+composer run test
+```
+
+Current workspace limitation:
+
+- `php` and `composer` are not available on the shell `PATH` in this workspace snapshot, so these automated checks could not be executed here.
+
+Manual verification still pending in a WordPress runtime:
+
+- `upload.php?page=hwlio` continues loading without new screen-wide asset leakage.
+- The REST bootstrap root remains `hwlio/v1`.
+- Invalid IDs, forbidden attachment access, excluded-action conflicts, and invalid `force` values return clean 4xx responses.
+- No response payload should contain absolute filesystem paths or raw exception traces.
+
+### Acceptance Criteria
+
+- [x] Status, diagnostics, attachment detail, and attachment action routes are registered in `hwlio/v1`.
+- [x] Global routes require `manage_options`.
+- [x] Attachment routes require `upload_files` and enforce `edit_post` after the attachment is resolved.
+- [x] Invalid or tampered derivative metadata is sanitized through `DerivativeRepository::read()` before REST output.
+- [x] Excluded attachments reject manual optimize, retry, and reconcile until included.
+- [x] No bulk scan, pause, resume, retry-failed, or cancel-pending routes were introduced.
+- [x] Policy tests now allow REST hook usage only in the new REST runtime/provider files.
+
+### Deferred Work
+
+- `GET /attachments` list browsing remains deferred until bounded list and bulk-query semantics are implemented.
+- Bulk scan, queue, pause, resume, retry-failed, and cancel-pending REST controls remain deferred to Subphases 6.6 and 6.7.
+- Media Library controls, upload-progress refresh consumers, and attachment-action UI remain deferred to Subphase 6.4.
+- Dashboard rendering, diagnostics execution UI, and log browsing remain deferred to later Phase 6 subphases.
+- Frontend modern-format delivery remains deferred to Phase 7.
+
+## Subphase 6.4 - Media Library and New-Upload Optimization Controls
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Add a dedicated `src/Admin/MediaLibrary/` slice for lightweight attachment summaries, action visibility, markup rendering, Media Library hooks, and media-screen assets.
+- [x] Compose `MediaLibraryIntegration` and `MediaLibraryAssets` through `Plugin::create()` without overloading the existing plugin-screen shell providers.
+- [x] Add typed settings getters for `media_library_controls` and `allow_attachment_exclusion`.
+- [x] Reuse `_hwlio_status` for list/grid/edit-screen rendering and keep manifest/details loading lazy through the existing attachment REST routes.
+- [x] Add Media Library list column, row actions, attachment payload enrichment, attachment edit/compat rendering, and media-modal/client polling foundations.
+- [x] Keep bulk `/jobs/*`, `GET /attachments`, and frontend delivery deferred.
+
+### Files Added
+
+```text
+admin/css/hyperweb-lighthouse-image-optimizer-media-library.css
+admin/js/hyperweb-lighthouse-image-optimizer-media-library.js
+src/Admin/MediaLibrary/AttachmentActionAvailability.php
+src/Admin/MediaLibrary/AttachmentStatusReader.php
+src/Admin/MediaLibrary/MediaAttachmentPresenter.php
+src/Admin/MediaLibrary/MediaAttachmentRenderer.php
+src/Admin/MediaLibrary/MediaAttachmentSummary.php
+src/Admin/MediaLibrary/MediaLibraryAssets.php
+src/Admin/MediaLibrary/MediaLibraryBootstrapConfig.php
+src/Admin/MediaLibrary/MediaLibraryIntegration.php
+src/Admin/MediaLibrary/MediaLibraryRuntimeInterface.php
+src/Admin/MediaLibrary/WordPressMediaLibraryRuntime.php
+tests/Unit/Admin/MediaLibrary/AttachmentActionAvailabilityTest.php
+tests/Unit/Admin/MediaLibrary/FakeMediaLibraryRuntime.php
+tests/Unit/Admin/MediaLibrary/MediaLibraryAssetsTest.php
+tests/Unit/Admin/MediaLibrary/MediaLibraryIntegrationTest.php
+```
+
+### Files Changed
+
+```text
+docs/implementation-status.md
+src/Admin/Rest/AttachmentActionService.php
+src/Plugin.php
+src/Settings/SettingsRepository.php
+src/Settings/SettingsRepositoryInterface.php
+tests/Unit/Admin/Rest/AttachmentActionServiceTest.php
+tests/Unit/Attachment/AttachmentScopePolicyTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Image/FakeSettingsRepository.php
+tests/Unit/Image/ImageScopePolicyTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/PluginTest.php
+tests/Unit/Queue/QueueScopePolicyTest.php
+tests/Unit/ScaffoldAssetPolicyTest.php
+tests/Unit/Settings/SettingsRepositoryTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Media Library Behavior
+
+- `MediaLibraryIntegration` is the only new runtime provider that registers Media Library hooks, and it registers only `wp_prepare_attachment_for_js`, `manage_media_columns`, `manage_media_custom_column`, `media_row_actions`, and `attachment_fields_to_edit`.
+- Initial list/grid/edit-screen rendering reads `_hwlio_status` only through `AttachmentStatusReader`; no filesystem validation or eager manifest loading was added to normal Media Library rendering.
+- `wp_prepare_attachment_for_js` now injects a small `hwlio` payload containing the attachment ID, lightweight state, ready formats, allowed actions, active/polling flag, and attachment-scoped route paths only.
+- Attachment edit and media compat contexts render one shared HWLIO summary block with lazy details containers; state changes remain REST-driven and do not use `attachment_fields_to_save`.
+- Media Library assets load only on `upload.php`, attachment edit screens, and screens that actually call `wp_enqueue_media()`.
+- The new client remains jQuery-free, configures `wp.apiFetch`, lazily fetches `GET /attachments/{id}` details, polls only active attachments already on screen, and shows visible notices/live-region announcements for action outcomes.
+
+### REST and Settings Alignment
+
+- `AttachmentActionService` now rejects include/exclude when per-attachment exclusion is disabled so the Media Library UI and REST behavior stay aligned.
+- `SettingsRepository` and `SettingsRepositoryInterface` now expose typed getters for `media_library_controls_enabled()` and `attachment_exclusion_allowed()`.
+- Media Library controls remain feature-gated by `media_library_controls`, and exclusion actions remain feature-gated by `allow_attachment_exclusion`.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+php -l src/Admin/MediaLibrary/*.php
+php -l src/Plugin.php
+vendor/bin/phpunit tests/Unit/Admin/MediaLibrary tests/Unit/Admin/Rest/AttachmentActionServiceTest.php tests/Unit/PluginTest.php
+composer run test
+```
+
+Current workspace limitation:
+
+- `php` and `composer` are not available on the shell `PATH` in this workspace snapshot, so these automated checks could not be executed here.
+
+Manual verification still pending in a WordPress runtime:
+
+- `upload.php` list view should show the lightweight Optimization column and quick actions without per-file filesystem work.
+- Media Library grid and modal contexts should display non-blocking queued/unprocessed status after upload and poll active attachments to terminal states.
+- Attachment edit and compat fields should expose the same action set and lazy details container.
+- Media Library controls should stay absent on unrelated admin screens.
+
+### Acceptance Criteria
+
+- [x] Media Library list/grid/edit-screen payloads now expose lightweight attachment state and actions without eager manifest reads.
+- [x] `Optimize Now`, `Retry`, `Re-optimize`, `View Details`, `Exclude from Optimization`, `Include in Optimization`, and `Reconcile Files` are now surfaced where the lightweight state and settings allow them.
+- [x] Automatic-new-upload disabled attachments remain `Unprocessed` and keep individual `Optimize Now` controls available.
+- [x] Exclusion-disabled sites now reject include/exclude both in UI exposure and REST action handling.
+- [x] The client refreshes active attachments without forcing a full page reload and keeps details loading on demand.
+- [x] Media Library assets remain scoped to media-capable admin screens and remain jQuery-free.
+- [x] Policy tests now allow Media Library hooks and media-screen assets only in the dedicated 6.4 files.
+
+### Deferred Work
+
+- Bulk scan, queue, pause, resume, retry-failed, and cancel-pending REST controls remain deferred to Subphases 6.6 and 6.7.
+- Dashboard rendering, diagnostics execution UI, and log browsing remain deferred to later Phase 6 subphases.
+- Richer bulk browsing semantics for `GET /attachments` remain deferred until bounded list/query behavior is implemented.
+- Frontend modern-format delivery remains deferred to Phase 7.
+
+## Subphase 6.5 - Dashboard
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Replace the dashboard placeholder tab with the first real plugin-screen dashboard shell.
+- [x] Expand `GET /status` into a cached dashboard read model with environment, failures, conflicts, and refresh state.
+- [x] Add async `POST /status/recalculate` handling without recalculating statistics during the request itself.
+- [x] Add a minimal read-only recent-failures log summary seam for dashboard use only.
+- [x] Reuse the existing plugin-screen asset pipeline to render dashboard data and recalculate progress without jQuery.
+- [x] Keep bulk controls, attachment browsing, full diagnostics execution UI, and frontend delivery deferred.
+
+### Files Added
+
+```text
+src/Admin/Rest/DashboardEnvironmentSummaryService.php
+src/Admin/Rest/StatusRefreshRequestResult.php
+src/Admin/Rest/StatusRefreshService.php
+src/Infrastructure/ActionSchedulerSingleActionScheduler.php
+src/Infrastructure/SingleActionSchedulerInterface.php
+src/Logging/LogReadDatabaseInterface.php
+src/Logging/RecentFailureLogReader.php
+src/Logging/WordPressLogReadDatabase.php
+tests/Unit/Admin/Rest/DashboardEnvironmentSummaryServiceTest.php
+tests/Unit/Admin/Rest/StatusRefreshServiceTest.php
+tests/Unit/Infrastructure/FakeSingleActionScheduler.php
+tests/Unit/Logging/FakeLogReadDatabase.php
+tests/Unit/Logging/RecentFailureLogReaderTest.php
+```
+
+### Files Changed
+
+```text
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+docs/implementation-status.md
+src/Admin/AbstractAdminPage.php
+src/Admin/AdminBootstrapConfig.php
+src/Admin/AdminController.php
+src/Admin/AdminPageInterface.php
+src/Admin/DashboardPage.php
+src/Admin/Rest/RestErrorFactory.php
+src/Admin/Rest/StatusController.php
+src/Admin/Rest/StatusSummaryService.php
+src/Plugin.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Admin/AssetsTest.php
+tests/Unit/Admin/Rest/StatusControllerTest.php
+tests/Unit/Admin/Rest/StatusSummaryServiceTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Dashboard Behavior
+
+- `DashboardPage` is now the first non-placeholder admin tab and renders stable dashboard sections for environment status, queue/state counts, byte savings, recent failures, conflict warnings, and recalculate state.
+- `AdminController` still owns the shared submenu shell and tab navigation, but page rendering now delegates to the resolved page object so later tabs can evolve without reworking the shell again.
+- The existing plugin-screen admin client now initializes dashboard behavior only on the `dashboard` tab, loads `GET /status` on first paint, formats cached totals client-side, and polls while a statistics refresh is pending.
+- The dashboard client remains scoped to the submenu screen, footer-loaded, `wp-api-fetch` based, and jQuery-free.
+
+### REST and Scheduling
+
+- `GET /status` still uses cached statistics and does not trigger recalculation, but now also returns lightweight environment state, conservative conflict warnings, recent warning/error summaries, and refresh metadata.
+- `POST /status/recalculate` is now available to `manage_options` users and asynchronously queues the existing `hwlio_reconcile_statistics` maintenance hook through a dedicated one-off Action Scheduler seam.
+- The earlier master-plan example hook name `hwlio_recalculate_statistics` was not introduced; 6.5 deliberately reuses the already-implemented `hwlio_reconcile_statistics` hook to avoid renaming the active Phase 5 maintenance flow.
+- Recent failure summaries are read through a new read-only logging seam and expose only bounded safe fields: timestamp, level, code, message, and attachment ID.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+php -l src/Admin/*.php
+php -l src/Admin/Rest/*.php
+php -l src/Infrastructure/*.php
+php -l src/Logging/*.php
+vendor/bin/phpunit tests/Unit/Admin tests/Unit/Logging tests/Unit/Infrastructure tests/Unit/PluginTest.php
+composer run test
+```
+
+Current workspace limitation:
+
+- `php` and `composer` are not available on the shell `PATH` in this workspace snapshot, so these automated checks could not be executed here.
+
+Manual verification still pending in a WordPress runtime:
+
+- `upload.php?page=hwlio` should load the dashboard shell and populate cached status cards without scanning the Media Library on page load.
+- The `Recalculate Statistics` action should queue a background refresh and keep polling until the cache timestamp updates or the pending flag clears.
+- Recent failure summaries and conservative conflict warnings should remain visible only on the plugin submenu screen.
+
+### Acceptance Criteria
+
+- [x] The dashboard now renders real environment, status, savings, failures, conflicts, and recalculate sections inside the existing submenu shell.
+- [x] `GET /status` remains cache-backed and fast while exposing the additional dashboard-focused summary data.
+- [x] `POST /status/recalculate` now queues asynchronous statistics reconciliation instead of recalculating inline.
+- [x] Recent warning/error summaries are bounded and do not expose raw log context.
+- [x] The dashboard client remains screen-scoped, footer-loaded, and jQuery-free.
+
+### Deferred Work
+
+- Bulk scan, queue, pause, resume, retry-failed, and cancel-pending controls remain deferred to Subphases 6.6 and 6.7.
+- Full diagnostics execution UI and the structured logs screen remain deferred to Subphase 6.8.
+- Frontend delivery status remains conservative environment/settings reporting only; delivery runtime behavior itself remains deferred to Phase 7.
+
+## Subphase 6.6 - Bulk Scanner
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Replace the bulk placeholder tab with a real dry-run scan shell and candidate preview layout.
+- [x] Add `POST /jobs/scan` for bounded resumable bulk dry-run scanning.
+- [x] Add the first bounded session-scoped `GET /attachments` collection preview route.
+- [x] Persist bulk scan sessions in transient-backed metadata plus candidate ID chunks.
+- [x] Keep scans conservative: excluded attachments skipped, no queueing, no sidecars, no derivative/status writes.
+- [x] Keep queue controls, pause/resume, retry-failed queueing, and cancel-pending deferred to Subphase 6.7.
+
+### Files Added
+
+```text
+src/Admin/Bulk/BulkPreviewService.php
+src/Admin/Bulk/BulkScanFilters.php
+src/Admin/Bulk/BulkScanProgress.php
+src/Admin/Bulk/BulkScanResultPage.php
+src/Admin/Bulk/BulkScanService.php
+src/Admin/Bulk/BulkScanSession.php
+src/Admin/Bulk/BulkScanSessionAccessDeniedException.php
+src/Admin/Bulk/BulkScanSessionNotFoundException.php
+src/Admin/Bulk/BulkScanSessionStoreInterface.php
+src/Admin/Bulk/BulkScanSummary.php
+src/Admin/Bulk/BulkScannerRuntimeInterface.php
+src/Admin/Bulk/WordPressBulkScannerRuntime.php
+src/Admin/Bulk/WordPressTransientBulkScanSessionStore.php
+src/Admin/Rest/JobsController.php
+src/Infrastructure/TransientStoreInterface.php
+src/Infrastructure/WordPressTransientStore.php
+tests/Unit/Admin/Bulk/BulkPreviewServiceTest.php
+tests/Unit/Admin/Bulk/BulkScanServiceTest.php
+tests/Unit/Admin/Bulk/FakeBulkScannerRuntime.php
+tests/Unit/Admin/Bulk/WordPressTransientBulkScanSessionStoreTest.php
+tests/Unit/Admin/Rest/JobsControllerTest.php
+tests/Unit/Infrastructure/FakeTransientStore.php
+```
+
+### Files Changed
+
+```text
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+docs/implementation-status.md
+src/Admin/AdminBootstrapConfig.php
+src/Admin/BulkPage.php
+src/Admin/Rest/AttachmentsController.php
+src/Admin/Rest/RestErrorFactory.php
+src/Admin/Rest/RestRuntimeInterface.php
+src/Admin/Rest/WordPressRestRuntime.php
+src/Plugin.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Admin/AssetsTest.php
+tests/Unit/Admin/Rest/AttachmentsControllerTest.php
+tests/Unit/Admin/Rest/FakeRestRuntime.php
+```
+
+### Bulk Scanner Behavior
+
+- The `Bulk Optimize` tab now renders real dry-run filter controls, progress/status messaging, summary cards, and a paged eligible-candidate preview while keeping queue execution controls explicitly deferred to 6.7.
+- `POST /jobs/scan` processes one bounded attachment-ID page per request, persists a tokenized transient-backed session, and resumes with a monotonic attachment-ID cursor until the scan completes.
+- Scan sessions store strict owner user IDs, normalized filters, cumulative summary counts, session timestamps, and chunked candidate ID pages so the browser can resume the same dry-run session after reloads.
+- `GET /attachments` is now available only as a session-scoped preview endpoint for persisted dry-run candidates; it returns lightweight title/filename/date plus sanitized `_hwlio_status` summary data only.
+- Dry-run scans skip excluded attachments, skip non-image attachments, skip active `queued` or `processing` items, never enqueue queue work, never create sidecars, and never rewrite derivative or status metadata.
+- The plugin-screen admin client now initializes bulk behavior only on the `bulk-optimize` tab, resumes the last scan token from `sessionStorage`, continues polling `POST /jobs/scan` while running, and loads paged previews through `GET /attachments` after completion.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+php -l src/Admin/Bulk/*.php
+php -l src/Admin/Rest/*.php
+php -l src/Infrastructure/*.php
+vendor/bin/phpunit tests/Unit/Admin/Bulk tests/Unit/Admin/Rest tests/Unit/Admin tests/Unit/Infrastructure tests/Unit/PluginTest.php
+composer run test
+```
+
+Current workspace limitation:
+
+- `php` and `composer` are not available on the shell `PATH` in this workspace snapshot, so these automated checks could not be executed here.
+
+Manual verification still pending in a WordPress runtime:
+
+- `upload.php?page=hwlio&tab=bulk-optimize` should render the dry-run filter form, progress shell, and preview table only on the plugin submenu screen.
+- Starting a dry-run scan should continue through bounded pages, survive a page reload through the stored scan token, and never create derivatives or queue jobs.
+- Completed scans should load session-scoped preview rows with lightweight status data only and no manifest/path leakage.
+
+### Acceptance Criteria
+
+- [x] Large fixture libraries are processed through bounded dry-run pages with a resumable attachment-ID cursor.
+- [x] Dry-run scans persist resumable session state without loading the full Media Library into memory at once.
+- [x] `GET /attachments` now provides bounded session-scoped preview browsing for dry-run candidates only.
+- [x] Excluded attachments are skipped conservatively in 6.6 without override controls or implicit queueing.
+- [x] Dry-run scanning creates no sidecars, queues no conversions, and does not rewrite attachment optimization metadata.
+
+### Deferred Work
+
+- Queueing scan results, pause/resume, retry-failed queueing, progress against live queue work, and cancel-pending controls remain deferred to Subphase 6.7.
+- Global Media Library browsing semantics for `GET /attachments` beyond session-scoped dry-run previews remain deferred.
+- Full diagnostics execution UI and the structured logs screen remain deferred to Subphase 6.8.
+
+## Subphase 6.7 - Bulk Queue Controls
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Extend persisted bulk scan sessions with resumable queue progress and queue summaries.
+- [x] Add `POST /jobs/queue`, `POST /jobs/retry`, `POST /jobs/pause`, `POST /jobs/resume`, and `DELETE /jobs/pending`.
+- [x] Add a global queue-control state and attachment-job control seam for pause/resume, counts, and pending-job cancellation.
+- [x] Reuse completed dry-run sessions for bounded queue continuation and retry continuation without re-scanning the Media Library.
+- [x] Gate manual optimize/retry/reconcile, new-upload queueing, and worker starts behind the same global paused state.
+- [x] Upgrade the Bulk tab shell and plugin-screen admin client with real queue controls and live queue status.
+
+### Files Added
+
+```text
+src/Admin/Bulk/BulkQueueProgress.php
+src/Admin/Bulk/BulkQueueService.php
+src/Admin/Bulk/BulkQueueSummary.php
+src/Admin/Bulk/BulkScanSessionIncompleteException.php
+src/Queue/ActionSchedulerAttachmentJobControl.php
+src/Queue/AttachmentJobControlInterface.php
+src/Queue/AttachmentJobControlResult.php
+src/Queue/AttachmentQueueResult.php
+src/Queue/AttachmentQueueService.php
+src/Queue/QueueControlService.php
+src/Queue/QueueControlState.php
+src/Queue/QueueControlStateStore.php
+src/Queue/QueueControlStateStoreInterface.php
+tests/Unit/Admin/Bulk/BulkQueueServiceTest.php
+tests/Unit/Queue/ActionSchedulerAttachmentJobControlTest.php
+tests/Unit/Queue/FakeAttachmentJobControl.php
+tests/Unit/Queue/QueueControlStateStoreTest.php
+```
+
+### Files Changed
+
+```text
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+docs/implementation-status.md
+src/Admin/AdminBootstrapConfig.php
+src/Admin/BulkPage.php
+src/Admin/Rest/AttachmentActionService.php
+src/Admin/Rest/JobsController.php
+src/Admin/Rest/RestErrorFactory.php
+src/Admin/Rest/StatusSummaryService.php
+src/Admin/Bulk/BulkScanSession.php
+src/Infrastructure/ActionSchedulerSingleActionScheduler.php
+src/Infrastructure/LifecyclePolicy.php
+src/Infrastructure/SingleActionSchedulerInterface.php
+src/Plugin.php
+src/Queue/NewUploadIntegration.php
+src/Queue/OptimizationWorker.php
+src/Queue/ReconciliationWorker.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Admin/AssetsTest.php
+tests/Unit/Admin/Rest/AttachmentActionServiceTest.php
+tests/Unit/Admin/Rest/JobsControllerTest.php
+tests/Unit/Admin/Rest/StatusControllerTest.php
+tests/Unit/Admin/Rest/StatusSummaryServiceTest.php
+tests/Unit/Diagnostics/DiagnosticsScopePolicyTest.php
+tests/Unit/Infrastructure/EnvironmentScopePolicyTest.php
+tests/Unit/Infrastructure/FakeSingleActionScheduler.php
+tests/Unit/Logging/LoggingScopePolicyTest.php
+tests/Unit/Queue/NewUploadIntegrationTest.php
+tests/Unit/Queue/OptimizationWorkerTest.php
+tests/Unit/Queue/ReconciliationWorkerTest.php
+tests/Unit/Settings/SettingsScopePolicyTest.php
+```
+
+### Bulk Queue Behavior
+
+- Completed dry-run scan sessions now persist queue continuation progress and queue summaries so queueing survives reloads without re-scanning attachments.
+- `POST /jobs/queue` and `POST /jobs/retry` process one persisted candidate chunk per request, revalidate current lightweight attachment state at queue time, and respect the stored scan token’s `target_format`.
+- Bulk queueing uses the shared `AttachmentQueueService`, which now powers both bulk queueing and attachment-scoped optimize/retry actions so dedupe, fingerprinting, and lightweight `_hwlio_status` writes stay aligned.
+- `GET /status` now includes a cheap `queueControl` payload with paused state plus pending and in-progress attachment-job counts for the dashboard and Bulk tab.
+- The Bulk tab now exposes real queue, retry, pause, resume, and cancel-pending controls, keeps queue mode in `sessionStorage`, and stays scoped to the existing plugin submenu asset pipeline without jQuery.
+
+### Global Queue Control Behavior
+
+- Global queue state is now persisted in plugin-owned option `hwlio_queue_control_state` with autoload disabled and tracked through `QueueControlState`.
+- `POST /jobs/pause` and `POST /jobs/resume` toggle that global state for all attachment optimization and reconciliation work, not just the Bulk tab.
+- `DELETE /jobs/pending` now targets only pending plugin-owned attachment hooks from `LifecyclePolicy::attachment_job_hooks()` and leaves maintenance hooks untouched.
+- `AttachmentActionService` now returns a stable `queue_paused` conflict for manual optimize, retry, and reconcile actions while paused.
+- `NewUploadIntegration` now leaves uploads usable but unqueued while paused, and both `OptimizationWorker` and `ReconciliationWorker` re-schedule paused jobs with a short delay instead of consuming work.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+php -l src/Admin/Bulk/*.php
+php -l src/Admin/Rest/*.php
+php -l src/Infrastructure/*.php
+php -l src/Queue/*.php
+vendor/bin/phpunit tests/Unit/Admin/Bulk tests/Unit/Admin/Rest tests/Unit/Queue tests/Unit/Infrastructure tests/Unit/PluginTest.php
+composer run test
+```
+
+Current workspace limitation:
+
+- `php` and `composer` are not available on the shell `PATH` in this workspace snapshot, so these automated checks could not be executed here.
+
+Manual verification still pending in a WordPress runtime:
+
+- A completed dry-run scan should continue queueing in bounded requests and survive reloads through the stored scan token and queue mode.
+- Pausing should block new manual, new-upload, and bulk queueing and should prevent new worker starts while allowing running actions to finish safely.
+- Resuming should allow pending work to continue again, and cancel pending should remove only pending plugin-owned attachment jobs.
+- Scan and preview browsing should remain available while paused.
+
+### Acceptance Criteria
+
+- [x] Bulk queueing and bulk retry now consume completed owned scan sessions instead of re-scanning the Media Library.
+- [x] Queue continuation respects stored target-format filters and revalidates candidate state conservatively at queue time.
+- [x] Global pause/resume now gates manual actions, new-upload automation, and worker starts without canceling maintenance work.
+- [x] Pending-job cancellation is limited to plugin-owned attachment hooks and excludes recurring maintenance hooks.
+- [x] The Bulk tab now exposes real queue controls and queue-control status through the existing screen-scoped admin client.
+- [x] Queue-control state is stored in a plugin-owned option with autoload disabled.
+
+### Deferred Work
+
+- Broad bulk re-optimize coverage for already-optimized attachments remains deferred because the current scan-session model intentionally excludes those items.
+- Full diagnostics execution UI and the structured logs screen remain deferred to Subphase 6.8.
+- Frontend modern-format delivery remains deferred to Phase 7.
+
+## Subphase 6.8 - Logs and Diagnostics Screens
+
+**Status:** Complete
+**Completed:** 2026-07-12
+
+### Tasks
+
+- [x] Replace the Diagnostics tab placeholder with a real structured diagnostics shell.
+- [x] Replace the Logs tab placeholder with paginated log browsing, lightweight filters, retention editing, and bounded clear-all controls.
+- [x] Add `GET /logs`, `DELETE /logs`, and `POST /logs/retention` under the existing `hwlio/v1` admin REST surface.
+- [x] Extend the log database seams with bounded page queries, total counts, and bounded clear-all deletion batches.
+- [x] Keep diagnostics and logs payloads path-safe and free of raw `context_json` or stack traces.
+- [x] Reuse the existing plugin-screen asset pipeline and jQuery-free admin client for the new tabs.
+
+### Files Added
+
+```text
+src/Admin/Rest/LogsController.php
+src/Logging/LogBrowserService.php
+src/Logging/LogDeletionResult.php
+src/Logging/LogDeletionService.php
+src/Logging/LogPage.php
+src/Logging/LogQuery.php
+src/Logging/LogRetentionService.php
+src/Logging/LogRetentionUpdateResult.php
+src/Logging/LogRowView.php
+tests/Unit/Admin/Rest/LogsControllerTest.php
+tests/Unit/Logging/LogBrowserServiceTest.php
+tests/Unit/Logging/LogDeletionServiceTest.php
+tests/Unit/Logging/LogRetentionServiceTest.php
+```
+
+### Files Changed
+
+```text
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+docs/implementation-status.md
+src/Admin/AdminBootstrapConfig.php
+src/Admin/DiagnosticsPage.php
+src/Admin/LogsPage.php
+src/Admin/Rest/RestErrorFactory.php
+src/Logging/LogDatabaseInterface.php
+src/Logging/LogReadDatabaseInterface.php
+src/Logging/NullLogDatabase.php
+src/Logging/RecentFailureLogReader.php
+src/Logging/WordPressLogDatabase.php
+src/Logging/WordPressLogReadDatabase.php
+src/Plugin.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Admin/AssetsTest.php
+tests/Unit/Logging/FakeLogDatabase.php
+tests/Unit/Logging/FakeLogReadDatabase.php
+```
+
+### Logs and Diagnostics Behavior
+
+- The Diagnostics tab now renders a real shell with summary cards, grouped check results, stable machine-readable codes, and sanitized detail output sourced from the existing `GET /diagnostics` route.
+- The Logs tab now renders a real filter form, paginated table, retention editor, and confirmed bounded clear-all flow, all inside the existing `Media -> Lighthouse Image Optimizer` screen shell.
+- `GET /logs` returns only safe projected fields: `created_at_gmt`, `level`, `code`, `message`, `attachment_id`, and `job_id`.
+- Log browsing is backed by typed `LogQuery`, `LogPage`, and `LogRowView` objects plus bounded wpdb reads; it does not expose raw `context_json`.
+- `DELETE /logs` clears plugin-owned log rows in bounded batches only, allowing the admin client to continue deletion until complete without unbounded truncation.
+- `POST /logs/retention` persists `log_retention_days` through the existing settings repository and returns the normalized saved value.
+
+### Verification
+
+Attempted verification commands for this subphase:
+
+```text
+php -l src/Admin/*.php
+php -l src/Admin/Rest/*.php
+php -l src/Logging/*.php
+vendor/bin/phpunit tests/Unit/Admin tests/Unit/Logging tests/Unit/PluginTest.php
+composer run test
+git diff --check
+```
+
+Current workspace limitation:
+
+- `php`, `vendor/bin/phpunit`, and `composer` may not be available on the shell `PATH` in this workspace snapshot, so PHP-based automated checks may need to be re-run in the normal project toolchain.
+
+Manual verification still pending in a WordPress runtime:
+
+- `upload.php?page=hwlio&tab=diagnostics` should load grouped structured diagnostics and allow copyable codes without showing raw paths.
+- `upload.php?page=hwlio&tab=logs` should load paginated logs, apply level/code/attachment filters, save retention days, and clear logs through bounded batches only.
+- No plugin diagnostics/logs assets or behavior should appear on unrelated admin screens.
+
+### Acceptance Criteria
+
+- [x] Structured diagnostics now render inside the plugin submenu using the existing sanitized diagnostics payload.
+- [x] Log output is escaped and limited to safe projected fields without `context_json` leakage.
+- [x] Large log tables remain paginated through bounded server-side page queries.
+- [x] Copyable stable codes are available for both diagnostics results and log rows.
+- [x] Safe retention and clear-all controls exist without touching non-log plugin data.
+
+### Deferred Work
+
+- Richer log drill-down into structured context remains intentionally deferred; 6.8 keeps the logs screen summary/table focused.
+- Frontend modern-format delivery remains deferred to Phase 7.
 
 ## Subphase 5.2 - Optimization Worker
 

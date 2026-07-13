@@ -11,7 +11,10 @@ use HyperWeb\LighthouseImageOptimizer\Image\ConversionOutput;
 use HyperWeb\LighthouseImageOptimizer\Image\ConversionResult;
 use HyperWeb\LighthouseImageOptimizer\Image\ConversionResultCollection;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImage;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\CacheInvalidationDispatcherInterface;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\CacheInvalidationRequest;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressCacheInvalidationDispatcher;
 
 /**
  * Reads and writes plugin-owned attachment derivative metadata.
@@ -40,6 +43,13 @@ final class DerivativeRepository {
 	private $clock;
 
 	/**
+	 * Cache invalidation dispatcher.
+	 *
+	 * @var CacheInvalidationDispatcherInterface|null
+	 */
+	private $cache_invalidation;
+
+	/**
 	 * Build WordPress-backed repository.
 	 *
 	 * @return self
@@ -48,7 +58,8 @@ final class DerivativeRepository {
 		return new self(
 			new WordPressAttachmentMetaStore(),
 			new DerivativeManifestSanitizer(),
-			new SystemAttachmentClock()
+			new SystemAttachmentClock(),
+			new WordPressCacheInvalidationDispatcher()
 		);
 	}
 
@@ -58,15 +69,18 @@ final class DerivativeRepository {
 	 * @param AttachmentMetaStoreInterface $meta Meta store.
 	 * @param DerivativeManifestSanitizer  $sanitizer Manifest sanitizer.
 	 * @param AttachmentClockInterface     $clock Clock.
+	 * @param CacheInvalidationDispatcherInterface|null $cache_invalidation Cache invalidation dispatcher.
 	 */
 	public function __construct(
 		AttachmentMetaStoreInterface $meta,
 		DerivativeManifestSanitizer $sanitizer,
-		AttachmentClockInterface $clock
+		AttachmentClockInterface $clock,
+		?CacheInvalidationDispatcherInterface $cache_invalidation = null
 	) {
-		$this->meta      = $meta;
-		$this->sanitizer = $sanitizer;
-		$this->clock     = $clock;
+		$this->meta               = $meta;
+		$this->sanitizer          = $sanitizer;
+		$this->clock              = $clock;
+		$this->cache_invalidation = $cache_invalidation;
 	}
 
 	/**
@@ -152,6 +166,7 @@ final class DerivativeRepository {
 			}
 
 			$codes[] = DerivativeRepositoryResult::CODE_SAVED;
+			$this->dispatch_derivatives_saved( $attachment_id, $results, $updated_at );
 		} else {
 			$codes[] = DerivativeRepositoryResult::CODE_NO_READY_RESULTS;
 		}
@@ -319,6 +334,49 @@ final class DerivativeRepository {
 		ksort( $sizes );
 
 		return $ready;
+	}
+
+	/**
+	 * Dispatch cache invalidation for successful derivative outputs.
+	 *
+	 * @param int                        $attachment_id Attachment ID.
+	 * @param ConversionResultCollection $results Results.
+	 * @param int                        $updated_at Timestamp.
+	 * @return void
+	 */
+	private function dispatch_derivatives_saved( int $attachment_id, ConversionResultCollection $results, int $updated_at ): void {
+		if ( ! $this->cache_invalidation instanceof CacheInvalidationDispatcherInterface ) {
+			return;
+		}
+
+		$paths   = array();
+		$formats = array();
+
+		foreach ( $results->successful() as $result ) {
+			$output = $result->output();
+
+			if ( ! $output instanceof ConversionOutput ) {
+				continue;
+			}
+
+			$paths[]   = $output->relative_path();
+			$formats[] = $result->target_format();
+		}
+
+		if ( array() === $paths ) {
+			return;
+		}
+
+		$this->cache_invalidation->dispatch(
+			new CacheInvalidationRequest(
+				CacheInvalidationRequest::EVENT_DERIVATIVES_SAVED,
+				$attachment_id,
+				'save_results',
+				$paths,
+				$formats,
+				gmdate( 'Y-m-d H:i:s', $updated_at )
+			)
+		);
 	}
 
 	/**

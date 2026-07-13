@@ -23,9 +23,14 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\SystemAttachmentClock;
 use HyperWeb\LighthouseImageOptimizer\Image\ConversionResult;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImageCollection;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\ActionSchedulerSingleActionScheduler;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\CacheInvalidationDispatcherInterface;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\CacheInvalidationRequest;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\SingleActionSchedulerInterface;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressCacheInvalidationDispatcher;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressFilesystem;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
 use HyperWeb\LighthouseImageOptimizer\Logging\Logger;
@@ -37,6 +42,8 @@ use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
  * Rebuilds stale derivatives after attachment metadata changes.
  */
 final class ReconciliationWorker implements HookProviderInterface {
+
+	private const PAUSE_DELAY_SECONDS = 60;
 
 	/**
 	 * Queue adapter.
@@ -109,6 +116,27 @@ final class ReconciliationWorker implements HookProviderInterface {
 	private $clock;
 
 	/**
+	 * Queue control state store.
+	 *
+	 * @var QueueControlStateStoreInterface|null
+	 */
+	private $controls;
+
+	/**
+	 * Single action scheduler.
+	 *
+	 * @var SingleActionSchedulerInterface|null
+	 */
+	private $single_actions;
+
+	/**
+	 * Cache invalidation dispatcher.
+	 *
+	 * @var CacheInvalidationDispatcherInterface|null
+	 */
+	private $cache_invalidation;
+
+	/**
 	 * Build the WordPress-backed worker.
 	 *
 	 * @return self
@@ -124,7 +152,10 @@ final class ReconciliationWorker implements HookProviderInterface {
 			SettingsRepository::for_wordpress(),
 			new DerivativeFileCleaner( self::uploads_base_dir(), new WordPressFilesystem() ),
 			Logger::for_wordpress(),
-			new SystemAttachmentClock()
+			new SystemAttachmentClock(),
+			QueueControlStateStore::for_wordpress(),
+			new ActionSchedulerSingleActionScheduler(),
+			new WordPressCacheInvalidationDispatcher()
 		);
 	}
 
@@ -141,6 +172,9 @@ final class ReconciliationWorker implements HookProviderInterface {
 	 * @param DerivativeFileCleaner        $files Derivative file cleaner.
 	 * @param LoggerInterface              $logger Logger.
 	 * @param AttachmentClockInterface     $clock Clock.
+	 * @param QueueControlStateStoreInterface|null $controls Queue control state store.
+	 * @param SingleActionSchedulerInterface|null $single_actions Single action scheduler.
+	 * @param CacheInvalidationDispatcherInterface|null $cache_invalidation Cache invalidation dispatcher.
 	 */
 	public function __construct(
 		QueueInterface $queue,
@@ -152,18 +186,24 @@ final class ReconciliationWorker implements HookProviderInterface {
 		SettingsRepositoryInterface $settings,
 		DerivativeFileCleaner $files,
 		LoggerInterface $logger,
-		AttachmentClockInterface $clock
+		AttachmentClockInterface $clock,
+		?QueueControlStateStoreInterface $controls = null,
+		?SingleActionSchedulerInterface $single_actions = null,
+		?CacheInvalidationDispatcherInterface $cache_invalidation = null
 	) {
-		$this->queue         = $queue;
-		$this->locks         = $locks;
-		$this->collector     = $collector;
-		$this->fingerprinter = $fingerprinter;
-		$this->repository    = $repository;
-		$this->processor     = $processor;
-		$this->settings      = $settings;
-		$this->files         = $files;
-		$this->logger        = $logger;
-		$this->clock         = $clock;
+		$this->queue              = $queue;
+		$this->locks              = $locks;
+		$this->collector          = $collector;
+		$this->fingerprinter      = $fingerprinter;
+		$this->repository         = $repository;
+		$this->processor          = $processor;
+		$this->settings           = $settings;
+		$this->files              = $files;
+		$this->logger             = $logger;
+		$this->clock              = $clock;
+		$this->controls           = $controls;
+		$this->single_actions     = $single_actions;
+		$this->cache_invalidation = $cache_invalidation;
 	}
 
 	/**
@@ -230,6 +270,12 @@ final class ReconciliationWorker implements HookProviderInterface {
 		$attachment_id  = $job->attachment_id();
 		$current_status = $this->current_status( $attachment_id );
 		$job_id         = $this->job_id( $job );
+
+		if ( $this->paused() ) {
+			$this->requeue_paused_job( $job, $job_id );
+			return;
+		}
+
 		$acquired       = $this->locks->acquire( $attachment_id );
 
 		if ( ! $acquired->is_successful() ) {
@@ -392,6 +438,7 @@ final class ReconciliationWorker implements HookProviderInterface {
 				$cleanup         = $this->files->cleanup_files( $source_files, $obsolete_derivatives );
 				$cleanup_warning = AttachmentCleanupResult::SEVERITY_FAILURE === $cleanup->severity()
 					|| AttachmentCleanupResult::SEVERITY_WARNING === $cleanup->severity();
+				$this->dispatch_derivatives_deleted( $attachment_id, $cleanup, 'reconciliation_obsolete_derivatives' );
 				if ( $cleanup_warning ) {
 					$this->logger->warning(
 						LogCode::RECONCILE_CLEANUP_WARNING,
@@ -663,5 +710,107 @@ final class ReconciliationWorker implements HookProviderInterface {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Dispatch cache invalidation for deleted obsolete derivative files.
+	 *
+	 * @param int                     $attachment_id Attachment ID.
+	 * @param AttachmentCleanupResult $cleanup Cleanup result.
+	 * @param string                  $reason Reason.
+	 * @return void
+	 */
+	private function dispatch_derivatives_deleted( int $attachment_id, AttachmentCleanupResult $cleanup, string $reason ): void {
+		if (
+			! $this->cache_invalidation instanceof CacheInvalidationDispatcherInterface
+			|| 0 >= $cleanup->deleted_files()
+			|| array() === $cleanup->deleted_relative_paths()
+		) {
+			return;
+		}
+
+		$this->cache_invalidation->dispatch(
+			new CacheInvalidationRequest(
+				CacheInvalidationRequest::EVENT_DERIVATIVES_DELETED,
+				$attachment_id,
+				$reason,
+				$cleanup->deleted_relative_paths(),
+				$this->formats_from_paths( $cleanup->deleted_relative_paths() ),
+				gmdate( 'Y-m-d H:i:s', $this->clock->now() )
+			)
+		);
+	}
+
+	/**
+	 * Extract known derivative formats from relative paths.
+	 *
+	 * @param string[] $paths Relative paths.
+	 * @return string[]
+	 */
+	private function formats_from_paths( array $paths ): array {
+		$formats = array();
+
+		foreach ( $paths as $path ) {
+			if ( 1 === preg_match( '/\.hwlio\.(webp|avif)$/', (string) $path, $matches ) ) {
+				$formats[] = $matches[1];
+			}
+		}
+
+		return array_values( array_unique( $formats ) );
+	}
+
+	/**
+	 * Determine whether queue execution is paused globally.
+	 *
+	 * @return bool
+	 */
+	private function paused(): bool {
+		return null !== $this->controls && $this->controls->read()->paused();
+	}
+
+	/**
+	 * Requeue one paused reconciliation job without consuming work.
+	 *
+	 * @param ReconciliationJob $job Job.
+	 * @param string            $job_id Job identifier.
+	 * @return void
+	 */
+	private function requeue_paused_job( ReconciliationJob $job, string $job_id ): void {
+		$scheduled = null !== $this->single_actions
+			&& $this->single_actions->schedule_single_action(
+				$this->clock->now() + self::PAUSE_DELAY_SECONDS,
+				LifecyclePolicy::ACTION_RECONCILE_ATTACHMENT,
+				$job->to_array(),
+				LifecyclePolicy::ACTION_GROUP,
+				false,
+				10
+			);
+
+		if ( $scheduled ) {
+			$this->logger->info(
+				LogCode::RECONCILE_QUEUED,
+				'Reconciliation worker re-queued a paused job without consuming work.',
+				array(
+					'attachment_id' => $job->attachment_id(),
+					'reason'        => $job->reason(),
+					'delay_seconds' => self::PAUSE_DELAY_SECONDS,
+				),
+				$job->attachment_id(),
+				$job_id
+			);
+
+			return;
+		}
+
+		$this->logger->warning(
+			LogCode::RECONCILE_QUEUE_FAILED,
+			'Reconciliation worker could not re-queue a paused job.',
+			array(
+				'attachment_id' => $job->attachment_id(),
+				'reason'        => $job->reason(),
+			),
+			$job->attachment_id(),
+			$job_id
+		);
 	}
 }

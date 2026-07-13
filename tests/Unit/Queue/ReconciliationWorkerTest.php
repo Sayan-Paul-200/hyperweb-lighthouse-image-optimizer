@@ -26,6 +26,7 @@ use HyperWeb\LighthouseImageOptimizer\Image\SourceImage;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
+use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
 use HyperWeb\LighthouseImageOptimizer\Queue\ReconciliationJob;
 use HyperWeb\LighthouseImageOptimizer\Queue\ReconciliationWorker;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
@@ -34,7 +35,10 @@ use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FixedAttachmentLockT
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAttachmentSourceProvider;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeCacheInvalidationDispatcher;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeFilesystem;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeOptionStore;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeSingleActionScheduler;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -147,6 +151,7 @@ final class ReconciliationWorkerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_obsolete_sidecars_are_removed_after_reconciliation(): void {
+		$dispatcher = new FakeCacheInvalidationDispatcher();
 		$runtime = $this->build_runtime(
 			new FakeSettingsRepository(
 				array(
@@ -162,7 +167,10 @@ final class ReconciliationWorkerTest extends TestCase {
 					self::UPLOADS . '/2026',
 					self::UPLOADS . '/2026/07',
 				)
-			)
+			),
+			null,
+			null,
+			$dispatcher
 		);
 		$runtime['store']->meta[123][ LifecyclePolicy::META_DERIVATIVES ] = $this->stored_manifest(
 			new AttachmentFingerprint( '2026/07/hero.jpg', 1000, 1783526400, str_repeat( 'b', 64 ) ),
@@ -190,16 +198,61 @@ final class ReconciliationWorkerTest extends TestCase {
 
 		self::assertContains( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp', $runtime['filesystem']->deleted );
 		self::assertSame( array( 'avif' ), $runtime['store']->meta[123][ LifecyclePolicy::META_STATUS ]['formats'] );
+		self::assertCount( 1, $dispatcher->requests );
+		self::assertSame( 'derivatives_deleted', $dispatcher->requests[0]['event'] );
+		self::assertSame( array( '2026/07/hero.jpg.hwlio.webp' ), $dispatcher->requests[0]['relative_paths'] );
+		self::assertSame( array( 'webp' ), $dispatcher->requests[0]['formats'] );
+	}
+
+	/**
+	 * Test paused queue control re-schedules the same reconciliation job without consuming work.
+	 *
+	 * @return void
+	 */
+	public function test_paused_queue_control_requeues_reconciliation_job(): void {
+		$controls  = new QueueControlStateStore(
+			new FakeOptionStore(
+				array(
+					LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE => array(
+						'paused'             => true,
+						'updated_at_gmt'     => '2026-07-12 00:00:00',
+						'updated_by_user_id' => 7,
+					),
+				)
+			),
+			LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE,
+			static function (): string {
+				return '2026-07-12 00:00:00';
+			}
+		);
+		$scheduler = new FakeSingleActionScheduler();
+		$runtime   = $this->build_runtime( null, null, $controls, $scheduler );
+
+		$runtime['worker']->run_job( new ReconciliationJob( 123, $runtime['fingerprint']->signature(), 'metadata_update' ) );
+
+		self::assertCount( 0, $runtime['processor']->requests );
+		self::assertCount( 1, $scheduler->single_calls );
+		self::assertSame( LifecyclePolicy::ACTION_RECONCILE_ATTACHMENT, $scheduler->single_calls[0]['hook'] );
+		self::assertSame( 123, $scheduler->single_calls[0]['args']['attachment_id'] );
+		self::assertSame( LogCode::RECONCILE_QUEUED, $runtime['logger']->entries[0]['code'] );
 	}
 
 	/**
 	 * Build a test runtime.
 	 *
-	 * @param FakeSettingsRepository|null $settings Settings override.
-	 * @param FakeFilesystem|null         $filesystem Filesystem override.
+	 * @param FakeSettingsRepository|null    $settings Settings override.
+	 * @param FakeFilesystem|null            $filesystem Filesystem override.
+	 * @param QueueControlStateStore|null    $controls Queue control store.
+	 * @param FakeSingleActionScheduler|null $scheduler Single action scheduler.
 	 * @return array<string,mixed>
 	 */
-	private function build_runtime( ?FakeSettingsRepository $settings = null, ?FakeFilesystem $filesystem = null ): array {
+	private function build_runtime(
+		?FakeSettingsRepository $settings = null,
+		?FakeFilesystem $filesystem = null,
+		?QueueControlStateStore $controls = null,
+		?FakeSingleActionScheduler $scheduler = null,
+		?FakeCacheInvalidationDispatcher $dispatcher = null
+	): array {
 		$store    = new FakeAttachmentMetaStore();
 		$clock    = new FixedAttachmentClock( 1783526500 );
 		$provider = new FakeAttachmentSourceProvider(
@@ -246,7 +299,10 @@ final class ReconciliationWorkerTest extends TestCase {
 			$settings,
 			new DerivativeFileCleaner( self::UPLOADS, $filesystem ),
 			$logger,
-			$clock
+			$clock,
+			$controls,
+			$scheduler,
+			$dispatcher
 		);
 
 		return array(

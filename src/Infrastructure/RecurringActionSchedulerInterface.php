@@ -5,7 +5,7 @@
  * @package Hyperweb_Lighthouse_Image_Optimizer
  */
 
-namespace HyperWeb\LighthouseImageOptimizer\Logging;
+namespace HyperWeb\LighthouseImageOptimizer\Infrastructure;
 
 /**
  * Small adapter for Action Scheduler recurring actions.

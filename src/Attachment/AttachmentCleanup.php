@@ -8,9 +8,12 @@
 namespace HyperWeb\LighthouseImageOptimizer\Attachment;
 
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\CacheInvalidationDispatcherInterface;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\CacheInvalidationRequest;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressCacheInvalidationDispatcher;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressFilesystem;
 
 /**
@@ -54,6 +57,13 @@ final class AttachmentCleanup implements HookProviderInterface {
 	private $collector;
 
 	/**
+	 * Cache invalidation dispatcher.
+	 *
+	 * @var CacheInvalidationDispatcherInterface|null
+	 */
+	private $cache_invalidation;
+
+	/**
 	 * Build the WordPress-backed cleanup provider.
 	 *
 	 * @return self
@@ -70,7 +80,8 @@ final class AttachmentCleanup implements HookProviderInterface {
 			$meta,
 			new DerivativeFileCleaner( self::uploads_base_dir(), new WordPressFilesystem() ),
 			ActionSchedulerAttachmentJobCleaner::for_wordpress(),
-			SourceCollector::for_wordpress()
+			SourceCollector::for_wordpress(),
+			new WordPressCacheInvalidationDispatcher()
 		);
 	}
 
@@ -82,19 +93,22 @@ final class AttachmentCleanup implements HookProviderInterface {
 	 * @param DerivativeFileCleaner         $files Shared derivative file cleaner.
 	 * @param AttachmentJobCleanerInterface $jobs Pending job cleaner.
 	 * @param SourceCollector               $collector Source collector.
+	 * @param CacheInvalidationDispatcherInterface|null $cache_invalidation Cache invalidation dispatcher.
 	 */
 	public function __construct(
 		DerivativeRepository $repository,
 		AttachmentMetaStoreInterface $meta,
 		DerivativeFileCleaner $files,
 		AttachmentJobCleanerInterface $jobs,
-		SourceCollector $collector
+		SourceCollector $collector,
+		?CacheInvalidationDispatcherInterface $cache_invalidation = null
 	) {
-		$this->repository = $repository;
-		$this->meta       = $meta;
-		$this->files      = $files;
-		$this->jobs       = $jobs;
-		$this->collector  = $collector;
+		$this->repository         = $repository;
+		$this->meta               = $meta;
+		$this->files              = $files;
+		$this->jobs               = $jobs;
+		$this->collector          = $collector;
+		$this->cache_invalidation = $cache_invalidation;
 	}
 
 	/**
@@ -138,7 +152,7 @@ final class AttachmentCleanup implements HookProviderInterface {
 		$source_files     = DerivativeFileCleaner::source_files_from_manifest( $manifest );
 		$derivative_files = DerivativeFileCleaner::derivative_files_from_manifest( $manifest );
 
-		return AttachmentCleanupResult::combine(
+		$result = AttachmentCleanupResult::combine(
 			$this->repository_warnings( $read ),
 			$this->files->cleanup_files( $source_files, $derivative_files ),
 			$this->jobs->cancel_pending_actions( $attachment_id ),
@@ -148,6 +162,10 @@ final class AttachmentCleanup implements HookProviderInterface {
 				array( 'Attachment cleanup completed.' )
 			)
 		);
+
+		$this->dispatch_derivatives_deleted( $attachment_id, $result, 'attachment_deleted' );
+
+		return $result;
 	}
 
 	/**
@@ -241,6 +259,53 @@ final class AttachmentCleanup implements HookProviderInterface {
 				$warnings
 			)
 		);
+	}
+
+	/**
+	 * Dispatch cache invalidation for deleted derivative files.
+	 *
+	 * @param int                     $attachment_id Attachment ID.
+	 * @param AttachmentCleanupResult $result Cleanup result.
+	 * @param string                  $reason Reason.
+	 * @return void
+	 */
+	private function dispatch_derivatives_deleted( int $attachment_id, AttachmentCleanupResult $result, string $reason ): void {
+		if (
+			! $this->cache_invalidation instanceof CacheInvalidationDispatcherInterface
+			|| 0 >= $result->deleted_files()
+			|| array() === $result->deleted_relative_paths()
+		) {
+			return;
+		}
+
+		$this->cache_invalidation->dispatch(
+			new CacheInvalidationRequest(
+				CacheInvalidationRequest::EVENT_DERIVATIVES_DELETED,
+				$attachment_id,
+				$reason,
+				$result->deleted_relative_paths(),
+				$this->formats_from_paths( $result->deleted_relative_paths() ),
+				gmdate( 'Y-m-d H:i:s' )
+			)
+		);
+	}
+
+	/**
+	 * Extract known derivative formats from relative paths.
+	 *
+	 * @param string[] $paths Relative paths.
+	 * @return string[]
+	 */
+	private function formats_from_paths( array $paths ): array {
+		$formats = array();
+
+		foreach ( $paths as $path ) {
+			if ( 1 === preg_match( '/\.hwlio\.(webp|avif)$/', (string) $path, $matches ) ) {
+				$formats[] = $matches[1];
+			}
+		}
+
+		return array_values( array_unique( $formats ) );
 	}
 
 	/**

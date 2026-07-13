@@ -31,6 +31,11 @@ final class DiagnosticsScopePolicyTest extends TestCase {
 			'global admin asset hook'      => '/\badmin_enqueue_scripts\b/',
 			'stylesheet enqueue'           => '/\bwp_enqueue_style\s*\(/',
 			'script enqueue'               => '/\bwp_enqueue_script\s*\(/',
+			'media modal hook'             => '/\bwp_enqueue_media\b/',
+			'media attachment payload'     => '/\bwp_prepare_attachment_for_js\b/',
+			'media list columns'           => '/\bmanage_media_columns\b/',
+			'media row actions'            => '/\bmedia_row_actions\b/',
+			'media attachment fields'      => '/\battachment_fields_to_edit\b/',
 			'new-upload media hook'        => '/\bwp_generate_attachment_metadata\b/',
 			'attachment metadata write'    => '/\b(?:add|update|delete)_post_meta\s*\(/',
 			'attachment metadata update'   => '/\bwp_update_attachment_metadata\s*\(/',
@@ -45,10 +50,40 @@ final class DiagnosticsScopePolicyTest extends TestCase {
 		);
 
 		$allowed_patterns = array(
+			'src/Admin/WordPressAdminRuntime.php' => array(
+				'admin submenu page',
+			),
+			'src/Admin/Assets.php' => array(
+				'global admin asset hook',
+			),
+			'src/Admin/MediaLibrary/MediaLibraryAssets.php' => array(
+				'global admin asset hook',
+				'media modal hook',
+			),
+			'src/Admin/MediaLibrary/MediaLibraryIntegration.php' => array(
+				'media attachment payload',
+				'media list columns',
+				'media row actions',
+				'media attachment fields',
+			),
+			'src/Admin/WordPressAdminAssetRuntime.php' => array(
+				'stylesheet enqueue',
+				'script enqueue',
+			),
+			'src/Admin/Rest/RestApi.php' => array(
+				'REST API hook',
+			),
+			'src/Admin/Rest/WordPressRestRuntime.php' => array(
+				'REST route registration',
+			),
 			'src/Infrastructure/LifecyclePolicy.php' => array(
 				'optimization queue action',
 			),
 			'src/Queue/ActionSchedulerQueue.php'     => array(
+				'async queue scheduling',
+				'single queue scheduling',
+			),
+			'src/Infrastructure/ActionSchedulerSingleActionScheduler.php' => array(
 				'async queue scheduling',
 				'single queue scheduling',
 			),
@@ -57,6 +92,10 @@ final class DiagnosticsScopePolicyTest extends TestCase {
 			),
 			'src/Attachment/WordPressAttachmentMetaStore.php' => array(
 				'attachment metadata write',
+			),
+			'src/Delivery/DeliveryManager.php' => array(
+				'frontend image hook',
+				'frontend content hook',
 			),
 		);
 

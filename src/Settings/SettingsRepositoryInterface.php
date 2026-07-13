@@ -58,11 +58,32 @@ interface SettingsRepositoryInterface {
 	public function automatic_optimization_enabled(): bool;
 
 	/**
+	 * Whether Media Library controls are enabled.
+	 *
+	 * @return bool
+	 */
+	public function media_library_controls_enabled(): bool;
+
+	/**
+	 * Whether per-attachment exclusion is allowed.
+	 *
+	 * @return bool
+	 */
+	public function attachment_exclusion_allowed(): bool;
+
+	/**
 	 * Whether frontend delivery is enabled.
 	 *
 	 * @return bool
 	 */
 	public function delivery_enabled(): bool;
+
+	/**
+	 * Whether the emergency frontend-delivery rollback switch is active.
+	 *
+	 * @return bool
+	 */
+	public function delivery_emergency_disabled(): bool;
 
 	/**
 	 * Get enabled target formats.

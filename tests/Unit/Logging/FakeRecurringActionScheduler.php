@@ -7,7 +7,7 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Logging;
 
-use HyperWeb\LighthouseImageOptimizer\Logging\RecurringActionSchedulerInterface;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\RecurringActionSchedulerInterface;
 
 /**
  * Captures recurring schedule calls.
@@ -34,6 +34,13 @@ final class FakeRecurringActionScheduler implements RecurringActionSchedulerInte
 	 * @var array<string,mixed>|null
 	 */
 	public $scheduled;
+
+	/**
+	 * All scheduled payloads.
+	 *
+	 * @var array<int,array<string,mixed>>
+	 */
+	public $scheduled_actions = array();
 
 	/**
 	 * Determine whether an action is already scheduled.
@@ -81,6 +88,7 @@ final class FakeRecurringActionScheduler implements RecurringActionSchedulerInte
 			'unique'    => $unique,
 			'priority'  => $priority,
 		);
+		$this->scheduled_actions[] = $this->scheduled;
 
 		return true;
 	}

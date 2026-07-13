@@ -5,10 +5,10 @@
  * @package Hyperweb_Lighthouse_Image_Optimizer
  */
 
-namespace HyperWeb\LighthouseImageOptimizer\Logging;
+namespace HyperWeb\LighthouseImageOptimizer\Infrastructure;
 
 /**
- * Wraps Action Scheduler functions behind a small logging-maintenance seam.
+ * Wraps Action Scheduler functions behind a reusable recurring-action seam.
  */
 final class ActionSchedulerRecurringActionScheduler implements RecurringActionSchedulerInterface {
 

@@ -88,6 +88,13 @@ final class AttachmentCleanupResult {
 	private $deleted_file_samples;
 
 	/**
+	 * Deleted derivative relative paths.
+	 *
+	 * @var string[]
+	 */
+	private $deleted_relative_paths;
+
+	/**
 	 * Orphan derivative file samples.
 	 *
 	 * @var string[]
@@ -106,6 +113,7 @@ final class AttachmentCleanupResult {
 	 * @param int      $orphan_files Orphan count.
 	 * @param string[] $deleted_file_samples Deleted file samples.
 	 * @param string[] $orphan_file_samples Orphan file samples.
+	 * @param string[] $deleted_relative_paths Deleted derivative relative paths.
 	 */
 	private function __construct(
 		string $severity,
@@ -116,7 +124,8 @@ final class AttachmentCleanupResult {
 		int $deleted_meta = 0,
 		int $orphan_files = 0,
 		array $deleted_file_samples = array(),
-		array $orphan_file_samples = array()
+		array $orphan_file_samples = array(),
+		array $deleted_relative_paths = array()
 	) {
 		$this->severity             = in_array( $severity, array( self::SEVERITY_SUCCESS, self::SEVERITY_WARNING, self::SEVERITY_FAILURE ), true )
 			? $severity
@@ -127,8 +136,12 @@ final class AttachmentCleanupResult {
 		$this->cancelled_actions    = max( 0, $cancelled_actions );
 		$this->deleted_meta         = max( 0, $deleted_meta );
 		$this->orphan_files         = max( 0, $orphan_files );
-		$this->deleted_file_samples = $this->normalize_relative_paths( $deleted_file_samples );
-		$this->orphan_file_samples  = $this->normalize_relative_paths( $orphan_file_samples );
+		$this->deleted_file_samples   = $this->normalize_relative_paths( $deleted_file_samples );
+		$this->deleted_relative_paths = $this->normalize_relative_paths(
+			array() === $deleted_relative_paths ? $deleted_file_samples : $deleted_relative_paths,
+			0
+		);
+		$this->orphan_file_samples    = $this->normalize_relative_paths( $orphan_file_samples );
 	}
 
 	/**
@@ -142,6 +155,7 @@ final class AttachmentCleanupResult {
 	 * @param int      $orphan_files Orphan count.
 	 * @param string[] $deleted_file_samples Deleted file samples.
 	 * @param string[] $orphan_file_samples Orphan file samples.
+	 * @param string[] $deleted_relative_paths Deleted derivative relative paths.
 	 * @return self
 	 */
 	public static function success(
@@ -152,7 +166,8 @@ final class AttachmentCleanupResult {
 		int $deleted_meta = 0,
 		int $orphan_files = 0,
 		array $deleted_file_samples = array(),
-		array $orphan_file_samples = array()
+		array $orphan_file_samples = array(),
+		array $deleted_relative_paths = array()
 	): self {
 		return new self(
 			self::SEVERITY_SUCCESS,
@@ -163,7 +178,8 @@ final class AttachmentCleanupResult {
 			$deleted_meta,
 			$orphan_files,
 			$deleted_file_samples,
-			$orphan_file_samples
+			$orphan_file_samples,
+			$deleted_relative_paths
 		);
 	}
 
@@ -178,6 +194,7 @@ final class AttachmentCleanupResult {
 	 * @param int      $orphan_files Orphan count.
 	 * @param string[] $deleted_file_samples Deleted file samples.
 	 * @param string[] $orphan_file_samples Orphan file samples.
+	 * @param string[] $deleted_relative_paths Deleted derivative relative paths.
 	 * @return self
 	 */
 	public static function warning(
@@ -188,7 +205,8 @@ final class AttachmentCleanupResult {
 		int $deleted_meta = 0,
 		int $orphan_files = 0,
 		array $deleted_file_samples = array(),
-		array $orphan_file_samples = array()
+		array $orphan_file_samples = array(),
+		array $deleted_relative_paths = array()
 	): self {
 		return new self(
 			self::SEVERITY_WARNING,
@@ -199,7 +217,8 @@ final class AttachmentCleanupResult {
 			$deleted_meta,
 			$orphan_files,
 			$deleted_file_samples,
-			$orphan_file_samples
+			$orphan_file_samples,
+			$deleted_relative_paths
 		);
 	}
 
@@ -214,6 +233,7 @@ final class AttachmentCleanupResult {
 	 * @param int      $orphan_files Orphan count.
 	 * @param string[] $deleted_file_samples Deleted file samples.
 	 * @param string[] $orphan_file_samples Orphan file samples.
+	 * @param string[] $deleted_relative_paths Deleted derivative relative paths.
 	 * @return self
 	 */
 	public static function failure(
@@ -224,7 +244,8 @@ final class AttachmentCleanupResult {
 		int $deleted_meta = 0,
 		int $orphan_files = 0,
 		array $deleted_file_samples = array(),
-		array $orphan_file_samples = array()
+		array $orphan_file_samples = array(),
+		array $deleted_relative_paths = array()
 	): self {
 		return new self(
 			self::SEVERITY_FAILURE,
@@ -235,7 +256,8 @@ final class AttachmentCleanupResult {
 			$deleted_meta,
 			$orphan_files,
 			$deleted_file_samples,
-			$orphan_file_samples
+			$orphan_file_samples,
+			$deleted_relative_paths
 		);
 	}
 
@@ -253,8 +275,9 @@ final class AttachmentCleanupResult {
 		$cancelled_actions    = 0;
 		$deleted_meta         = 0;
 		$orphan_files         = 0;
-		$deleted_file_samples = array();
-		$orphan_file_samples  = array();
+		$deleted_file_samples   = array();
+		$orphan_file_samples    = array();
+		$deleted_relative_paths = array();
 
 		foreach ( $results as $result ) {
 			if ( self::SEVERITY_FAILURE === $result->severity() ) {
@@ -269,8 +292,9 @@ final class AttachmentCleanupResult {
 			$cancelled_actions   += $result->cancelled_actions();
 			$deleted_meta        += $result->deleted_meta();
 			$orphan_files        += $result->orphan_files();
-			$deleted_file_samples = array_merge( $deleted_file_samples, $result->deleted_file_samples() );
-			$orphan_file_samples  = array_merge( $orphan_file_samples, $result->orphan_file_samples() );
+			$deleted_file_samples   = array_merge( $deleted_file_samples, $result->deleted_file_samples() );
+			$orphan_file_samples    = array_merge( $orphan_file_samples, $result->orphan_file_samples() );
+			$deleted_relative_paths = array_merge( $deleted_relative_paths, $result->deleted_relative_paths() );
 		}
 
 		return new self(
@@ -282,7 +306,8 @@ final class AttachmentCleanupResult {
 			$deleted_meta,
 			$orphan_files,
 			$deleted_file_samples,
-			$orphan_file_samples
+			$orphan_file_samples,
+			$deleted_relative_paths
 		);
 	}
 
@@ -387,6 +412,15 @@ final class AttachmentCleanupResult {
 	}
 
 	/**
+	 * Get deleted derivative relative paths.
+	 *
+	 * @return string[]
+	 */
+	public function deleted_relative_paths(): array {
+		return $this->deleted_relative_paths;
+	}
+
+	/**
 	 * Get orphan file samples.
 	 *
 	 * @return string[]
@@ -410,8 +444,9 @@ final class AttachmentCleanupResult {
 			'cancelled_actions'    => $this->cancelled_actions,
 			'deleted_meta'         => $this->deleted_meta,
 			'orphan_files'         => $this->orphan_files,
-			'deleted_file_samples' => $this->deleted_file_samples,
-			'orphan_file_samples'  => $this->orphan_file_samples,
+			'deleted_file_samples'   => $this->deleted_file_samples,
+			'deleted_relative_paths' => $this->deleted_relative_paths,
+			'orphan_file_samples'    => $this->orphan_file_samples,
 		);
 	}
 
@@ -469,9 +504,10 @@ final class AttachmentCleanupResult {
 	 * Normalize uploads-relative path samples.
 	 *
 	 * @param string[] $paths Paths.
+	 * @param int      $limit Maximum items, or 0 for unbounded.
 	 * @return string[]
 	 */
-	private function normalize_relative_paths( array $paths ): array {
+	private function normalize_relative_paths( array $paths, int $limit = 20 ): array {
 		$normalized = array();
 
 		foreach ( $paths as $path ) {
@@ -486,6 +522,8 @@ final class AttachmentCleanupResult {
 			}
 		}
 
-		return array_slice( array_values( array_unique( $normalized ) ), 0, 20 );
+		$normalized = array_values( array_unique( $normalized ) );
+
+		return 0 < $limit ? array_slice( $normalized, 0, $limit ) : $normalized;
 	}
 }

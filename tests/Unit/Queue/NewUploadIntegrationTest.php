@@ -16,12 +16,14 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
 use HyperWeb\LighthouseImageOptimizer\Queue\NewUploadIntegration;
+use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueStatus;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FixedAttachmentClock;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAttachmentSourceProvider;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeOptionStore;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use PHPUnit\Framework\TestCase;
 
@@ -276,17 +278,48 @@ final class NewUploadIntegrationTest extends TestCase {
 	}
 
 	/**
+	 * Test global pause leaves uploads usable without queueing.
+	 *
+	 * @return void
+	 */
+	public function test_paused_queue_control_skips_new_upload_queueing(): void {
+		$controls = new QueueControlStateStore(
+			new FakeOptionStore(
+				array(
+					'hwlio_queue_control_state' => array(
+						'paused'             => true,
+						'updated_at_gmt'     => '2026-07-12 00:00:00',
+						'updated_by_user_id' => 7,
+					),
+				)
+			),
+			'hwlio_queue_control_state',
+			static function (): string {
+				return '2026-07-12 00:00:00';
+			}
+		);
+		$runtime = $this->build_runtime( array(), null, null, $controls );
+
+		$runtime['integration']->handle_generated_metadata( array( 'file' => '2026/07/hero.jpg' ), 123, 'create' );
+
+		self::assertCount( 0, $runtime['queue']->jobs );
+		self::assertSame( AttachmentStatus::STATE_UNPROCESSED, $runtime['store']->meta[123][ LifecyclePolicy::META_STATUS ]['state'] );
+	}
+
+	/**
 	 * Build a runtime harness.
 	 *
 	 * @param array<string,mixed>         $config Runtime config.
 	 * @param FakeQueue|null              $queue Queue override.
 	 * @param FakeSettingsRepository|null $settings Settings override.
+	 * @param QueueControlStateStore|null $controls Queue control state store.
 	 * @return array<string,mixed>
 	 */
 	private function build_runtime(
 		array $config = array(),
 		?FakeQueue $queue = null,
-		?FakeSettingsRepository $settings = null
+		?FakeSettingsRepository $settings = null,
+		?QueueControlStateStore $controls = null
 	): array {
 		$store         = new FakeAttachmentMetaStore();
 		$clock         = new FixedAttachmentClock( 1783526500 );
@@ -340,7 +373,8 @@ final class NewUploadIntegrationTest extends TestCase {
 					'status'        => $status,
 					'payload'       => $payload,
 				);
-			}
+			},
+			$controls
 		);
 
 		$fingerprint = ( new AttachmentFingerprintBuilder() )->build(

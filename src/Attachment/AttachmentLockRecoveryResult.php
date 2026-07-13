@@ -61,6 +61,13 @@ final class AttachmentLockRecoveryResult {
 	private $sample_attachment_ids;
 
 	/**
+	 * Recovered attachment IDs.
+	 *
+	 * @var int[]
+	 */
+	private $recovered_attachment_ids;
+
+	/**
 	 * Create result.
 	 *
 	 * @param int   $scanned Scanned count.
@@ -69,6 +76,7 @@ final class AttachmentLockRecoveryResult {
 	 * @param int   $invalid_recovered Invalid recovered count.
 	 * @param int   $failed Failure count.
 	 * @param int[] $sample_attachment_ids Sampled attachment IDs.
+	 * @param int[] $recovered_attachment_ids Recovered attachment IDs.
 	 */
 	public function __construct(
 		int $scanned,
@@ -76,14 +84,16 @@ final class AttachmentLockRecoveryResult {
 		int $stale_recovered,
 		int $invalid_recovered,
 		int $failed,
-		array $sample_attachment_ids = array()
+		array $sample_attachment_ids = array(),
+		array $recovered_attachment_ids = array()
 	) {
 		$this->scanned               = max( 0, $scanned );
 		$this->active                = max( 0, $active );
 		$this->stale_recovered       = max( 0, $stale_recovered );
 		$this->invalid_recovered     = max( 0, $invalid_recovered );
 		$this->failed                = max( 0, $failed );
-		$this->sample_attachment_ids = $this->normalize_ids( $sample_attachment_ids );
+		$this->sample_attachment_ids = $this->normalize_ids( $sample_attachment_ids, 10 );
+		$this->recovered_attachment_ids = $this->normalize_ids( $recovered_attachment_ids, 100 );
 	}
 
 	/**
@@ -150,6 +160,24 @@ final class AttachmentLockRecoveryResult {
 	}
 
 	/**
+	 * Get recovered attachment IDs.
+	 *
+	 * @return int[]
+	 */
+	public function recovered_attachment_ids(): array {
+		return $this->recovered_attachment_ids;
+	}
+
+	/**
+	 * Get sampled attachment IDs.
+	 *
+	 * @return int[]
+	 */
+	public function sample_attachment_ids(): array {
+		return $this->sample_attachment_ids;
+	}
+
+	/**
 	 * Get result codes.
 	 *
 	 * @return string[]
@@ -196,6 +224,7 @@ final class AttachmentLockRecoveryResult {
 			'invalid_recovered'     => $this->invalid_recovered,
 			'failed'                => $this->failed,
 			'sample_attachment_ids' => $this->sample_attachment_ids,
+			'recovered_attachment_ids' => $this->recovered_attachment_ids,
 		);
 	}
 
@@ -203,9 +232,10 @@ final class AttachmentLockRecoveryResult {
 	 * Normalize attachment IDs.
 	 *
 	 * @param int[] $ids IDs.
+	 * @param int   $limit Maximum IDs to keep.
 	 * @return int[]
 	 */
-	private function normalize_ids( array $ids ): array {
+	private function normalize_ids( array $ids, int $limit ): array {
 		$normalized = array();
 
 		foreach ( $ids as $id ) {
@@ -220,6 +250,6 @@ final class AttachmentLockRecoveryResult {
 			}
 		}
 
-		return array_slice( array_values( array_unique( $normalized ) ), 0, 10 );
+		return array_slice( array_values( array_unique( $normalized ) ), 0, max( 1, $limit ) );
 	}
 }

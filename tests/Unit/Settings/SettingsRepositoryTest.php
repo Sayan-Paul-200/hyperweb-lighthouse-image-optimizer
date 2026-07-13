@@ -120,7 +120,10 @@ final class SettingsRepositoryTest extends TestCase {
 					SettingsSchema::defaults(),
 					array(
 						'automatic_optimization'          => '1',
+						'media_library_controls'          => true,
+						'allow_attachment_exclusion'      => false,
 						'delivery_enabled'                => true,
+						'delivery_emergency_disabled'     => true,
 						'enabled_formats'                 => array( 'webp', 'avif' ),
 						'format_preference'               => array( 'avif', 'webp' ),
 						'webp_quality'                    => 70,
@@ -139,7 +142,10 @@ final class SettingsRepositoryTest extends TestCase {
 		$repository = SettingsRepository::for_options( $options );
 
 		self::assertTrue( $repository->automatic_optimization_enabled() );
+		self::assertTrue( $repository->media_library_controls_enabled() );
+		self::assertFalse( $repository->attachment_exclusion_allowed() );
 		self::assertTrue( $repository->delivery_enabled() );
+		self::assertTrue( $repository->delivery_emergency_disabled() );
 		self::assertSame( array( 'webp', 'avif' ), $repository->enabled_formats() );
 		self::assertSame( array( 'avif', 'webp' ), $repository->format_preference() );
 		self::assertSame( 70, $repository->quality_for( 'webp' ) );

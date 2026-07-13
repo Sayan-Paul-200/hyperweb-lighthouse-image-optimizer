@@ -18,6 +18,7 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAttachmentSourceProvider;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeCacheInvalidationDispatcher;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeFilesystem;
 use PHPUnit\Framework\TestCase;
 
@@ -93,6 +94,38 @@ final class AttachmentCleanupTest extends TestCase {
 		self::assertArrayHasKey( self::UPLOADS . '/2026/07/hero.jpg', $files->files );
 		self::assertSame( array(), $store->meta[ self::ATTACHMENT_ID ] );
 		self::assertSame( array( self::ATTACHMENT_ID ), $jobs->attachment_ids );
+	}
+
+	/**
+	 * Test cleanup dispatches cache invalidation for deleted sidecars.
+	 *
+	 * @return void
+	 */
+	public function test_cleanup_dispatches_cache_invalidation_for_deleted_sidecars(): void {
+		$store      = $this->meta_store_with_manifest( $this->manifest() );
+		$files      = new FakeFilesystem(
+			array(
+				self::UPLOADS . '/2026/07/hero.jpg',
+				self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp',
+				self::UPLOADS . '/2026/07/hero.jpg.hwlio.avif',
+			),
+			array( self::UPLOADS )
+		);
+		$dispatcher = new FakeCacheInvalidationDispatcher();
+
+		$this->cleanup_service( $store, $files, new FakeAttachmentJobCleaner(), $dispatcher )->cleanup_attachment( self::ATTACHMENT_ID );
+
+		self::assertCount( 1, $dispatcher->requests );
+		self::assertSame( 'derivatives_deleted', $dispatcher->requests[0]['event'] );
+		self::assertSame( self::ATTACHMENT_ID, $dispatcher->requests[0]['attachment_id'] );
+		self::assertSame(
+			array(
+				'2026/07/hero.jpg.hwlio.webp',
+				'2026/07/hero.jpg.hwlio.avif',
+			),
+			$dispatcher->requests[0]['relative_paths']
+		);
+		self::assertSame( array( 'webp', 'avif' ), $dispatcher->requests[0]['formats'] );
 	}
 
 	/**
@@ -185,7 +218,8 @@ final class AttachmentCleanupTest extends TestCase {
 	private function cleanup_service(
 		FakeAttachmentMetaStore $store,
 		FakeFilesystem $filesystem,
-		FakeAttachmentJobCleaner $jobs
+		FakeAttachmentJobCleaner $jobs,
+		?FakeCacheInvalidationDispatcher $dispatcher = null
 	): AttachmentCleanup {
 		$provider = new FakeAttachmentSourceProvider(
 			self::UPLOADS . '/2026/07/hero.jpg',
@@ -212,7 +246,8 @@ final class AttachmentCleanupTest extends TestCase {
 			$store,
 			new DerivativeFileCleaner( self::UPLOADS, $filesystem ),
 			$jobs,
-			new SourceCollector( $provider, $probe )
+			new SourceCollector( $provider, $probe ),
+			$dispatcher
 		);
 	}
 

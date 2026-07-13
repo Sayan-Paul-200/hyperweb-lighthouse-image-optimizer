@@ -42,6 +42,10 @@ final class LogCode {
 	public const RECONCILE_SKIPPED                 = 'reconcile_skipped';
 	public const RECONCILE_COMPLETED               = 'reconcile_completed';
 	public const RECONCILE_CLEANUP_WARNING         = 'reconcile_cleanup_warning';
+	public const MAINTENANCE_STALE_LOCKS_RECOVERED = 'maintenance_stale_locks_recovered';
+	public const MAINTENANCE_STALE_LOCK_RECOVERY_FAILED = 'maintenance_stale_lock_recovery_failed';
+	public const MAINTENANCE_STATISTICS_RECONCILED = 'maintenance_statistics_reconciled';
+	public const MAINTENANCE_STATISTICS_RECONCILE_FAILED = 'maintenance_statistics_reconcile_failed';
 
 	/**
 	 * Normalize a code into the stable machine-readable shape.

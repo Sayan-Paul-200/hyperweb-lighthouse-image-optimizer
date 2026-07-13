@@ -7,16 +7,87 @@
 
 namespace HyperWeb\LighthouseImageOptimizer;
 
+use HyperWeb\LighthouseImageOptimizer\Admin\AdminController;
+use HyperWeb\LighthouseImageOptimizer\Admin\AdminScreenContextResolver;
+use HyperWeb\LighthouseImageOptimizer\Admin\Assets as AdminAssets;
+use HyperWeb\LighthouseImageOptimizer\Admin\BulkPage;
+use HyperWeb\LighthouseImageOptimizer\Admin\DashboardPage;
+use HyperWeb\LighthouseImageOptimizer\Admin\DiagnosticsPage;
+use HyperWeb\LighthouseImageOptimizer\Admin\LogsPage;
+use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\BulkPreviewService;
+use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\BulkQueueService;
+use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\BulkScanService;
+use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\WordPressBulkScannerRuntime;
+use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\WordPressTransientBulkScanSessionStore;
+use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentActionAvailability;
+use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
+use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\MediaAttachmentPresenter;
+use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\MediaAttachmentRenderer;
+use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\MediaLibraryAssets;
+use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\MediaLibraryIntegration;
+use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\WordPressMediaLibraryRuntime;
+use HyperWeb\LighthouseImageOptimizer\Admin\Menu;
+use HyperWeb\LighthouseImageOptimizer\Admin\NoticeManager;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\AttachmentActionService;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\AttachmentDetailsService;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\AttachmentsController;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\CompositeDiagnosticsService;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\DashboardEnvironmentSummaryService;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\DiagnosticsController;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\JobsController;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\LogsController;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\RestApi;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\RestErrorFactory;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatisticsCacheReader;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusController;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusRefreshService;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusSummaryService;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\WordPressRestRuntime;
+use HyperWeb\LighthouseImageOptimizer\Admin\SettingsPage;
+use HyperWeb\LighthouseImageOptimizer\Admin\WordPressAdminAssetRuntime;
+use HyperWeb\LighthouseImageOptimizer\Admin\WordPressAdminRuntime;
+use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentFingerprintBuilder;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentCleanup;
+use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
+use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
+use HyperWeb\LighthouseImageOptimizer\Attachment\SystemAttachmentClock;
+use HyperWeb\LighthouseImageOptimizer\Attachment\WordPressAttachmentMetaStore;
+use HyperWeb\LighthouseImageOptimizer\Diagnostics\DerivativeHealthDiagnostics;
+use HyperWeb\LighthouseImageOptimizer\Diagnostics\EnvironmentDiagnostics;
+use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentImageSourceExtractor;
+use HyperWeb\LighthouseImageOptimizer\Delivery\DeliveryManager;
+use HyperWeb\LighthouseImageOptimizer\Delivery\MarkupEligibility;
+use HyperWeb\LighthouseImageOptimizer\Delivery\PictureRenderer;
+use HyperWeb\LighthouseImageOptimizer\Delivery\SourceSetBuilder;
+use HyperWeb\LighthouseImageOptimizer\Delivery\TransformedMarkupRegistry;
+use HyperWeb\LighthouseImageOptimizer\Delivery\WordPressAttachmentImageRuntime;
+use HyperWeb\LighthouseImageOptimizer\Delivery\WordPressImageMarkupAnalyzer;
+use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\I18n;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\Installer;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\ActionSchedulerSingleActionScheduler;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentInspector;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressCacheInvalidationDispatcher;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressOptionStore;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressTransientStore;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\UpgradeRunner;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogMaintenance;
+use HyperWeb\LighthouseImageOptimizer\Logging\LogBrowserService;
+use HyperWeb\LighthouseImageOptimizer\Logging\LogDeletionService;
+use HyperWeb\LighthouseImageOptimizer\Logging\LogRetentionService;
+use HyperWeb\LighthouseImageOptimizer\Logging\RecentFailureLogReader;
+use HyperWeb\LighthouseImageOptimizer\Queue\ActionSchedulerQueue;
+use HyperWeb\LighthouseImageOptimizer\Queue\ActionSchedulerAttachmentJobControl;
+use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueService;
 use HyperWeb\LighthouseImageOptimizer\Queue\NewUploadIntegration;
 use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationWorker;
+use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlService;
+use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
+use HyperWeb\LighthouseImageOptimizer\Queue\QueueMaintenance;
 use HyperWeb\LighthouseImageOptimizer\Queue\ReconciliationWorker;
+use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsApiRegistrar;
 
 /**
@@ -82,6 +153,94 @@ final class Plugin {
 			: 1;
 
 		$hooks = new HookRegistrar();
+		$admin_runtime = new WordPressAdminRuntime();
+		$menu          = new Menu( $admin_runtime );
+		$query_provider = static function (): array {
+			if ( ! isset( $_GET ) || ! is_array( $_GET ) ) {
+				return array();
+			}
+
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tab routing for the current screen shell and bootstrap.
+			return function_exists( 'wp_unslash' ) ? wp_unslash( $_GET ) : $_GET;
+		};
+		$notice_manager = new NoticeManager();
+		$context_resolver = new AdminScreenContextResolver( $menu, $query_provider );
+		$plugin_url = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_URL' )
+			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_URL' )
+			: '';
+		$rest_runtime = new WordPressRestRuntime();
+		$rest_errors  = new RestErrorFactory( $rest_runtime );
+		$settings     = SettingsRepository::for_wordpress();
+		$queue        = ActionSchedulerQueue::for_wordpress();
+		$single_actions = new ActionSchedulerSingleActionScheduler();
+		$queue_control_store = QueueControlStateStore::for_wordpress();
+		$attachment_jobs = ActionSchedulerAttachmentJobControl::for_wordpress();
+		$queue_control   = new QueueControlService( $queue_control_store, $attachment_jobs );
+		$meta         = new WordPressAttachmentMetaStore();
+		$clock        = new SystemAttachmentClock();
+		$cache_invalidation = new WordPressCacheInvalidationDispatcher();
+		$repository   = new DerivativeRepository(
+			$meta,
+			new DerivativeManifestSanitizer(),
+			$clock,
+			$cache_invalidation
+		);
+		$details      = new AttachmentDetailsService( $repository );
+		$attachment_queue = new AttachmentQueueService(
+			$queue,
+			$meta,
+			$repository,
+			SourceCollector::for_wordpress(),
+			new AttachmentFingerprintBuilder(),
+			$clock,
+			$queue_control_store
+		);
+		$media_runtime = new WordPressMediaLibraryRuntime();
+		$media_renderer = new MediaAttachmentRenderer();
+		$media_presenter = new MediaAttachmentPresenter( new AttachmentActionAvailability() );
+		$media_reader   = new AttachmentStatusReader( $meta );
+		$bulk_sessions  = new WordPressTransientBulkScanSessionStore( new WordPressTransientStore() );
+		$bulk_runtime   = new WordPressBulkScannerRuntime();
+		$bulk_scans     = new BulkScanService(
+			$bulk_runtime,
+			$bulk_sessions,
+			$media_reader,
+			$settings
+		);
+		$bulk_preview   = new BulkPreviewService(
+			$bulk_sessions,
+			$bulk_runtime,
+			$media_reader,
+			$media_presenter,
+			$settings
+		);
+		$bulk_queue     = new BulkQueueService(
+			$bulk_sessions,
+			$bulk_scans,
+			$media_reader,
+			$attachment_queue,
+			$settings,
+			$queue_control_store
+		);
+		$status_refresh = new StatusRefreshService( $single_actions );
+		$status_summary = new StatusSummaryService(
+			$queue,
+			new StatisticsCacheReader( new WordPressOptionStore() ),
+			$settings,
+			new DashboardEnvironmentSummaryService( EnvironmentInspector::for_wordpress(), $settings ),
+			RecentFailureLogReader::for_wordpress(),
+			$status_refresh,
+			$queue_control
+		);
+		$admin_pages = array(
+			new DashboardPage(),
+			new BulkPage(),
+			new SettingsPage(),
+			new DiagnosticsPage(),
+			new LogsPage( $settings->log_retention_days() ),
+		);
+		$delivery_runtime  = new WordPressAttachmentImageRuntime();
+		$delivery_analyzer = new WordPressImageMarkupAnalyzer();
 
 		return new self(
 			$version,
@@ -89,11 +248,167 @@ final class Plugin {
 			array(
 				new UpgradeRunner( Installer::for_wordpress( $version, $db_version, $schema_version ) ),
 				SettingsApiRegistrar::for_wordpress(),
+				new AdminController(
+					$menu,
+					$admin_pages,
+					$admin_runtime,
+					$context_resolver,
+					$notice_manager
+				),
+				new AdminAssets(
+					$menu,
+					$context_resolver,
+					new WordPressAdminAssetRuntime(),
+					$notice_manager,
+					$plugin_url,
+					$version
+				),
+				new MediaLibraryIntegration(
+					$settings,
+					$media_runtime,
+					$media_reader,
+					$media_presenter,
+					$media_renderer
+				),
+				new MediaLibraryAssets(
+					$media_runtime,
+					new WordPressAdminAssetRuntime(),
+					$settings,
+					$plugin_url,
+					$version
+				),
+				new RestApi(
+					array(
+						new StatusController(
+							$rest_runtime,
+							$rest_errors,
+							$status_summary,
+							$status_refresh
+						),
+						new DiagnosticsController(
+							$rest_runtime,
+							$rest_errors,
+							new CompositeDiagnosticsService(
+								EnvironmentDiagnostics::for_wordpress(),
+								DerivativeHealthDiagnostics::for_wordpress()
+							)
+						),
+						new LogsController(
+							$rest_runtime,
+							$rest_errors,
+							LogBrowserService::for_wordpress(),
+							LogDeletionService::for_wordpress(),
+							new LogRetentionService( $settings )
+						),
+						new JobsController(
+							$rest_runtime,
+							$rest_errors,
+							$bulk_scans,
+							$bulk_queue,
+							$queue_control
+						),
+						new AttachmentsController(
+							$rest_runtime,
+							$rest_errors,
+							$details,
+							new AttachmentActionService(
+								$queue,
+								$settings,
+								$meta,
+								$repository,
+								SourceCollector::for_wordpress(),
+								new AttachmentFingerprintBuilder(),
+								$clock,
+								$details,
+								$attachment_queue,
+								$queue_control_store
+							),
+							$bulk_preview
+						),
+					)
+				),
 				LogMaintenance::for_wordpress(),
+				QueueMaintenance::for_wordpress(),
 				AttachmentCleanup::for_wordpress(),
-				NewUploadIntegration::for_wordpress(),
-				ReconciliationWorker::for_wordpress(),
-				OptimizationWorker::for_wordpress(),
+				new NewUploadIntegration(
+					$queue,
+					$settings,
+					\HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentExclusionRepository::for_wordpress(),
+					SourceCollector::for_wordpress(),
+					new AttachmentFingerprintBuilder(),
+					$repository,
+					\HyperWeb\LighthouseImageOptimizer\Logging\Logger::for_wordpress(),
+					$clock,
+					static function ( int $attachment_id ): bool {
+						return function_exists( 'wp_attachment_is_image' ) && \wp_attachment_is_image( $attachment_id );
+					},
+					static function ( int $attachment_id, string $context, array $status, array $payload ): void {
+						if ( function_exists( 'do_action' ) ) {
+							\do_action(
+								\HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy::HOOK_ATTACHMENT_STATUS_REFRESH,
+								$attachment_id,
+								$context,
+								$status,
+								$payload
+							);
+						}
+					},
+					$queue_control_store
+				),
+				new ReconciliationWorker(
+					$queue,
+					\HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentLockManager::for_wordpress(),
+					SourceCollector::for_wordpress(),
+					new AttachmentFingerprintBuilder(),
+					$repository,
+					\HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentProcessor::for_wordpress(),
+					$settings,
+					new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeFileCleaner(
+						(function (): string {
+							if ( function_exists( 'wp_get_upload_dir' ) ) {
+								$uploads = wp_get_upload_dir();
+								if ( is_array( $uploads ) && ! empty( $uploads['basedir'] ) && is_string( $uploads['basedir'] ) ) {
+									return $uploads['basedir'];
+								}
+							}
+
+							return '';
+						})(),
+						new \HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressFilesystem()
+					),
+					\HyperWeb\LighthouseImageOptimizer\Logging\Logger::for_wordpress(),
+					$clock,
+					$queue_control_store,
+					$single_actions,
+					$cache_invalidation
+				),
+				new OptimizationWorker(
+					$queue,
+					\HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentLockManager::for_wordpress(),
+					SourceCollector::for_wordpress(),
+					new AttachmentFingerprintBuilder(),
+					$repository,
+					\HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentProcessor::for_wordpress(),
+					$settings,
+					\HyperWeb\LighthouseImageOptimizer\Logging\Logger::for_wordpress(),
+					new \HyperWeb\LighthouseImageOptimizer\Queue\OptimizationRetryPolicy(),
+					$clock,
+					$queue_control_store,
+					$single_actions
+				),
+				new DeliveryManager(
+					$settings,
+					$delivery_runtime,
+					new MarkupEligibility(
+						$settings,
+						$delivery_runtime,
+						$delivery_analyzer
+					),
+					new AttachmentImageSourceExtractor( $delivery_analyzer ),
+					SourceSetBuilder::for_wordpress(),
+					new PictureRenderer( $delivery_analyzer ),
+					new TransformedMarkupRegistry()
+				),
 				new I18n( self::SLUG, dirname( $basename ) . '/languages/' ),
 			)
 		);

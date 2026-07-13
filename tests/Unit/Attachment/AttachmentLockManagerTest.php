@@ -147,6 +147,7 @@ final class AttachmentLockManagerTest extends TestCase {
 		self::assertSame( 1, $result->failed() );
 		self::assertSame( 'new-worker-token', $store->meta[123][ LifecyclePolicy::META_LOCK ]['token'] );
 		self::assertContains( AttachmentLockRecoveryResult::CODE_RECOVERY_FAILED, $result->codes() );
+		self::assertSame( array(), $result->recovered_attachment_ids() );
 	}
 
 	/**
@@ -246,6 +247,8 @@ final class AttachmentLockManagerTest extends TestCase {
 		self::assertSame( 100, $result->scanned() );
 		self::assertSame( 100, $result->stale_recovered() );
 		self::assertSame( 0, $result->failed() );
+		self::assertCount( 100, $result->recovered_attachment_ids() );
+		self::assertSame( 1, $result->recovered_attachment_ids()[0] );
 		self::assertArrayNotHasKey( LifecyclePolicy::META_LOCK, $store->meta[100] );
 		self::assertArrayHasKey( LifecyclePolicy::META_LOCK, $store->meta[101] );
 	}

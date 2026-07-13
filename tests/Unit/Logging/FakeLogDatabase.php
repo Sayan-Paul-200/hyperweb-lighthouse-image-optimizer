@@ -29,6 +29,13 @@ final class FakeLogDatabase implements LogDatabaseInterface {
 	public $delete_result = 0;
 
 	/**
+	 * Batch delete result.
+	 *
+	 * @var int
+	 */
+	public $delete_batch_result = 0;
+
+	/**
 	 * Last inserted table.
 	 *
 	 * @var string|null
@@ -100,5 +107,19 @@ final class FakeLogDatabase implements LogDatabaseInterface {
 		$this->delete_limit      = $limit;
 
 		return $this->delete_result;
+	}
+
+	/**
+	 * Delete one bounded batch of log rows.
+	 *
+	 * @param string $table Table name.
+	 * @param int    $limit Maximum rows to delete.
+	 * @return int
+	 */
+	public function delete_batch( string $table, int $limit ): int {
+		$this->delete_table = $table;
+		$this->delete_limit = $limit;
+
+		return $this->delete_batch_result;
 	}
 }

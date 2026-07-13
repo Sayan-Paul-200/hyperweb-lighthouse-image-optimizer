@@ -77,6 +77,12 @@ final class SettingsSchema {
 				self::GROUP_DELIVERY,
 				'Serve generated modern-image derivatives on the frontend.'
 			),
+			'delivery_emergency_disabled'     => self::boolean_definition(
+				false,
+				self::GROUP_INTERNAL,
+				'Emergency rollback switch that disables frontend delivery without deleting derivatives.',
+				true
+			),
 			'enabled_formats'                 => self::format_list_definition(
 				array( self::FORMAT_WEBP ),
 				self::GROUP_FORMATS,

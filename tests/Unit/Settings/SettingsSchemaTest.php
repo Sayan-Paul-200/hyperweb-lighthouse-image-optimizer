@@ -38,6 +38,7 @@ final class SettingsSchemaTest extends TestCase {
 		self::assertFalse( $defaults['setup_completed'] );
 		self::assertFalse( $defaults['automatic_optimization'] );
 		self::assertFalse( $defaults['delivery_enabled'] );
+		self::assertFalse( $defaults['delivery_emergency_disabled'] );
 		self::assertSame( array( 'webp' ), $defaults['enabled_formats'] );
 		self::assertSame( array( 'avif', 'webp' ), $defaults['format_preference'] );
 		self::assertSame( 82, $defaults['webp_quality'] );
@@ -69,6 +70,9 @@ final class SettingsSchemaTest extends TestCase {
 			self::assertArrayHasKey( 'internal', $definition );
 			self::assertSame( SettingsSchema::CAPABILITY_MANAGE_OPTIONS, $definition['capability'] );
 		}
+
+		self::assertTrue( $definitions['delivery_emergency_disabled']['internal'] );
+		self::assertSame( SettingsSchema::GROUP_INTERNAL, $definitions['delivery_emergency_disabled']['group'] );
 	}
 
 	/**

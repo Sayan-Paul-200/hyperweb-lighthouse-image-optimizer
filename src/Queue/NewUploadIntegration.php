@@ -101,6 +101,13 @@ final class NewUploadIntegration implements HookProviderInterface {
 	private $dispatch_refresh;
 
 	/**
+	 * Queue control state store.
+	 *
+	 * @var QueueControlStateStoreInterface|null
+	 */
+	private $controls;
+
+	/**
 	 * Build the WordPress-backed integration.
 	 *
 	 * @return self
@@ -128,7 +135,8 @@ final class NewUploadIntegration implements HookProviderInterface {
 						$payload
 					);
 				}
-			}
+			},
+			QueueControlStateStore::for_wordpress()
 		);
 	}
 
@@ -145,6 +153,7 @@ final class NewUploadIntegration implements HookProviderInterface {
 	 * @param AttachmentClockInterface               $clock Clock.
 	 * @param callable                               $is_image_attachment Attachment-image check.
 	 * @param callable                               $dispatch_refresh Internal refresh dispatcher.
+	 * @param QueueControlStateStoreInterface|null   $controls Queue control state store.
 	 */
 	public function __construct(
 		QueueInterface $queue,
@@ -156,7 +165,8 @@ final class NewUploadIntegration implements HookProviderInterface {
 		LoggerInterface $logger,
 		AttachmentClockInterface $clock,
 		callable $is_image_attachment,
-		callable $dispatch_refresh
+		callable $dispatch_refresh,
+		?QueueControlStateStoreInterface $controls = null
 	) {
 		$this->queue               = $queue;
 		$this->settings            = $settings;
@@ -168,6 +178,7 @@ final class NewUploadIntegration implements HookProviderInterface {
 		$this->clock               = $clock;
 		$this->is_image_attachment = $is_image_attachment;
 		$this->dispatch_refresh    = $dispatch_refresh;
+		$this->controls            = $controls;
 	}
 
 	/**
@@ -238,6 +249,30 @@ final class NewUploadIntegration implements HookProviderInterface {
 		}
 
 		$current_status = $this->current_status( $attachment_id );
+
+		if ( $this->paused() ) {
+			$status = $this->save_status(
+				$attachment_id,
+				AttachmentStatus::STATE_UNPROCESSED,
+				null,
+				false,
+				$current_status
+			);
+
+			$this->logger->info(
+				LogCode::NEW_UPLOAD_AUTOMATION_DISABLED,
+				'New-upload automation skipped queueing because attachment processing is paused.',
+				array(
+					'attachment_id' => $attachment_id,
+					'context'       => $context,
+				),
+				$attachment_id
+			);
+
+			$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
+
+			return $metadata;
+		}
 
 		if ( ! $this->settings->automatic_optimization_enabled() ) {
 			$status = $this->save_status(
@@ -448,6 +483,15 @@ final class NewUploadIntegration implements HookProviderInterface {
 	}
 
 	/**
+	 * Determine whether queueing is paused globally.
+	 *
+	 * @return bool
+	 */
+	private function paused(): bool {
+		return null !== $this->controls && $this->controls->read()->paused();
+	}
+
+	/**
 	 * Read current attachment status.
 	 *
 	 * @param int $attachment_id Attachment ID.
@@ -550,6 +594,23 @@ final class NewUploadIntegration implements HookProviderInterface {
 			$this->logger->info(
 				LogCode::NEW_UPLOAD_EXCLUDED,
 				'Excluded attachment remained stale after metadata changed and was not reconciled automatically.',
+				array(
+					'attachment_id'   => $attachment_id,
+					'context'         => $context,
+					'comparison_code' => $comparison->code(),
+				),
+				$attachment_id
+			);
+
+			$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
+
+			return $metadata;
+		}
+
+		if ( $this->paused() ) {
+			$this->logger->info(
+				LogCode::RECONCILE_SKIPPED,
+				'Stale attachment derivatives were detected but reconciliation queueing is paused.',
 				array(
 					'attachment_id'   => $attachment_id,
 					'context'         => $context,

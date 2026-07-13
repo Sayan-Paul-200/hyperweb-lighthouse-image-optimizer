@@ -29,6 +29,20 @@ final class FakeOptionStore implements OptionStoreInterface {
 	public $autoload = array();
 
 	/**
+	 * Whether add operations should fail.
+	 *
+	 * @var bool
+	 */
+	public $fail_adds = false;
+
+	/**
+	 * Whether update operations should fail.
+	 *
+	 * @var bool
+	 */
+	public $fail_updates = false;
+
+	/**
 	 * Create the store.
 	 *
 	 * @param array<string,mixed> $options Initial options.
@@ -57,6 +71,10 @@ final class FakeOptionStore implements OptionStoreInterface {
 	 * @return bool
 	 */
 	public function add( string $option, $value, bool $autoload = true ): bool {
+		if ( $this->fail_adds ) {
+			return false;
+		}
+
 		if ( array_key_exists( $option, $this->options ) ) {
 			return false;
 		}
@@ -76,6 +94,10 @@ final class FakeOptionStore implements OptionStoreInterface {
 	 * @return bool
 	 */
 	public function update( string $option, $value, ?bool $autoload = null ): bool {
+		if ( $this->fail_updates ) {
+			return false;
+		}
+
 		$this->options[ $option ] = $value;
 
 		if ( null !== $autoload ) {

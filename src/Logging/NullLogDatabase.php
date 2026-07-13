@@ -39,4 +39,17 @@ final class NullLogDatabase implements LogDatabaseInterface {
 
 		return 0;
 	}
+
+	/**
+	 * Delete one bounded batch of log rows.
+	 *
+	 * @param string $table Table name.
+	 * @param int    $limit Maximum rows to delete.
+	 * @return int
+	 */
+	public function delete_batch( string $table, int $limit ): int {
+		unset( $table, $limit );
+
+		return 0;
+	}
 }

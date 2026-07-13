@@ -29,9 +29,25 @@ final class ScaffoldAssetPolicyTest extends TestCase {
 			'stylesheet enqueue'         => '/\bwp_enqueue_style\s*\(/',
 			'script enqueue'             => '/\bwp_enqueue_script\s*\(/',
 		);
+		$allowed_patterns   = array(
+			'src/Admin/Assets.php'                 => array(
+				'global admin asset hook',
+			),
+			'src/Admin/MediaLibrary/MediaLibraryAssets.php' => array(
+				'global admin asset hook',
+			),
+			'src/Admin/WordPressAdminAssetRuntime.php' => array(
+				'stylesheet enqueue',
+				'script enqueue',
+			),
+		);
 
 		foreach ( $this->runtime_source_files() as $file => $contents ) {
 			foreach ( $forbidden_patterns as $label => $pattern ) {
+				if ( isset( $allowed_patterns[ $file ] ) && in_array( $label, $allowed_patterns[ $file ], true ) ) {
+					continue;
+				}
+
 				self::assertDoesNotMatchRegularExpression(
 					$pattern,
 					$contents,

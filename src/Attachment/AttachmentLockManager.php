@@ -256,6 +256,7 @@ final class AttachmentLockManager {
 		$invalid_recovered = 0;
 		$failed            = 0;
 		$samples           = array();
+		$recovered_ids     = array();
 
 		foreach ( $attachment_ids as $attachment_id ) {
 			$attachment_id = (int) $attachment_id;
@@ -280,6 +281,7 @@ final class AttachmentLockManager {
 				} else {
 					++$invalid_recovered;
 				}
+				$recovered_ids[] = $attachment_id;
 				continue;
 			}
 
@@ -292,7 +294,8 @@ final class AttachmentLockManager {
 			$stale_recovered,
 			$invalid_recovered,
 			$failed,
-			$samples
+			$samples,
+			$recovered_ids
 		);
 	}
 

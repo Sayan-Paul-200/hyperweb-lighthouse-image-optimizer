@@ -84,6 +84,36 @@ final class WordPressLogDatabase implements LogDatabaseInterface {
 	}
 
 	/**
+	 * Delete one bounded batch of log rows.
+	 *
+	 * @param string $table Table name.
+	 * @param int    $limit Maximum rows to delete.
+	 * @return int
+	 */
+	public function delete_batch( string $table, int $limit ): int {
+		if ( ! $this->is_safe_table_name( $table ) || $limit < 1 ) {
+			return 0;
+		}
+
+		try {
+			$sql = $this->wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"DELETE FROM {$table} ORDER BY id ASC LIMIT %d",
+				$limit
+			);
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+			$deleted = $this->wpdb->query( $sql );
+		} catch ( \Throwable $throwable ) {
+			unset( $throwable );
+
+			return 0;
+		}
+
+		return is_int( $deleted ) ? max( 0, $deleted ) : 0;
+	}
+
+	/**
 	 * Validate a table identifier before interpolating it into SQL.
 	 *
 	 * @param string $table Table name.

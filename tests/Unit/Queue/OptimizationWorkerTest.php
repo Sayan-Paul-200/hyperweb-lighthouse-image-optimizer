@@ -26,6 +26,7 @@ use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
 use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationJob;
 use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationRetryPolicy;
 use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationWorker;
+use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueStatus;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FixedAttachmentClock;
@@ -33,6 +34,8 @@ use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FixedAttachmentLockT
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAttachmentSourceProvider;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeOptionStore;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeSingleActionScheduler;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -351,6 +354,40 @@ final class OptimizationWorkerTest extends TestCase {
 	}
 
 	/**
+	 * Test paused queue control re-schedules the same job without processing it.
+	 *
+	 * @return void
+	 */
+	public function test_paused_queue_control_requeues_job_without_processing(): void {
+		$controls  = new QueueControlStateStore(
+			new FakeOptionStore(
+				array(
+					LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE => array(
+						'paused'             => true,
+						'updated_at_gmt'     => '2026-07-12 00:00:00',
+						'updated_by_user_id' => 7,
+					),
+				)
+			),
+			LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE,
+			static function (): string {
+				return '2026-07-12 00:00:00';
+			}
+		);
+		$scheduler = new FakeSingleActionScheduler();
+		$runtime   = $this->build_runtime( array(), null, null, $controls, $scheduler );
+
+		$runtime['worker']->run_job( $this->job( $runtime['fingerprint'] ) );
+
+		self::assertCount( 0, $runtime['processor']->requests );
+		self::assertCount( 1, $scheduler->single_calls );
+		self::assertSame( LifecyclePolicy::ACTION_OPTIMIZE_ATTACHMENT_FORMAT, $scheduler->single_calls[0]['hook'] );
+		self::assertSame( 123, $scheduler->single_calls[0]['args']['attachment_id'] );
+		self::assertSame( 'webp', $scheduler->single_calls[0]['args']['format'] );
+		self::assertSame( LogCode::WORKER_CONTINUATION_QUEUED, $runtime['logger']->entries[0]['code'] );
+	}
+
+	/**
 	 * Test logger records sanitized outcome context.
 	 *
 	 * @return void
@@ -403,12 +440,20 @@ final class OptimizationWorkerTest extends TestCase {
 	/**
 	 * Build worker runtime with real collection/fingerprint services and fake orchestration seams.
 	 *
-	 * @param array<string,mixed>         $config Runtime config.
-	 * @param FakeQueue|null              $queue Queue override.
-	 * @param FakeSettingsRepository|null $settings Settings override.
+	 * @param array<string,mixed>             $config Runtime config.
+	 * @param FakeQueue|null                  $queue Queue override.
+	 * @param FakeSettingsRepository|null     $settings Settings override.
+	 * @param QueueControlStateStore|null     $controls Queue control store.
+	 * @param FakeSingleActionScheduler|null  $scheduler Single action scheduler.
 	 * @return array<string,mixed>
 	 */
-	private function build_runtime( array $config = array(), ?FakeQueue $queue = null, ?FakeSettingsRepository $settings = null ): array {
+	private function build_runtime(
+		array $config = array(),
+		?FakeQueue $queue = null,
+		?FakeSettingsRepository $settings = null,
+		?QueueControlStateStore $controls = null,
+		?FakeSingleActionScheduler $scheduler = null
+	): array {
 		$store    = new FakeAttachmentMetaStore();
 		$clock    = new FixedAttachmentClock( 1783526500 );
 		$provider = new FakeAttachmentSourceProvider(
@@ -454,7 +499,9 @@ final class OptimizationWorkerTest extends TestCase {
 			$settings,
 			$logger,
 			new OptimizationRetryPolicy(),
-			$clock
+			$clock,
+			$controls,
+			$scheduler
 		);
 
 		return array(
