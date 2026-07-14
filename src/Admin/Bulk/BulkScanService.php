@@ -8,7 +8,9 @@
 namespace HyperWeb\LighthouseImageOptimizer\Admin\Bulk;
 
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
+use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentFingerprintBuilder;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentStatus;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\AttachmentSourceCollectorInterface;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
 /**
@@ -47,6 +49,20 @@ final class BulkScanService {
 	private $settings;
 
 	/**
+	 * Optional queue-source collector used to keep dry-run candidates queueable.
+	 *
+	 * @var AttachmentSourceCollectorInterface|null
+	 */
+	private $source_collector;
+
+	/**
+	 * Optional fingerprint builder used to verify the current source can be queued.
+	 *
+	 * @var AttachmentFingerprintBuilder|null
+	 */
+	private $fingerprinter;
+
+	/**
 	 * GMT clock callback.
 	 *
 	 * @var callable
@@ -63,12 +79,14 @@ final class BulkScanService {
 	/**
 	 * Create the service.
 	 *
-	 * @param BulkScannerRuntimeInterface   $runtime Scanner runtime.
-	 * @param BulkScanSessionStoreInterface $sessions Session store.
-	 * @param AttachmentStatusReader        $statuses Lightweight status reader.
-	 * @param SettingsRepositoryInterface   $settings Settings repository.
-	 * @param callable|null                 $now_gmt Optional GMT clock callback.
-	 * @param callable|null                 $token_generator Optional token generator.
+	 * @param BulkScannerRuntimeInterface             $runtime Scanner runtime.
+	 * @param BulkScanSessionStoreInterface           $sessions Session store.
+	 * @param AttachmentStatusReader                  $statuses Lightweight status reader.
+	 * @param SettingsRepositoryInterface             $settings Settings repository.
+	 * @param callable|null                           $now_gmt Optional GMT clock callback.
+	 * @param callable|null                           $token_generator Optional token generator.
+	 * @param AttachmentSourceCollectorInterface|null $source_collector Optional source collector for queueability checks.
+	 * @param AttachmentFingerprintBuilder|null       $fingerprinter Optional fingerprint builder.
 	 */
 	public function __construct(
 		BulkScannerRuntimeInterface $runtime,
@@ -76,16 +94,20 @@ final class BulkScanService {
 		AttachmentStatusReader $statuses,
 		SettingsRepositoryInterface $settings,
 		?callable $now_gmt = null,
-		?callable $token_generator = null
+		?callable $token_generator = null,
+		?AttachmentSourceCollectorInterface $source_collector = null,
+		?AttachmentFingerprintBuilder $fingerprinter = null
 	) {
-		$this->runtime         = $runtime;
-		$this->sessions        = $sessions;
-		$this->statuses        = $statuses;
-		$this->settings        = $settings;
-		$this->now_gmt         = $now_gmt ?? static function (): string {
+		$this->runtime          = $runtime;
+		$this->sessions         = $sessions;
+		$this->statuses         = $statuses;
+		$this->settings         = $settings;
+		$this->source_collector = $source_collector;
+		$this->fingerprinter    = $fingerprinter;
+		$this->now_gmt          = $now_gmt ?? static function (): string {
 			return gmdate( 'Y-m-d H:i:s' );
 		};
-		$this->token_generator = $token_generator ?? static function (): string {
+		$this->token_generator  = $token_generator ?? static function (): string {
 			return bin2hex( random_bytes( 16 ) );
 		};
 	}
@@ -214,6 +236,11 @@ final class BulkScanService {
 			}
 
 			if ( $this->is_eligible( $status, $session->filters()->scan_scope(), $target_formats ) ) {
+				if ( ! $this->attachment_has_queueable_source( $attachment_id ) ) {
+					++$delta['skipped'];
+					continue;
+				}
+
 				$candidate_ids[] = $attachment_id;
 				++$delta['eligible'];
 				continue;
@@ -291,6 +318,42 @@ final class BulkScanService {
 		}
 
 		return count( array_intersect( $target_formats, $status->formats_ready() ) ) === count( $target_formats );
+	}
+
+	/**
+	 * Determine whether an attachment has the source facts required for queueing.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool
+	 */
+	private function attachment_has_queueable_source( int $attachment_id ): bool {
+		if ( ! $this->source_collector instanceof AttachmentSourceCollectorInterface ) {
+			return true;
+		}
+
+		try {
+			$collected = $this->source_collector->collect( $attachment_id );
+		} catch ( \Throwable $throwable ) {
+			unset( $throwable );
+
+			return false;
+		}
+
+		try {
+			$collection = $collected->collection();
+
+			if ( array() === $collection->sources() ) {
+				return false;
+			}
+
+			if ( ! $this->fingerprinter instanceof AttachmentFingerprintBuilder ) {
+				return true;
+			}
+
+			return null !== $this->fingerprinter->build( $collection );
+		} finally {
+			$collected->release();
+		}
 	}
 
 	/**

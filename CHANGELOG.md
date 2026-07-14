@@ -70,6 +70,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 
 - Fixed image-editor conversions that save to a MIME-corrected temporary filename instead of the requested deterministic `.tmp` path.
 - Fixed the dashboard statistics recalculation button staying disabled because it treated the recurring daily statistics maintenance action as a pending manual recalculation.
+- Fixed bulk dry-run scans counting image attachments without queueable source fingerprints as eligible, which caused large failed-to-queue totals for libraries with missing local source files.
 
 ### Notes
 

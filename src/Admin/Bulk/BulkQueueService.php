@@ -244,6 +244,11 @@ final class BulkQueueService {
 			}
 
 			if ( ! $result->is_successful() ) {
+				if ( $this->is_non_queueable_skip( $result ) ) {
+					++$delta['skipped'];
+					continue;
+				}
+
 				++$delta['failed_to_queue'];
 				continue;
 			}
@@ -343,5 +348,24 @@ final class BulkQueueService {
 		}
 
 		return AttachmentStatus::normalize_formats( $this->settings->enabled_formats() );
+	}
+
+	/**
+	 * Determine whether a queue failure represents a non-queueable candidate, not an enqueue failure.
+	 *
+	 * @param AttachmentQueueResult $result Queue result.
+	 * @return bool
+	 */
+	private function is_non_queueable_skip( AttachmentQueueResult $result ): bool {
+		return in_array(
+			$result->code(),
+			array(
+				AttachmentQueueResult::CODE_ATTACHMENT_EXCLUDED,
+				AttachmentQueueResult::CODE_NO_ENABLED_FORMATS,
+				AttachmentQueueResult::CODE_ATTACHMENT_SOURCE_UNAVAILABLE,
+				AttachmentQueueResult::CODE_OFFLOAD_UNSUPPORTED,
+			),
+			true
+		);
 	}
 }

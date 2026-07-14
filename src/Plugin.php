@@ -302,7 +302,11 @@ final class Plugin {
 			$bulk_runtime,
 			$bulk_sessions,
 			$media_reader,
-			$settings
+			$settings,
+			null,
+			null,
+			$source_collector,
+			new AttachmentFingerprintBuilder()
 		);
 		$bulk_preview                 = new BulkPreviewService(
 			$bulk_sessions,

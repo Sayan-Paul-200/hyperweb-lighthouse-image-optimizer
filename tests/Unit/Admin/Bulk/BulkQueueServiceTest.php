@@ -17,15 +17,11 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentFingerprintBuilder;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentStatus;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
-use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
-use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueService;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FixedAttachmentClock;
-use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAttachmentSourceProvider;
-use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeOptionStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeTransientStore;
@@ -148,13 +144,40 @@ final class BulkQueueServiceTest extends TestCase {
 	}
 
 	/**
+	 * Test source-unavailable candidates are treated as skipped, not queue failures.
+	 *
+	 * @return void
+	 */
+	public function test_queue_treats_source_unavailable_candidates_as_skipped(): void {
+		$runtime                   = $this->build_runtime( array(), false, false );
+		$runtime['bulk']->pages[0] = array( 60 );
+
+		$session = $runtime['scans']->start_scan( new BulkScanFilters(), 7 );
+		$queued  = $runtime['queues']->queue( $session->token(), 7 );
+
+		self::assertSame( BulkQueueProgress::STATUS_COMPLETE, $queued->queue_progress()->status() );
+		self::assertSame(
+			array(
+				'queued'            => 0,
+				'already_queued'    => 0,
+				'already_optimized' => 0,
+				'skipped'           => 1,
+				'failed_to_queue'   => 0,
+			),
+			$queued->queue_summary()->to_array()
+		);
+		self::assertCount( 0, $runtime['queue']->jobs );
+	}
+
+	/**
 	 * Build a bulk queue runtime fixture.
 	 *
 	 * @param array<string,mixed> $settings Settings override.
 	 * @param bool                $paused Whether the queue starts paused.
+	 * @param bool                $source_queueable Whether collected sources are queueable.
 	 * @return array<string,mixed>
 	 */
-	private function build_runtime( array $settings = array(), bool $paused = false ): array {
+	private function build_runtime( array $settings = array(), bool $paused = false, bool $source_queueable = true ): array {
 		$bulk       = new FakeBulkScannerRuntime();
 		$store      = new FakeAttachmentMetaStore();
 		$clock      = new FixedAttachmentClock( 1783612800 );
@@ -181,24 +204,8 @@ final class BulkQueueServiceTest extends TestCase {
 				return 'feedfacefeedfacefeedfacefeedface';
 			}
 		);
-		$probe      = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
-		$probe->add_file( '/uploads/2026/07/hero.jpg', 1000, 1783526400, 'image/jpeg', 2400, 1600 );
-		$collector = new LocalAttachmentSourceCollector(
-			new SourceCollector(
-				new FakeAttachmentSourceProvider(
-					'/uploads/2026/07/hero.jpg',
-					array(
-						'file'   => '2026/07/hero.jpg',
-						'width'  => 2400,
-						'height' => 1600,
-						'sizes'  => array(),
-					),
-					'/uploads'
-				),
-				$probe
-			)
-		);
-		$options   = new FakeOptionStore(
+		$collector  = new FakeAttachmentSourceCollector( $source_queueable );
+		$options    = new FakeOptionStore(
 			$paused
 				? array(
 					LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE => array(
@@ -209,15 +216,15 @@ final class BulkQueueServiceTest extends TestCase {
 				)
 				: array()
 		);
-		$controls  = new QueueControlStateStore(
+		$controls   = new QueueControlStateStore(
 			$options,
 			LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE,
 			static function (): string {
 				return '2026-07-12 00:00:00';
 			}
 		);
-		$queue     = new FakeQueue();
-		$queueing  = new AttachmentQueueService(
+		$queue      = new FakeQueue();
+		$queueing   = new AttachmentQueueService(
 			$queue,
 			$store,
 			$repository,

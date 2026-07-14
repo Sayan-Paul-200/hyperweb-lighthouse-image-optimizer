@@ -11,6 +11,7 @@ use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\BulkScanFilters;
 use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\BulkScanService;
 use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\WordPressTransientBulkScanSessionStore;
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
+use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentFingerprintBuilder;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentStatus;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
@@ -172,5 +173,46 @@ final class BulkScanServiceTest extends TestCase {
 		self::assertSame( 1, $session->summary()->already_optimized() );
 		self::assertSame( 1, $session->summary()->skipped() );
 		self::assertSame( array( 20 ), $sessions->read_candidate_page( $session, 1, 20 ) );
+	}
+
+	/**
+	 * Test dry-run scans only persist candidates that can build queue fingerprints.
+	 *
+	 * @return void
+	 */
+	public function test_scan_skips_attachments_without_queueable_sources(): void {
+		$runtime                  = new FakeBulkScannerRuntime();
+		$runtime->pages[0]        = array( 40, 41 );
+		$store                    = new FakeAttachmentMetaStore();
+		$sessions                 = new WordPressTransientBulkScanSessionStore( new FakeTransientStore() );
+		$collector                = new FakeAttachmentSourceCollector();
+		$collector->queueable[41] = false;
+		$service                  = new BulkScanService(
+			$runtime,
+			$sessions,
+			new AttachmentStatusReader( $store ),
+			new FakeSettingsRepository(
+				array(
+					'enabled_formats' => array( 'webp' ),
+				)
+			),
+			static function (): string {
+				return '2026-07-12 00:00:00';
+			},
+			static function (): string {
+				return 'facefeedfacefeedfacefeedfacefeed';
+			},
+			$collector,
+			new AttachmentFingerprintBuilder()
+		);
+
+		$session = $service->start_scan( new BulkScanFilters(), 7 );
+
+		self::assertTrue( $session->progress()->complete() );
+		self::assertSame( 2, $session->summary()->scanned() );
+		self::assertSame( 1, $session->summary()->eligible() );
+		self::assertSame( 1, $session->summary()->skipped() );
+		self::assertSame( 1, $session->progress()->candidate_total() );
+		self::assertSame( array( 40 ), $sessions->read_candidate_page( $session, 1, 20 ) );
 	}
 }
