@@ -8,6 +8,7 @@
 namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Admin\Rest;
 
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusRefreshService;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Queue\StatisticsCache;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeSingleActionScheduler;
 use PHPUnit\Framework\TestCase;
@@ -31,6 +32,22 @@ final class StatusRefreshServiceTest extends TestCase {
 
 		self::assertSame( '2026-07-12 10:00:00', $summary['generated_at_gmt'] );
 		self::assertTrue( $summary['pending'] );
+	}
+
+	/**
+	 * Test recurring maintenance statistics hook does not make manual refresh pending.
+	 *
+	 * @return void
+	 */
+	public function test_summary_ignores_recurring_statistics_maintenance_hook(): void {
+		$scheduler                  = new FakeSingleActionScheduler();
+		$scheduler->scheduled_hooks = array( LifecyclePolicy::ACTION_RECONCILE_STATISTICS );
+		$service                    = new StatusRefreshService( $scheduler );
+
+		$summary = $service->summary( StatisticsCache::empty( '2026-07-12 10:00:00' ) );
+
+		self::assertFalse( $summary['pending'] );
+		self::assertSame( LifecyclePolicy::ACTION_RECALCULATE_STATISTICS, $scheduler->has_calls[0]['hook'] );
 	}
 
 	/**
@@ -62,7 +79,7 @@ final class StatusRefreshServiceTest extends TestCase {
 
 		self::assertSame( 'queued', $result['result_code'] );
 		self::assertCount( 1, $scheduler->enqueue_calls );
-		self::assertSame( 'hwlio_reconcile_statistics', $scheduler->enqueue_calls[0]['hook'] );
+		self::assertSame( 'hwlio_recalculate_statistics', $scheduler->enqueue_calls[0]['hook'] );
 		self::assertSame( 'hwlio', $scheduler->enqueue_calls[0]['group'] );
 		self::assertTrue( $scheduler->enqueue_calls[0]['unique'] );
 	}

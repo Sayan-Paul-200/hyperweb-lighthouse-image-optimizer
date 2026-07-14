@@ -131,6 +131,7 @@ final class QueueMaintenance implements HookProviderInterface {
 		$hooks->add_action( 'action_scheduler_init', array( $this, 'ensure_scheduled' ), self::PRIORITY, 0 );
 		$hooks->add_action( LifecyclePolicy::ACTION_RECOVER_STALE_LOCKS, array( $this, 'run_stale_lock_recovery' ), self::PRIORITY, 0 );
 		$hooks->add_action( LifecyclePolicy::ACTION_RECONCILE_STATISTICS, array( $this, 'run_statistics_reconciliation' ), self::PRIORITY, 0 );
+		$hooks->add_action( LifecyclePolicy::ACTION_RECALCULATE_STATISTICS, array( $this, 'run_statistics_reconciliation' ), self::PRIORITY, 0 );
 	}
 
 	/**

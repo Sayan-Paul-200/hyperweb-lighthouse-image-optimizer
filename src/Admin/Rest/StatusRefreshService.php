@@ -53,7 +53,7 @@ final class StatusRefreshService {
 	 */
 	public function __construct(
 		SingleActionSchedulerInterface $scheduler,
-		string $hook = LifecyclePolicy::ACTION_RECONCILE_STATISTICS,
+		string $hook = LifecyclePolicy::ACTION_RECALCULATE_STATISTICS,
 		string $group = LifecyclePolicy::ACTION_GROUP
 	) {
 		$this->scheduler = $scheduler;

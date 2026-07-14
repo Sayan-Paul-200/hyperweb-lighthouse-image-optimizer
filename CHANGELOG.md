@@ -69,6 +69,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 ### Fixed
 
 - Fixed image-editor conversions that save to a MIME-corrected temporary filename instead of the requested deterministic `.tmp` path.
+- Fixed the dashboard statistics recalculation button staying disabled because it treated the recurring daily statistics maintenance action as a pending manual recalculation.
 
 ### Notes
 

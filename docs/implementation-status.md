@@ -2472,6 +2472,7 @@ Maintenance hooks:
 - hwlio_cleanup_logs
 - hwlio_recover_stale_locks
 - hwlio_reconcile_statistics
+- hwlio_recalculate_statistics
 
 Attachment meta keys:
 - _hwlio_derivatives
@@ -4443,7 +4444,7 @@ src/Logging/RecurringActionSchedulerInterface.php
 
 ### Maintenance Behavior
 
-- `QueueMaintenance` is composed into `Plugin::create()` and registers only `action_scheduler_init`, `hwlio_recover_stale_locks`, and `hwlio_reconcile_statistics`.
+- `QueueMaintenance` is composed into `Plugin::create()` and registers only `action_scheduler_init`, `hwlio_recover_stale_locks`, `hwlio_reconcile_statistics`, and the one-off dashboard recalculation hook `hwlio_recalculate_statistics`.
 - The shared recurring scheduler seam now lives under `src/Infrastructure/` and is reused by both `LogMaintenance` and `QueueMaintenance`.
 - `hwlio_cleanup_logs` remains owned by `LogMaintenance` and continues to schedule daily log-pruning work unchanged.
 - `hwlio_recover_stale_locks` is scheduled hourly in the `hwlio` Action Scheduler group, while `hwlio_reconcile_statistics` is scheduled daily in the same group.
@@ -4914,8 +4915,8 @@ tests/Unit/Settings/SettingsScopePolicyTest.php
 ### REST and Scheduling
 
 - `GET /status` still uses cached statistics and does not trigger recalculation, but now also returns lightweight environment state, conservative conflict warnings, recent warning/error summaries, and refresh metadata.
-- `POST /status/recalculate` is now available to `manage_options` users and asynchronously queues the existing `hwlio_reconcile_statistics` maintenance hook through a dedicated one-off Action Scheduler seam.
-- The earlier master-plan example hook name `hwlio_recalculate_statistics` was not introduced; 6.5 deliberately reuses the already-implemented `hwlio_reconcile_statistics` hook to avoid renaming the active Phase 5 maintenance flow.
+- `POST /status/recalculate` is now available to `manage_options` users and asynchronously queues the one-off `hwlio_recalculate_statistics` hook through a dedicated Action Scheduler seam.
+- Dashboard recalculation uses `hwlio_recalculate_statistics` instead of the recurring `hwlio_reconcile_statistics` maintenance hook so the always-scheduled daily maintenance action cannot keep the dashboard button stuck in a pending state.
 - Recent failure summaries are read through a new read-only logging seam and expose only bounded safe fields: timestamp, level, code, message, and attachment ID.
 
 ### Verification

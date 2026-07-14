@@ -22,6 +22,13 @@ final class FakeSingleActionScheduler implements SingleActionSchedulerInterface 
 	public $scheduled = false;
 
 	/**
+	 * Scheduled hooks, when hook-specific scheduling is needed.
+	 *
+	 * @var string[]
+	 */
+	public $scheduled_hooks = array();
+
+	/**
 	 * Whether enqueue should succeed.
 	 *
 	 * @var bool
@@ -63,6 +70,10 @@ final class FakeSingleActionScheduler implements SingleActionSchedulerInterface 
 			'args'  => $args,
 			'group' => $group,
 		);
+
+		if ( array() !== $this->scheduled_hooks ) {
+			return in_array( $hook, $this->scheduled_hooks, true );
+		}
 
 		return $this->scheduled;
 	}

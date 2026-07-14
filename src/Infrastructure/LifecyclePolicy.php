@@ -16,6 +16,7 @@ final class LifecyclePolicy {
 	public const ACTION_CLEANUP_LOGS               = 'hwlio_cleanup_logs';
 	public const ACTION_RECOVER_STALE_LOCKS        = 'hwlio_recover_stale_locks';
 	public const ACTION_RECONCILE_STATISTICS       = 'hwlio_reconcile_statistics';
+	public const ACTION_RECALCULATE_STATISTICS     = 'hwlio_recalculate_statistics';
 	public const ACTION_OPTIMIZE_ATTACHMENT_FORMAT = 'hwlio_optimize_attachment_format';
 	public const ACTION_CLEANUP_ATTACHMENT         = 'hwlio_cleanup_attachment';
 	public const ACTION_RECONCILE_ATTACHMENT       = 'hwlio_reconcile_attachment';
@@ -40,6 +41,7 @@ final class LifecyclePolicy {
 			self::ACTION_CLEANUP_LOGS,
 			self::ACTION_RECOVER_STALE_LOCKS,
 			self::ACTION_RECONCILE_STATISTICS,
+			self::ACTION_RECALCULATE_STATISTICS,
 		);
 	}
 

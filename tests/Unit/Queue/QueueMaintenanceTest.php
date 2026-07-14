@@ -42,13 +42,15 @@ final class QueueMaintenanceTest extends TestCase {
 
 		$maintenance->register_hooks( $hooks );
 
-		self::assertCount( 3, $hooks->actions() );
+		self::assertCount( 4, $hooks->actions() );
 		self::assertSame( 'action_scheduler_init', $hooks->actions()[0]['hook'] );
 		self::assertSame( LifecyclePolicy::ACTION_RECOVER_STALE_LOCKS, $hooks->actions()[1]['hook'] );
 		self::assertSame( LifecyclePolicy::ACTION_RECONCILE_STATISTICS, $hooks->actions()[2]['hook'] );
+		self::assertSame( LifecyclePolicy::ACTION_RECALCULATE_STATISTICS, $hooks->actions()[3]['hook'] );
 		self::assertSame( 0, $hooks->actions()[0]['accepted_args'] );
 		self::assertSame( 0, $hooks->actions()[1]['accepted_args'] );
 		self::assertSame( 0, $hooks->actions()[2]['accepted_args'] );
+		self::assertSame( 0, $hooks->actions()[3]['accepted_args'] );
 	}
 
 	/**
