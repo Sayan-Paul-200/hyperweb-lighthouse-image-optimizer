@@ -108,6 +108,12 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - A plugin-owned Elementor companion stylesheet layer for structured attachment-backed backgrounds now exists as of Subphase 10.4.
 - An opt-in Elementor critical background preload layer with an explicit hero-background selector, shared background delivery-plan builder, and media-scoped `wp_head` preload tags now exists as of Subphase 10.5.
 - A read-only compatibility conflict detector, capability-first overlap reporting, compatibility settings toggles, and conflict diagnostics now exist as of Subphase 11.1.
+- A formal generic CDN/offload adapter contract now exists for delivery URL rewrites and cache invalidation signaling as of Subphase 11.2.
+- A first offload adapter framework now exists for WP Offload Media compatibility, offload-aware source collection, conservative unsupported-environment gating, remote derivative publish/delete seams, and remote derivative URL rewriting as of Subphase 11.3.
+- A multisite hardening layer now exists for network-active new-site initialization, conservative activation behavior, and site-affinity cache safety as of Subphase 11.4.
+- A read-only page-level issue-reporting layer with stable occurrence IDs, conservative image issue rules, and Diagnostics-tab issue rendering now exists as of Subphase 12.2.
+- A read-only before/after byte reporting layer now exists inside the existing Diagnostics inventory workflow, including measured manifest-backed conversion totals plus conservative per-occurrence theoretical page-transfer estimates as of Subphase 12.3.
+- A WP-CLI slice now exists for `wp hwlio status`, `wp hwlio diagnostics`, `wp hwlio attachment <id>`, bounded bulk/dev-ops commands including scan, queue, retry-failures, reconcile-stale, prune-logs, and cleanup-dry-run, and a canonical public developer extension guide as of Subphase 13.3.
 
 ## Phase Status
 
@@ -179,8 +185,17 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
   - [x] Subphase 10.5 - Critical background preload
 - [ ] Phase 11 - CDN, Offload, Multisite, and Conflict Adapters
   - [x] Subphase 11.1 - Conflict detector
+  - [x] Subphase 11.2 - Generic CDN URL filter contract
+  - [x] Subphase 11.3 - Offload adapter framework
+  - [x] Subphase 11.4 - Multisite hardening
 - [ ] Phase 12 - Page-Level Diagnostics and Lighthouse-Oriented Reporting
+  - [x] Subphase 12.1 - Attachment and page inventory
+  - [x] Subphase 12.2 - Image issue rules
+  - [x] Subphase 12.3 - Before/after byte reporting
 - [ ] Phase 13 - WP-CLI and Developer Operations
+  - [x] Subphase 13.1 - WP-CLI status and diagnostics
+  - [x] Subphase 13.2 - WP-CLI bulk operations
+  - [x] Subphase 13.3 - Public developer documentation
 - [ ] Phase 14 - Testing, Performance, Security, and Release
 
 Phase 0 implementation subphases are complete. The phase remains unchecked at the phase level until a supported WordPress 6.5+ activation smoke test is performed.
@@ -191,7 +206,585 @@ Phase 7 now includes derivative URL resolution, responsive modern source-set bui
 Phase 8 now includes core-loading preservation, explicit critical-image overrides, conservative intrinsic-dimension repair, and opt-in responsive preload for explicit late-discovered critical images. The phase remains unchecked until supported WordPress frontend loading and layout-stability smoke tests are performed.
 Phase 9 now includes the WooCommerce compatibility baseline audit, expanded fixture coverage for gallery and commerce surfaces, isolated primary-product-image runtime integration, and conservative gallery-secondary delivery. The phase remains unchecked until supported WooCommerce smoke tests are performed across live product, gallery, variation, cart, checkout, and loop-like surfaces.
 Phase 10 now includes the first isolated Elementor adapter for attachment-backed frontend widgets, a repo-owned audit and fixture baseline, a service-only oversized full-selection advisory analyzer, a read-only structured background-discovery layer, a plugin-owned companion stylesheet strategy for supported Elementor attachment-backed backgrounds, and an explicit opt-in critical background preload flow for one selected hero target per request. The phase remains unchecked until supported Elementor frontend, preview, editor, generated-CSS, and critical-background preload smoke tests are performed.
-Phase 11 now includes capability-first detection of overlapping optimizer, delivery, lazy-loading, CDN-transformation, and media-offload plugins, along with compatibility toggles for plugin-owned overlapping modules and conflict diagnostics surfaced through the existing admin/dashboard flows. The phase remains unchecked until later CDN, offload, multisite, and adapter behavior subphases are implemented and smoke tested.
+Phase 11 now includes capability-first detection of overlapping optimizer, delivery, lazy-loading, CDN-transformation, and media-offload plugins, compatibility toggles for plugin-owned overlapping modules, a formal generic URL-rewrite and cache-invalidation adapter contract, the first WP Offload Media adapter framework with offload-aware source collection, conservative unsupported-environment gating, remote derivative publish/delete seams, remote derivative URL rewriting, and multisite hardening for network-active new-site initialization plus site-affinity cache safety. All planned implementation subphases are complete. The phase remains unchecked until supported multisite, offload, and compatibility smoke tests are performed.
+Phase 12 now includes a read-only single-content inventory workflow inside the existing Diagnostics tab, backed by a dedicated REST read model for stored content `<img>` occurrences, structured Elementor backgrounds, WooCommerce product media, conservative page-level image issue rules, and before/after byte reporting that distinguishes measured conversion totals from theoretical page-transfer estimates. The phase remains unchecked until later rule/reporting subphases and supported WordPress admin smoke tests are performed.
+Phase 13 now includes read-only WP-CLI status/diagnostics/attachment inspection, bounded bulk/dev-ops commands for scan, queue, retry-failures, stale reconciliation, retained-log pruning, and cleanup dry-run, plus a canonical public developer extension guide covering stable hooks, owned storage boundaries, integration recipes, and rollback guarantees. The phase remains unchecked until supported WordPress CLI smoke tests are performed.
+
+## Subphase 13.3 - Public Developer Documentation
+
+**Status:** Complete
+**Completed:** 2026-07-14
+
+### Tasks
+
+- [x] Add one canonical developer guide under `docs/` for stable extension seams, storage ownership, supported integration patterns, and rollback guarantees.
+- [x] Freeze the documented public hook surface around the currently implemented filters and actions without promoting internal runtime hooks as public API.
+- [x] Document plugin-owned sidecar naming, attachment meta, option/cache, and log-storage boundaries with clear read-versus-write expectations.
+- [x] Add product-neutral exclusion, delivery-disable, URL-rewrite, cache-invalidation, critical-image, and loading-role examples that do not require editing core plugin files.
+- [x] Cross-link the existing CDN/offload adapter contract as a focused appendix instead of replacing it.
+- [x] Update status and changelog records without introducing runtime, REST, admin, CLI, or frontend behavior changes.
+
+### Notes
+
+- The new canonical guide is `docs/developer-extension-guide.md`.
+- Stable public documentation now covers `hwlio_default_settings`, `hwlio_max_pixel_count`, delivery gating filters, picture-source rewriting, loading-role refinement, critical-image selection hooks, delivery URL rewrite filters, and the cache invalidation action.
+- Internal lifecycle signals such as `hwlio_attachment_process_started`, `hwlio_attachment_process_completed`, `hwlio_attachment_process_failed`, `hwlio_attachment_status_refresh`, and plugin Action Scheduler hook names remain documented as runtime-owned internals rather than public extension contracts.
+- Storage ownership is now explicit: originals are preserved, sidecars are deterministic sibling files named with `.hwlio.{format}`, and plugin-owned attachment meta, options, credentials, reports, and log storage are documented as owned/internal unless a specific public contract says otherwise.
+- The specialized `docs/cdn-offload-adapter-contract.md` remains in place as the delivery URL and cache-signaling appendix for CDN/offload integrations.
+- No code paths, settings, hooks, route surfaces, CLI commands, or frontend behaviors changed in 13.3.
+
+### Verification
+
+```text
+Repo searches confirmed documented public hook names, signatures, meta/option keys, and log table names against current source.
+git diff --check: pass
+```
+
+PHP-based verification remains blocked in this workspace because no usable local `php` executable is available to run PHPUnit, PHPStan, or syntax checks.
+
+### Acceptance Criteria
+
+- [x] A third-party developer can now add a delivery exclusion through supported hooks without editing core plugin files.
+- [x] A third-party developer can now add a derivative URL adapter through supported hooks without editing core plugin files.
+- [x] Public documentation clearly separates stable extension seams from internal/runtime-owned hooks and storage.
+- [x] Rollback and fail-open guarantees are documented without adding new runtime APIs.
+
+## Subphase 13.2 - WP-CLI Bulk Operations
+
+**Status:** Complete
+**Completed:** 2026-07-14
+
+### Tasks
+
+- [x] Extend the existing `wp hwlio` command with bounded `scan`, `queue`, `retry-failures`, `reconcile-stale`, `prune-logs`, and `cleanup-dry-run` subcommands.
+- [x] Reuse the existing bulk scan/session/queue services internally while keeping scan tokens private to CLI orchestration.
+- [x] Extract a shared attachment reconciliation queue service so REST and CLI stale-reconcile flows reuse the same fingerprint, queue, and status-write rules.
+- [x] Add provider-free CLI operation services for bulk scan/queue, stale reconciliation, log pruning, and cleanup dry-run.
+- [x] Stream progress only in table mode, keep JSON output final-payload-only, and preserve stable degraded exit codes for paused, blocked, partial, and orphan-detection outcomes.
+- [x] Add CLI and queue unit coverage for new command exposure, bulk paging, stale reconciliation, bounded log pruning, and cleanup dry-run aggregation.
+
+### Notes
+
+- `HwlioCommand` remains the only root command surface and now owns both the earlier read-only commands and the new bounded operational subcommands.
+- Bulk CLI commands reuse `BulkScanService`, `BulkQueueService`, and the transient-backed session store internally, but best-effort session cleanup keeps tokens out of the public operator contract.
+- `queue` performs an internal dry-run scan first, then queues the resulting candidates to completion; `retry-failures` reuses the same flow with fixed `failed_only` scope and retry continuation mode.
+- `reconcile-stale` pages attachments through the existing bounded scanner runtime, revalidates current lightweight status, and queues reconciliation through the new shared attachment reconciliation service.
+- `prune-logs` loops the existing bounded `LogPruner` until the final short batch, while `cleanup-dry-run` pages image attachments and aggregates deterministic orphan-sidecar findings without deleting files.
+- No new CLI provider, REST route, admin UI, frontend hook, queue scheduler primitive, or destructive uploads scan was introduced in 13.2.
+
+### Verification
+
+```text
+git diff --check: pass
+```
+
+PHP-based verification remains blocked in this workspace because no usable local `php` executable is available to run PHPUnit, PHPStan, or syntax checks.
+
+### Acceptance Criteria
+
+- [x] Large CLI scan, queue, retry, reconcile, prune, and cleanup flows now proceed in bounded pages or batches instead of loading all attachments at once.
+- [x] Table output streams progress while JSON output remains one final normalized payload.
+- [x] Stale reconciliation now reuses a shared queue service instead of duplicating REST-only reconciliation queue logic.
+- [x] Log pruning and cleanup dry-run stay bounded and non-destructive.
+- [x] New paused, offload-blocked, partial-queue, and orphan-detection outcomes surface through stable degraded CLI exits instead of fatals.
+
+## Subphase 13.1 - WP-CLI Status and Diagnostics
+
+**Status:** Complete
+**Completed:** 2026-07-14
+
+### Tasks
+
+- [x] Add a new isolated `src/Cli/` slice with one provider on `cli_init`, one WP-CLI runtime seam, and one small attachment lookup seam.
+- [x] Register one root `wp hwlio` command with the read-only subcommands `status`, `diagnostics`, and `attachment <id>`.
+- [x] Support only `table` and `json` output modes and use `--target-format=<webp|avif>` for attachment-format filtering.
+- [x] Reuse the existing `StatusSummaryService`, `CompositeDiagnosticsService`, and `AttachmentDetailsService` directly without routing through REST.
+- [x] Add stable exit-code handling where `0` is healthy, `1` is misuse/runtime failure, and `2` is a successful degraded read.
+- [x] Add CLI-focused provider/runtime/command tests plus a dedicated CLI scope-policy guard.
+
+### Notes
+
+- The active runtime now composes one new provider, `CliCommands`, which owns only `cli_init`.
+- The root `HwlioCommand` remains strictly read-only and does not add queue, reconciliation, conversion, REST, admin, or frontend behavior.
+- `wp hwlio status` normalizes the existing status payload into CLI-safe keys such as `recent_failures` and `queue_control` while preserving the existing underlying data sources.
+- `wp hwlio diagnostics` returns the existing diagnostics report shape for JSON output and one stable row per diagnostic result for table output.
+- `wp hwlio attachment <id>` validates positive image attachments only, reads sanitized repository details, and filters derivative presentation through `--target-format` without touching metadata or filesystems.
+- The CLI runtime deliberately separates error output from process halting so tests can assert behavior without depending on real WP-CLI exits.
+
+### Verification
+
+```text
+git diff --check: pass
+```
+
+PHP-based verification remains blocked in this workspace because no usable local `php` executable is available to run PHPUnit, PHPStan, or syntax checks.
+
+### Acceptance Criteria
+
+- [x] A single read-only root command `wp hwlio` now exists.
+- [x] Status, diagnostics, and single-attachment inspection commands support human-readable and machine-readable output.
+- [x] Attachment filtering uses `--target-format`, avoiding ambiguity with output-mode formatting.
+- [x] Commands now return stable success, failure, and degraded exit codes.
+- [x] No queueing, reconciliation, conversion, REST proxying, admin UI, or frontend behavior was added in 13.1.
+
+## Subphase 12.3 - Before/After Byte Reporting
+
+**Status:** Complete
+**Completed:** 2026-07-14
+
+### Tasks
+
+- [x] Add a dedicated read-only byte reporting layer with typed summary and per-occurrence models.
+- [x] Extract a shared occurrence asset mapper so 12.2 issue rules and 12.3 byte reporting reuse the same conservative attachment/uploads mapping rules.
+- [x] Extend the existing `GET /content/{id}/inventory` payload with `byte_summary` and `byte_occurrences` without adding a new route or tab.
+- [x] Add measured `actual_conversion` totals from sanitized derivative manifests and conservative `theoretical_page_transfer` estimates from trustworthy occurrence sources only.
+- [x] Extend the existing Diagnostics tab shell, bootstrap strings, and admin client rendering for byte summary and per-occurrence byte output.
+
+### Files Added
+
+```text
+src/Reporting/ByteOccurrenceReport.php
+src/Reporting/ContentByteReport.php
+src/Reporting/ContentByteReportService.php
+src/Reporting/ContentByteSummary.php
+src/Reporting/OccurrenceAssetMapper.php
+src/Reporting/OccurrenceAssetMapping.php
+tests/Unit/Reporting/ContentByteReportServiceTest.php
+```
+
+### Files Modified
+
+```text
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+docs/implementation-status.md
+src/Admin/AdminBootstrapConfig.php
+src/Admin/DiagnosticsPage.php
+src/Admin/Rest/ContentInventoryController.php
+src/Delivery/AttachmentSizeResolver.php
+src/Plugin.php
+src/Reporting/ContentIssueReportService.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Admin/AssetsTest.php
+tests/Unit/Admin/Rest/ContentInventoryControllerTest.php
+```
+
+### Acceptance Criteria
+
+- [x] 12.3 extends the existing inventory route and Diagnostics workflow instead of adding a second page-report route.
+- [x] `actual_conversion` uses stored manifest byte facts only and keeps overall totals conservative by counting only the smallest ready derivative once per source size.
+- [x] `theoretical_page_transfer` stays estimate-only, occurrence-scoped, and certainty-first, without claiming measured browser/network transfer.
+- [x] The Diagnostics tab now renders byte summary and byte-occurrence containers beside the existing inventory and issue output.
+
+### Deferred Work
+
+- Browser-measured network transfer, Lighthouse-style scoring, and richer page-wide crawl/reporting behavior remain deferred to later Phase 12 subphases.
+
+## Subphase 12.4 - Optional PageSpeed Insights Integration
+
+**Status:** Complete
+**Completed:** 2026-07-14
+
+### Tasks
+
+- [x] Add opt-in `pagespeed_insights_enabled` settings support plus a separate autoload-disabled credentials store for the optional API key.
+- [x] Add a provider-free PSI reporting layer with conservative public-URL resolution, per-content per-strategy cached reports, and normalized lab-data/image-audit summaries.
+- [x] Add dedicated `GET`/`POST /content/{id}/pagespeed` REST handling so cached reads stay local-only and live external requests happen only on explicit user action.
+- [x] Extend the existing Settings and Diagnostics tabs plus admin bootstrap/client behavior for PSI configuration, cached result display, and manual live runs.
+- [x] Keep 12.4 narrow with no frontend hooks, no queue/delivery side effects, and no automatic external PSI requests from the existing inventory route.
+
+### Files Added
+
+```text
+src/Admin/Rest/PageSpeedInsightsController.php
+src/Reporting/PageSpeedAuditSummary.php
+src/Reporting/PageSpeedClientResult.php
+src/Reporting/PageSpeedExecutionResult.php
+src/Reporting/PageSpeedHttpResponse.php
+src/Reporting/PageSpeedHttpRuntimeInterface.php
+src/Reporting/PageSpeedInsightsClientInterface.php
+src/Reporting/PageSpeedInsightsService.php
+src/Reporting/PageSpeedMetrics.php
+src/Reporting/PageSpeedReport.php
+src/Reporting/PageSpeedReportStoreInterface.php
+src/Reporting/WordPressPageSpeedHttpRuntime.php
+src/Reporting/WordPressPageSpeedInsightsClient.php
+src/Reporting/WordPressPageSpeedReportStore.php
+src/Settings/PageSpeedCredentialsStoreInterface.php
+src/Settings/WordPressPageSpeedCredentialsStore.php
+tests/Unit/Admin/Rest/PageSpeedInsightsControllerTest.php
+tests/Unit/Reporting/PageSpeedInsightsServiceTest.php
+tests/Unit/Reporting/WordPressPageSpeedInsightsClientTest.php
+tests/Unit/Settings/FakePageSpeedCredentialsStore.php
+tests/Unit/Settings/WordPressPageSpeedCredentialsStoreTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+docs/implementation-status.md
+src/Admin/AdminBootstrapConfig.php
+src/Admin/DiagnosticsPage.php
+src/Admin/Rest/ContentInventoryController.php
+src/Admin/Rest/RestErrorFactory.php
+src/Admin/SettingsPage.php
+src/Plugin.php
+src/Reporting/ContentInventoryRuntimeInterface.php
+src/Reporting/WordPressContentInventoryRuntime.php
+src/Settings/SettingsApiRegistrar.php
+src/Settings/SettingsRepository.php
+src/Settings/SettingsRepositoryInterface.php
+src/Settings/SettingsSchema.php
+src/Settings/StaticSettingsRepository.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Admin/AssetsTest.php
+tests/Unit/Admin/Rest/ContentInventoryControllerTest.php
+tests/Unit/Admin/SettingsPageTest.php
+tests/Unit/Image/FakeSettingsRepository.php
+tests/Unit/Reporting/FakeContentInventoryRuntime.php
+tests/Unit/Reporting/ReportingScopePolicyTest.php
+tests/Unit/Settings/SettingsApiRegistrarTest.php
+tests/Unit/Settings/SettingsRepositoryTest.php
+tests/Unit/Settings/SettingsSchemaTest.php
+```
+
+### PageSpeed Behavior
+
+- `pagespeed_insights_enabled` now lives in the schema-backed general settings set, while the optional API key is stored separately in `hwlio_pagespeed_credentials` with autoload disabled.
+- The Settings tab now renders a dedicated PageSpeed Insights card with opt-in enablement, a password-style API key field, blank-preserves-existing-key behavior, explicit clear-key handling, and disclosure copy about Google-bound public URL requests.
+- `PageSpeedInsightsService` reads cached per-content PSI data locally through `_hwlio_pagespeed_reports` and only performs a live external request when the dedicated REST `POST` route is called.
+- Live PSI requests are limited to the public URL, one `mobile|desktop` strategy, `category=performance`, and an optional API key, then normalized to a small fixed lab-data plus image-audit subset before caching.
+- The Diagnostics tab now shows a PageSpeed section beside the existing inventory/issue/byte workflow, loads cached results automatically after a successful inventory read, and requires an explicit button click for new live PSI fetches.
+
+### Verification
+
+```text
+Verification pending in this workspace.
+PHP syntax checks, PHPUnit, coding standards, and static analysis have not been run yet in this turn.
+```
+
+### Acceptance Criteria
+
+- [x] PSI integration is manual and opt-in, with persistent enablement on the existing Settings tab.
+- [x] The optional API key is stored separately from `hwlio_settings` with autoload disabled and blank-field-preserve behavior.
+- [x] `GET /content/{id}/pagespeed` stays local-only and cached-only, while `POST /content/{id}/pagespeed` performs one explicit live PSI request and refreshes cache on success.
+- [x] Diagnostics now renders PSI strategy/run controls plus cached/lab-data summary output without adding a new tab or route family beyond the dedicated PSI controller.
+- [x] 12.4 introduces no frontend hooks, queue behavior, delivery changes, or automatic external PSI requests from the existing inventory route.
+
+### Deferred Work
+
+- PSI output remains summary-only lab data and must not be presented as measured browser/network truth or a guaranteed Lighthouse outcome.
+- Broader crawl/reporting, PageSpeed score comparisons over time, and richer Lighthouse-style aggregation remain deferred to later Phase 12 work.
+
+## Subphase 12.2 - Image Issue Rules
+
+**Status:** Complete
+**Completed:** 2026-07-14
+
+### Tasks
+
+- [x] Refactor the existing inventory pipeline around a richer internal snapshot with stable occurrence IDs and internal-only occurrence context.
+- [x] Add a read-only page-level issue reporting service with stable rule codes, `low|medium|high` severity, summary counts, and occurrence references.
+- [x] Extend the existing `GET /content/{id}/inventory` payload with `issue_summary` and `issues` while preserving the existing 12.1 inventory sections.
+- [x] Extend the Diagnostics tab shell, bootstrap strings, and admin client rendering for issue summary cards and findings output without adding a new route or tab.
+- [x] Keep 12.2 within the existing 12.1 source families and reuse existing delivery/image certainty boundaries for markup, dimensions, responsive candidates, loading hints, and file-backed checks.
+
+### Files Added
+
+```text
+src/Reporting/ContentCriticalImageSelector.php
+src/Reporting/ContentInventorySnapshot.php
+src/Reporting/ContentIssueReportService.php
+src/Reporting/ImageIssueFinding.php
+src/Reporting/ImageIssueReport.php
+src/Reporting/InventoryOccurrence.php
+tests/Unit/Reporting/ContentIssueReportServiceTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+docs/implementation-status.md
+src/Admin/AdminBootstrapConfig.php
+src/Admin/DiagnosticsPage.php
+src/Admin/Rest/ContentInventoryController.php
+src/Plugin.php
+src/Reporting/ContentInventoryService.php
+src/Reporting/PageInventoryItem.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Admin/AssetsTest.php
+tests/Unit/Admin/Rest/ContentInventoryControllerTest.php
+tests/Unit/Reporting/ContentInventoryServiceTest.php
+```
+
+### Reporting Behavior
+
+- `ContentInventoryService` now exposes `inspect()` for internal reporting layers while preserving the existing serialized 12.1 report wrapper.
+- Inventory occurrences now carry stable serialized IDs plus internal-only raw context, allowing later rules to reference affected occurrences without depending on array position.
+- `ContentIssueReportService` adds conservative, fixed-code findings for missing modern derivatives, oversized full-size selection, missing responsive candidates, missing intrinsic dimensions, critical image lazy loading, heuristic below-the-fold eager loading, external images, animated GIFs, broken local image references, supported structured Elementor CSS-background usage, and possible duplicate source downloads.
+- The issue layer stays read-only and bounded:
+  - no content mutation
+  - no queueing
+  - no filesystem writes
+  - no browser-measured LCP/viewport claims
+  - no new source-family discovery beyond 12.1
+- The existing content inventory route now returns `issue_summary` and `issues`, and the Diagnostics tab renders issue summary cards plus per-finding remediation and evidence alongside the existing inventory results.
+
+### Verification
+
+```text
+git diff --check: pass
+PHP syntax checks: unavailable in this workspace because a callable `php` executable is not currently on PATH
+PHPUnit tests: unavailable in this workspace because `vendor/bin` is not present and no callable local PHPUnit/PHP entrypoint is currently available
+```
+
+Manual WordPress smoke testing remains pending in this plugin-only workspace:
+
+- loading one content ID in the Diagnostics tab should now populate issue summary cards and per-finding rows from the existing inventory route
+- findings should reference stable occurrence IDs that match the rendered inventory occurrences
+- no new admin tabs, REST routes, queue behavior, or frontend hooks should appear as part of 12.2
+
+### Acceptance Criteria
+
+- [x] 12.2 stays within the current 12.1 source families and extends the existing inventory route instead of adding a second page-report route.
+- [x] Findings use stable machine-readable codes, `low|medium|high` severity, remediation text, and occurrence references.
+- [x] The Diagnostics tab now renders issue summary and finding containers inside the existing Page Inventory workflow.
+- [x] The rule engine remains read-only and conservative, with no browser-measured Lighthouse claims and no new source-family discovery.
+
+### Deferred Work
+
+- Broader rendered-page crawling, template/header scans, and custom-logo page-criticality remain deferred to later Phase 12 reporting phases.
+- Elementor foreground widget discovery remains deferred; 12.2 reuses existing certainty rules only where 12.1 already provides trustworthy stored markup or structured background evidence.
+- Byte totals, transfer estimates, PageSpeed Insights integration, and richer Lighthouse-oriented scoring/reporting remain deferred to later Phase 12 subphases.
+
+## Subphase 12.1 - Attachment and Page Inventory
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a reporting-oriented read-model slice with a dedicated WordPress content runtime, typed report/item/unsupported-case value objects, and a shared trusted attachment-marker parser.
+- [x] Inventory one content record at a time across stored `post_content` `<img>` fragments, structured Elementor backgrounds, and WooCommerce product featured/gallery media while preserving occurrence order.
+- [x] Use the two-axis `presentation` plus `origin` classification model and include lightweight plugin attachment-state facts for trusted local attachments only.
+- [x] Return unsupported and uncertain inventory observations explicitly instead of dropping malformed or unsupported references silently.
+- [x] Add a read-only `GET /content/{id}/inventory` REST route and extend the existing Diagnostics tab shell, bootstrap, and admin client with the new page-inventory workflow.
+
+### Files Added
+
+```text
+src/Admin/Rest/ContentInventoryController.php
+src/Reporting/ContentInventoryRuntimeInterface.php
+src/Reporting/ContentInventoryService.php
+src/Reporting/PageInventoryItem.php
+src/Reporting/PageInventoryReport.php
+src/Reporting/TrustedAttachmentMarkerParser.php
+src/Reporting/UnsupportedInventoryCase.php
+src/Reporting/WordPressContentInventoryRuntime.php
+tests/Unit/Admin/Rest/ContentInventoryControllerTest.php
+tests/Unit/Reporting/ContentInventoryServiceTest.php
+tests/Unit/Reporting/FakeContentInventoryRuntime.php
+tests/Unit/Reporting/ReportingScopePolicyTest.php
+tests/Unit/Reporting/TrustedAttachmentMarkerParserTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+admin/css/hyperweb-lighthouse-image-optimizer-admin.css
+admin/js/hyperweb-lighthouse-image-optimizer-admin.js
+docs/implementation-status.md
+src/Admin/AdminBootstrapConfig.php
+src/Admin/DiagnosticsPage.php
+src/Admin/Rest/RestErrorFactory.php
+src/Delivery/LateDiscoveredCriticalImageLocator.php
+src/Integration/ElementorBackgroundDiscovery.php
+src/Plugin.php
+tests/Unit/Admin/AdminControllerTest.php
+tests/Unit/Admin/AssetsTest.php
+```
+
+### Reporting Behavior
+
+- `ContentInventoryService` now builds one conservative page inventory report per numeric content ID without mutating content, metadata, files, or queue state.
+- The report returns `content`, `summary`, ordered `items`, and ordered `unsupported` collections so later rule/reporting phases can layer on top of a stable read model.
+- Trusted attachment ownership stays marker-based and conservative: `wp-image-{id}`, `data-id`, `data-attachment-id`, structured Elementor attachment IDs, and WooCommerce media IDs are supported; URL-to-ID guessing remains out of scope.
+- Core content URLs with no trusted attachment marker are classified as `local_unregistered_url`, `external`, or `unknown`, and non-classifiable references are surfaced separately in `unsupported`.
+- The existing Diagnostics tab now includes a dedicated Page Inventory section driven by the existing screen-scoped admin asset pipeline and a new `GET /content/{id}/inventory` route.
+
+### Verification
+
+```text
+git diff --check: pass
+PHPUnit / PHPCS / PHPStan: blocked (no local php executable in this workspace)
+Manual verification: pending
+```
+
+## Subphase 11.4 - Multisite Hardening
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a dedicated multisite runtime/provider slice with conservative site-context helpers and one `wp_initialize_site` integration provider.
+- [x] Initialize newly created network sites only when the plugin is network-active, always restoring the previous site context.
+- [x] Formalize lazy network-activation behavior so activation installs only the current site context and never iterates the existing network.
+- [x] Harden site-affine caches so request-local offload support and critical-image selections are flushed after `switch_to_blog()` boundaries.
+- [x] Preserve and verify existing site-local option, transient, uploads, and bounded network-uninstall behavior without widening UI, REST, or frontend surfaces.
+
+### Files Added
+
+```text
+src/Integration/Multisite/MultisiteIntegration.php
+src/Integration/Multisite/SiteContextRuntimeInterface.php
+src/Integration/Multisite/WordPressSiteContextRuntime.php
+tests/Unit/Delivery/WordPressUploadsRuntimeMultisiteTest.php
+tests/Unit/Includes/ActivatorTest.php
+tests/Unit/Integration/Multisite/FakeSiteContextRuntime.php
+tests/Unit/Integration/Multisite/MultisiteIntegrationTest.php
+tests/Unit/Integration/Multisite/MultisiteTestWordPressShim.php
+tests/Unit/Integration/Multisite/WordPressSiteContextRuntimeTest.php
+tests/Unit/Integration/MultisiteScopePolicyTest.php
+tests/Unit/Integration/Offload/OffloadSupportServiceTest.php
+tests/Unit/Settings/SettingsRepositoryMultisiteTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+hyperweb-lighthouse-image-optimizer.php
+includes/class-hyperweb-lighthouse-image-optimizer-activator.php
+src/Delivery/CriticalImageRegistry.php
+src/Plugin.php
+src/Integration/Offload/OffloadSupportService.php
+tests/Unit/Delivery/CriticalImageRegistryTest.php
+tests/Unit/Delivery/DeliveryTestWordPressShim.php
+tests/Unit/PluginTest.php
+```
+
+### Multisite Behavior
+
+- `MultisiteIntegration` is now the only Phase 11.4 runtime provider and registers only `wp_initialize_site`.
+- New-site initialization runs only when WordPress multisite is active and the plugin is network-active, switches into the new site, runs the existing installer once, and always restores the previous site context in `finally`.
+- Activation now accepts WordPress' `network_wide` flag but intentionally installs only the current site context; existing network sites remain lazy-upgrade sites and future sites initialize through `wp_initialize_site`.
+- `OffloadSupportService` now flushes cached site support and per-attachment support when the current site ID changes.
+- `CriticalImageRegistry` now drops its cached resolved selection when the current site ID changes, preventing request-local cross-site bleed after `switch_to_blog()`.
+- Existing site-local boundaries remain intact: settings continue to use per-site options, uploads resolution follows the current site, and the bounded `NetworkUninstaller` remains the canonical multisite uninstall path.
+
+### Verification
+
+```text
+git diff --check: pending
+```
+
+PHP-based verification remains blocked in this workspace because no usable local `php` executable is available to run PHPUnit, PHPStan, or syntax checks.
+
+## Subphase 11.3 - Offload Adapter Framework
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Add a dedicated `src/Integration/Offload/` framework slice with typed site/attachment support facts, source-collection leases, local-source resolution, remote publish/delete seams, and one active delivery URL adapter provider.
+- [x] Implement the first WP Offload Media adapter using core-API-first attachment classification with conservative remote-base inference.
+- [x] Refactor processing and queue flows to use offload-aware source collection, unsupported-offload gating, and remote derivative publish/delete handling.
+- [x] Extend dashboard, status, diagnostics, and conflict handling with offload support summaries while suppressing the generic overlap warning for supported WP Offload Media states.
+
+### Notes
+
+- The active runtime now composes one new provider, `OffloadDeliveryAdapter`, which owns only the two existing generic delivery URL hooks from 11.2.
+- Optimization, retry, reconcile, bulk queue continuation, new-upload automation, and delivery now fail open or block conservatively when an attachment or site-level offload state is unsupported.
+- Remote derivative publication happens before repository-ready state is persisted, and remote delete propagation now runs from attachment-aware cleanup and reconciliation paths rather than from generic filesystem cleaners.
+- Offload support is intentionally conservative: when safe remote write/delete behavior cannot be verified, the plugin blocks unsafe operations rather than guessing third-party storage behavior.
+
+### Verification
+
+```text
+git diff --check: pending
+```
+
+PHP-based verification remains blocked in this workspace because no usable local `php` executable is available to run PHPUnit, PHPStan, or syntax checks.
+
+## Subphase 11.2 - Generic CDN URL Filter Contract
+
+**Status:** Complete
+**Completed:** 2026-07-13
+
+### Tasks
+
+- [x] Formalize the generic delivery URL rewrite hooks with shared constants and normalized trailing context payloads.
+- [x] Freeze the cache invalidation request payload as the stable 11.2 adapter contract.
+- [x] Add explicit developer-facing CDN/offload adapter documentation.
+- [x] Keep the subphase narrow with no provider-composition, UI, REST, queue, or storage behavior expansion.
+
+### Files Added
+
+```text
+docs/cdn-offload-adapter-contract.md
+src/Delivery/DeliveryHookPolicy.php
+tests/Unit/Infrastructure/CacheInvalidationRequestTest.php
+tests/Unit/Infrastructure/InfrastructureTestWordPressShim.php
+tests/Unit/Infrastructure/WordPressCacheInvalidationDispatcherTest.php
+```
+
+### Files Changed
+
+```text
+CHANGELOG.md
+docs/implementation-status.md
+src/Delivery/WordPressUploadsRuntime.php
+src/Infrastructure/CacheInvalidationRequest.php
+tests/Unit/Delivery/WordPressUploadsRuntimeTest.php
+```
+
+### Contract Behavior
+
+- `DeliveryHookPolicy` now centralizes the stable generic delivery hook names `hwlio_delivery_uploads_base_url` and `hwlio_delivery_derivative_url`.
+- `WordPressUploadsRuntime` now preserves the existing first five filter arguments for backward compatibility and appends one normalized trailing context array for both hooks.
+- The normalized filter context includes `relative_path`, `attachment_id`, `size_name`, `format`, the typed `DerivativeUrlRequest`, and the hook-specific current value (`base_url` or `url`).
+- Invalid or empty filter returns still fail open to the unmodified uploads base URL or derivative URL, and no metadata, settings, queue state, or filesystem behavior is touched by these hooks.
+- `CacheInvalidationRequest` now exposes explicit getters for `event`, `reason`, `formats`, and `timestamp_gmt`, making the existing request payload a stable typed contract in addition to `to_array()`.
+- `hwlio_cache_invalidation_requested` remains the single cache invalidation action seam with unchanged callback shape: `do_action( 'hwlio_cache_invalidation_requested', $attachment_id, $payload )`.
+- The dedicated adapter contract document now records the exact filter signatures, context payloads, cache invalidation payload keys, fail-open rules, and the explicit deferment of real offload mechanics to later Phase 11 subphases.
+
+### Verification
+
+```text
+git diff --check: pass
+```
+
+Source/policy verification: pass.
+
+- No new runtime providers were added to `Plugin::create()`.
+- No product-specific CDN or offload adapter implementation was introduced.
+- No new settings, admin UI, REST routes, diagnostics surfaces, queue behavior, or storage behavior were added in 11.2.
+
+Attempted PHP-based verification remains blocked in this workspace because no usable local `php` executable is available to run PHPUnit or Composer-driven checks.
+
+### Acceptance Criteria
+
+- [x] Core delivery remains independent of any specific CDN or offload product.
+- [x] Generic delivery URL rewrite hooks are now formalized with shared constants, stable argument order, and normalized trailing context payloads.
+- [x] The cache invalidation action remains stable and is explicitly documented as the adapter-safe create/delete signaling contract.
+- [x] Dedicated developer-facing contract documentation now exists without adding sample product adapters.
+- [x] No provider-composition, REST, admin, queue, or frontend delivery-surface expansion was introduced in 11.2.
+
+### Deferred Work
+
+- Product-specific CDN integrations, cache purge adapters, and media offload implementations remain deferred.
+- Local-source retrieval, derivative upload/push contracts, delayed offload timing, and deletion propagation remain deferred to Subphase 11.3.
+- Broader multisite operational behavior remains deferred to Subphase 11.4.
 
 ## Subphase 11.1 - Conflict Detector
 

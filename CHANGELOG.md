@@ -50,6 +50,15 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added a plugin-owned Elementor companion stylesheet layer for structured attachment-backed backgrounds, with safe uploads-scoped artifact storage, viewport-aware responsive CSS generation, late frontend enqueueing, and rollback that leaves Elementor's own CSS untouched.
 - Added explicit Elementor hero-background selection and opt-in critical background preload, backed by a shared background delivery-plan builder and media-scoped modern preload tags for one selected supported target per request.
 - Added a read-only conflict detector with capability-first overlap warnings, compatibility module toggles, settings-backed runtime guards, and conflict diagnostics wired into the existing dashboard and diagnostics flows.
+- Added a formal generic CDN/offload adapter contract for delivery URL rewrite filters and cache invalidation signaling, with normalized trailing filter context payloads and dedicated developer documentation.
+- Added the first WP Offload Media adapter framework with offload-aware source collection, unsupported-environment gating, remote derivative publish/delete seams, remote derivative URL rewriting, and dashboard/diagnostics support summaries.
+- Added multisite hardening with network-active new-site initialization, conservative lazy network activation, and site-affinity cache resets for offload support and critical-image selection.
+- Added a read-only page-inventory foundation in the Diagnostics tab, including a dedicated content-inventory REST route, conservative occurrence classification, structured Elementor background inventory, and WooCommerce product media inventory.
+- Added conservative page-level image issue rules on top of the existing Diagnostics inventory workflow, with stable occurrence IDs, severity summaries, remediation text, and extended `GET /content/{id}/inventory` issue payloads.
+- Added before/after byte reporting to the existing Diagnostics inventory workflow, including manifest-backed actual conversion totals, certainty-only theoretical page-transfer estimates, and per-occurrence byte reporting.
+- Added optional manual PageSpeed Insights integration with separate autoload-disabled API-key storage, cached per-content PSI summaries, dedicated cached/live REST routes, and Diagnostics/Settings tab controls.
+- Added bounded WP-CLI bulk/dev-ops commands for scan, queue, retry-failures, reconcile-stale, prune-logs, and cleanup dry-run, backed by shared reconciliation queueing and streamed table progress.
+- Added a canonical public developer extension guide covering stable hooks/actions, owned storage boundaries, integration recipes, and rollback/fail-open guarantees, while keeping the CDN/offload contract as a focused appendix.
 
 ### Removed
 
