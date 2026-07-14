@@ -60,6 +60,13 @@ final class FakeConversionEditor implements ConversionEditorInterface {
 	private $output_height = 100;
 
 	/**
+	 * Actual output path to simulate, or null for deterministic temp path.
+	 *
+	 * @var string|null
+	 */
+	private $output_path;
+
+	/**
 	 * Save calls.
 	 *
 	 * @var int
@@ -131,6 +138,16 @@ final class FakeConversionEditor implements ConversionEditorInterface {
 	}
 
 	/**
+	 * Configure the actual path written by the editor.
+	 *
+	 * @param string $path Output path.
+	 * @return void
+	 */
+	public function output_path( string $path ): void {
+		$this->output_path = $path;
+	}
+
+	/**
 	 * Save fake derivative.
 	 *
 	 * @param SourceImage     $source Source image.
@@ -150,14 +167,16 @@ final class FakeConversionEditor implements ConversionEditorInterface {
 			return $this->result;
 		}
 
+		$output_path = null === $this->output_path ? $destination->temporary_absolute_path() : $this->output_path;
+
 		$this->filesystem->add_file(
-			$destination->temporary_absolute_path(),
+			$output_path,
 			$this->output_bytes,
 			$this->output_mime,
 			$this->output_width,
 			$this->output_height
 		);
 
-		return $this->result;
+		return ConversionEditorResult::success( $this->result->details(), $output_path );
 	}
 }

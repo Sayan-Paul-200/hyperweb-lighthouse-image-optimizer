@@ -245,6 +245,29 @@ final class ImageConverter {
 			);
 		}
 
+		$prepared_temporary = $this->prepare_editor_output(
+			$editor_result->output_path(),
+			$temporary_path,
+			$source_path,
+			$destination_path,
+			$backup_path,
+			$uploads_base
+		);
+
+		if ( ! $prepared_temporary['valid'] ) {
+			return $this->failed(
+				$source,
+				$destination,
+				(string) $prepared_temporary['code'],
+				(string) $prepared_temporary['message'],
+				null,
+				array(
+					'reason'         => $prepared_temporary['reason'],
+					'cleanup_failed' => $prepared_temporary['cleanup_failed'],
+				)
+			);
+		}
+
 		$temporary_output = $this->validate_output_file( $temporary_path, $destination->target_mime(), $source );
 		if ( ! $temporary_output['valid'] ) {
 			$cleanup_failed = ! $this->cleanup_temporary( $temporary_path, $uploads_base );
@@ -618,6 +641,134 @@ final class ImageConverter {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Normalize an editor-returned output path back to the deterministic temporary path.
+	 *
+	 * WordPress image editors may change an output filename extension to match the
+	 * requested MIME type. The converter still owns a deterministic temp/final
+	 * policy, so a safe same-directory alternate output is moved back before
+	 * validation continues.
+	 *
+	 * @param string $editor_output_path Editor-returned output path.
+	 * @param string $temporary_path Expected temporary path.
+	 * @param string $source_path Source path.
+	 * @param string $destination_path Final destination path.
+	 * @param string $backup_path Replacement backup path.
+	 * @param string $uploads_base Uploads base path.
+	 * @return array<string,mixed>
+	 */
+	private function prepare_editor_output(
+		string $editor_output_path,
+		string $temporary_path,
+		string $source_path,
+		string $destination_path,
+		string $backup_path,
+		string $uploads_base
+	): array {
+		$editor_output_path = '' === trim( $editor_output_path )
+			? $temporary_path
+			: $this->normalize_path( $editor_output_path );
+
+		if ( $this->same_path( $editor_output_path, $temporary_path ) ) {
+			return array(
+				'valid' => true,
+			);
+		}
+
+		if ( ! $this->is_safe_absolute_path( $editor_output_path ) ) {
+			return $this->invalid_editor_output(
+				ConversionResultCode::TEMPORARY_OUTSIDE_UPLOADS,
+				'The image editor returned an unsafe temporary derivative path.',
+				'editor_output_path',
+				false
+			);
+		}
+
+		if ( ! $this->path_is_inside_base( $editor_output_path, $uploads_base ) ) {
+			return $this->invalid_editor_output(
+				ConversionResultCode::TEMPORARY_OUTSIDE_UPLOADS,
+				'The image editor output path is outside uploads.',
+				'editor_output_outside_uploads',
+				false
+			);
+		}
+
+		$realpath = $this->filesystem->realpath( $editor_output_path );
+		if ( '' !== $realpath && ! $this->path_is_inside_base( $realpath, $uploads_base ) ) {
+			$cleanup_failed = ! $this->cleanup_path( $editor_output_path, $uploads_base );
+
+			return $this->invalid_editor_output(
+				ConversionResultCode::TEMPORARY_REALPATH_OUTSIDE_UPLOADS,
+				'The image editor output resolves outside uploads.',
+				'editor_output_realpath',
+				$cleanup_failed
+			);
+		}
+
+		if (
+			! $this->filesystem->exists( $editor_output_path )
+			|| ! $this->filesystem->is_file( $editor_output_path )
+			|| ! $this->same_path( dirname( $editor_output_path ), dirname( $temporary_path ) )
+			|| $this->same_path( $editor_output_path, $source_path )
+			|| $this->same_path( $editor_output_path, $destination_path )
+			|| $this->same_path( $editor_output_path, $backup_path )
+		) {
+			$cleanup_failed = ! $this->cleanup_path( $editor_output_path, $uploads_base );
+
+			return $this->invalid_editor_output(
+				ConversionResultCode::TEMPORARY_COLLISION,
+				'The image editor returned an unexpected temporary derivative path.',
+				'unexpected_editor_output_path',
+				$cleanup_failed
+			);
+		}
+
+		if ( $this->filesystem->exists( $temporary_path ) && ! $this->cleanup_temporary( $temporary_path, $uploads_base ) ) {
+			$cleanup_failed = ! $this->cleanup_path( $editor_output_path, $uploads_base );
+
+			return $this->invalid_editor_output(
+				ConversionResultCode::TEMPORARY_WRITE_FAILED,
+				'The deterministic temporary derivative path could not be prepared.',
+				'temporary_path_occupied',
+				$cleanup_failed
+			);
+		}
+
+		if ( ! $this->filesystem->move( $editor_output_path, $temporary_path ) ) {
+			$cleanup_failed = ! $this->cleanup_path( $editor_output_path, $uploads_base );
+
+			return $this->invalid_editor_output(
+				ConversionResultCode::TEMPORARY_WRITE_FAILED,
+				'The editor output could not be normalized to the deterministic temporary path.',
+				'editor_output_move_failed',
+				$cleanup_failed
+			);
+		}
+
+		return array(
+			'valid' => true,
+		);
+	}
+
+	/**
+	 * Build an invalid editor-output normalization result.
+	 *
+	 * @param string $code Code.
+	 * @param string $message Message.
+	 * @param string $reason Reason.
+	 * @param bool   $cleanup_failed Whether cleanup failed.
+	 * @return array<string,mixed>
+	 */
+	private function invalid_editor_output( string $code, string $message, string $reason, bool $cleanup_failed ): array {
+		return array(
+			'valid'          => false,
+			'code'           => $code,
+			'message'        => $message,
+			'reason'         => $reason,
+			'cleanup_failed' => $cleanup_failed,
+		);
 	}
 
 	/**

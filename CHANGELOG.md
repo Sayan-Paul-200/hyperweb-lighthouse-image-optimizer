@@ -66,6 +66,10 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Removed the obsolete legacy runtime core, hook loader, and i18n classes.
 - Replaced the settings-local format support checker with the canonical environment format support provider.
 
+### Fixed
+
+- Fixed image-editor conversions that save to a MIME-corrected temporary filename instead of the requested deterministic `.tmp` path.
+
 ### Notes
 
 - Frontend delivery and admin workflow screens remain deferred.

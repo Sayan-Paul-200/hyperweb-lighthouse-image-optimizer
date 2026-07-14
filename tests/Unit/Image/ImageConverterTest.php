@@ -88,6 +88,61 @@ final class ImageConverterTest extends TestCase {
 	}
 
 	/**
+	 * Test WordPress editor alternate temp filename is normalized before validation.
+	 *
+	 * @return void
+	 */
+	public function test_editor_alternate_output_path_is_normalized_to_deterministic_temp_path(): void {
+		$filesystem = $this->filesystem_with_source( 'image/png' );
+		$editor     = new FakeConversionEditor( $filesystem );
+		$editor->output( 350, 'image/webp', 100, 100 );
+		$editor->output_path( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.webp' );
+
+		$result = $this->converter( $filesystem, $editor )->convert(
+			new ConversionRequest( $this->source( 'image/png' ), $this->destination(), 80, 1.0 )
+		);
+
+		self::assertTrue( $result->is_success() );
+		self::assertSame( '2026/07/hero.jpg.hwlio.webp', $result->output()->relative_path() );
+		self::assertFalse( $filesystem->exists( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.webp' ) );
+		self::assertFalse( $filesystem->exists( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.tmp' ) );
+		self::assertTrue( $filesystem->exists( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp' ) );
+		self::assertSame(
+			array(
+				array(
+					'source'      => self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.webp',
+					'destination' => self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.tmp',
+				),
+				array(
+					'source'      => self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp.tmp',
+					'destination' => self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp',
+				),
+			),
+			$filesystem->moves
+		);
+	}
+
+	/**
+	 * Test unsafe alternate editor output path is rejected.
+	 *
+	 * @return void
+	 */
+	public function test_editor_alternate_output_path_outside_uploads_is_rejected(): void {
+		$filesystem = $this->filesystem_with_source( 'image/png' );
+		$editor     = new FakeConversionEditor( $filesystem );
+		$editor->output_path( 'C:/outside/hero.jpg.hwlio.webp' );
+
+		$result = $this->converter( $filesystem, $editor )->convert(
+			new ConversionRequest( $this->source( 'image/png' ), $this->destination(), 80, 1.0 )
+		);
+
+		self::assertTrue( $result->is_failed() );
+		self::assertSame( ConversionResultCode::TEMPORARY_OUTSIDE_UPLOADS, $result->code() );
+		self::assertSame( 'editor_output_outside_uploads', $result->details()['reason'] );
+		self::assertFalse( $filesystem->exists( self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp' ) );
+	}
+
+	/**
 	 * Test AVIF conversion success.
 	 *
 	 * @return void

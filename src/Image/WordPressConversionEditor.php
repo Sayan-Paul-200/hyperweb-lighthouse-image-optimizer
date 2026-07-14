@@ -108,6 +108,8 @@ final class WordPressConversionEditor implements ConversionEditorInterface {
 			);
 		}
 
-		return ConversionEditorResult::success();
+		$output_path = isset( $saved['path'] ) && is_scalar( $saved['path'] ) ? (string) $saved['path'] : '';
+
+		return ConversionEditorResult::success( array(), $output_path );
 	}
 }

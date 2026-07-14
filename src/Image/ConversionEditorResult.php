@@ -41,35 +41,46 @@ final class ConversionEditorResult {
 	private $details;
 
 	/**
+	 * Actual output path returned by the editor, when known.
+	 *
+	 * @var string
+	 */
+	private $output_path;
+
+	/**
 	 * Create result.
 	 *
 	 * @param bool         $success Whether operation succeeded.
 	 * @param string       $code Code.
 	 * @param string       $message Message.
 	 * @param array<mixed> $details Details.
+	 * @param string       $output_path Actual output path, when known.
 	 */
-	private function __construct( bool $success, string $code, string $message, array $details = array() ) {
-		$this->success = $success;
-		$this->code    = ConversionResultCode::normalize_for_status(
+	private function __construct( bool $success, string $code, string $message, array $details = array(), string $output_path = '' ) {
+		$this->success     = $success;
+		$this->code        = ConversionResultCode::normalize_for_status(
 			$success ? ConversionResult::STATUS_SUCCESS : ConversionResult::STATUS_FAILED,
 			$code
 		);
-		$this->message = '' === trim( $message ) ? 'Conversion editor result.' : trim( $message );
-		$this->details = $details;
+		$this->message     = '' === trim( $message ) ? 'Conversion editor result.' : trim( $message );
+		$this->details     = $details;
+		$this->output_path = trim( $output_path );
 	}
 
 	/**
 	 * Build success result.
 	 *
 	 * @param array<mixed> $details Details.
+	 * @param string       $output_path Actual output path, when known.
 	 * @return self
 	 */
-	public static function success( array $details = array() ): self {
+	public static function success( array $details = array(), string $output_path = '' ): self {
 		return new self(
 			true,
 			ConversionResultCode::OPTIMIZED,
 			'The image editor saved the temporary derivative.',
-			$details
+			$details,
+			$output_path
 		);
 	}
 
@@ -119,5 +130,14 @@ final class ConversionEditorResult {
 	 */
 	public function details(): array {
 		return $this->details;
+	}
+
+	/**
+	 * Get the actual editor output path, when known.
+	 *
+	 * @return string
+	 */
+	public function output_path(): string {
+		return $this->output_path;
 	}
 }
