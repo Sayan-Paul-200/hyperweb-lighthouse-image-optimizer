@@ -345,6 +345,9 @@
 	function updateTile(id, summary) {
 		findAll('.attachment[data-id="' + id + '"]').forEach(function (tile) {
 			var badge = find('.hwlio-media-tile-badge', tile);
+			var state = String(summary.state || '');
+			var label = String(summary.statusLabel || '');
+			var markup = '<span class="hwlio-media-badge hwlio-media-badge--' + state + '">' + label + '</span>';
 
 			if (!badge) {
 				badge = document.createElement('div');
@@ -352,7 +355,16 @@
 				tile.appendChild(badge);
 			}
 
-			badge.innerHTML = '<span class="hwlio-media-badge hwlio-media-badge--' + summary.state + '">' + summary.statusLabel + '</span>';
+			if (
+				badge.getAttribute('data-hwlio-state') === state &&
+				badge.getAttribute('data-hwlio-label') === label
+			) {
+				return;
+			}
+
+			badge.setAttribute('data-hwlio-state', state);
+			badge.setAttribute('data-hwlio-label', label);
+			badge.innerHTML = markup;
 		});
 	}
 
@@ -613,12 +625,22 @@
 	}
 
 	function observeTiles(config) {
+		var scheduled = false;
+
 		if (!window.MutationObserver) {
 			return;
 		}
 
 		(new MutationObserver(function () {
-			primeTiles(config);
+			if (scheduled) {
+				return;
+			}
+
+			scheduled = true;
+			window.setTimeout(function () {
+				scheduled = false;
+				primeTiles(config);
+			}, 100);
 		})).observe(document.body, {
 			childList: true,
 			subtree: true

@@ -229,7 +229,7 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 			);
 		}
 
-		return $this->pagespeed_credentials->save_submission( $payload );
+		return $this->sanitize_pagespeed_credentials_payload( $payload );
 	}
 
 	/**
@@ -369,5 +369,62 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 		}
 
 		return array_values( $formats );
+	}
+
+	/**
+	 * Normalize PageSpeed credentials for the Settings API without writing.
+	 *
+	 * WordPress persists the value returned by the sanitize callback. Calling
+	 * update_option() for the same option from inside the callback recursively
+	 * re-enters sanitization and can exhaust request resources.
+	 *
+	 * @param array<mixed> $payload Submitted payload.
+	 * @return array<string,string>
+	 */
+	private function sanitize_pagespeed_credentials_payload( array $payload ): array {
+		if ( ! $this->pagespeed_credentials instanceof PageSpeedCredentialsStoreInterface ) {
+			return array(
+				'api_key' => '',
+			);
+		}
+
+		$current = $this->pagespeed_credentials->all();
+
+		if ( ! empty( $payload['clear_api_key'] ) ) {
+			return array(
+				'api_key' => '',
+			);
+		}
+
+		if ( ! array_key_exists( 'api_key', $payload ) ) {
+			return $current;
+		}
+
+		$api_key = $this->sanitize_pagespeed_api_key( $payload['api_key'] );
+
+		if ( '' === $api_key ) {
+			return $current;
+		}
+
+		return array(
+			'api_key' => $api_key,
+		);
+	}
+
+	/**
+	 * Sanitize one PageSpeed API key value.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	private function sanitize_pagespeed_api_key( $value ): string {
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		$value = trim( (string) $value );
+		$value = (string) preg_replace( '/[\x00-\x1F\x7F]/', '', $value );
+
+		return substr( $value, 0, 191 );
 	}
 }

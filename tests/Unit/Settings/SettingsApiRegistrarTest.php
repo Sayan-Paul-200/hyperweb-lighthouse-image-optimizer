@@ -164,7 +164,6 @@ final class SettingsApiRegistrarTest extends TestCase {
 
 		self::assertSame( array( 'api_key' => 'saved-key' ), $result );
 		self::assertSame( 'saved-key', $options->options[ WordPressPageSpeedCredentialsStore::OPTION_NAME ]['api_key'] );
-		self::assertSame( 'no', $options->autoload[ WordPressPageSpeedCredentialsStore::OPTION_NAME ] );
 	}
 
 	/**
@@ -192,8 +191,7 @@ final class SettingsApiRegistrarTest extends TestCase {
 		);
 
 		self::assertSame( array( 'api_key' => '' ), $result );
-		self::assertSame( '', $options->options[ WordPressPageSpeedCredentialsStore::OPTION_NAME ]['api_key'] );
-		self::assertSame( 'no', $options->autoload[ WordPressPageSpeedCredentialsStore::OPTION_NAME ] );
+		self::assertSame( 'saved-key', $options->options[ WordPressPageSpeedCredentialsStore::OPTION_NAME ]['api_key'] );
 	}
 
 	/**
