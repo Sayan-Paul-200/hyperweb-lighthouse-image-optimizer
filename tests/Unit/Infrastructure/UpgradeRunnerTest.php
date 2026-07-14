@@ -28,7 +28,7 @@ final class UpgradeRunnerTest extends TestCase {
 			new Installer(
 				new FakeOptionStore(),
 				new FakeLogTableInstaller( InstallerResult::success( array( InstallerResult::CODE_LOG_TABLE_READY ) ) ),
-				'0.1.0-alpha.3',
+				'0.1.0-alpha.4',
 				'1',
 				1
 			)

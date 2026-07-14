@@ -36,7 +36,7 @@ class Hyperweb_Lighthouse_Image_Optimizer_Activator {
 
 		$version = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_VERSION' )
 			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_VERSION' )
-			: '0.1.0-alpha.3';
+			: '0.1.0-alpha.4';
 
 		$db_version = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_DB_VERSION' )
 			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_DB_VERSION' )

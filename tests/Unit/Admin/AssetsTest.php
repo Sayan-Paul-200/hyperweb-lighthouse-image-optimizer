@@ -109,6 +109,7 @@ final class AssetsTest extends TestCase {
 		self::assertStringContainsString( '"pageSlug":"hwlio"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"screenId":"media_page_hwlio"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"currentTab":"bulk-optimize"', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"statusRoute":"\\/status"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"jobsScanRoute":"\\/jobs\\/scan"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"jobsQueueRoute":"\\/jobs\\/queue"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"jobsPauseRoute":"\\/jobs\\/pause"', $asset_runtime->inline_scripts[0]['data'] );

@@ -31,7 +31,7 @@ final class MultisiteIntegrationTest extends TestCase {
 		$provider = new MultisiteIntegration(
 			$runtime,
 			'hyperweb-lighthouse-image-optimizer/hyperweb-lighthouse-image-optimizer.php',
-			'0.1.0-alpha.3',
+			'0.1.0-alpha.4',
 			'1',
 			1
 		);
@@ -108,7 +108,7 @@ final class MultisiteIntegrationTest extends TestCase {
 		$provider                        = new MultisiteIntegration(
 			$runtime,
 			'hyperweb-lighthouse-image-optimizer/hyperweb-lighthouse-image-optimizer.php',
-			'0.1.0-alpha.3',
+			'0.1.0-alpha.4',
 			'1',
 			1,
 			static function (): Installer {
@@ -131,7 +131,7 @@ final class MultisiteIntegrationTest extends TestCase {
 		return new Installer(
 			new FakeOptionStore(),
 			new FakeLogTableInstaller( InstallerResult::success( array( InstallerResult::CODE_LOG_TABLE_READY ) ) ),
-			'0.1.0-alpha.3',
+			'0.1.0-alpha.4',
 			'1',
 			1,
 			static function (): string {
@@ -151,7 +151,7 @@ final class MultisiteIntegrationTest extends TestCase {
 		return new MultisiteIntegration(
 			$runtime,
 			'hyperweb-lighthouse-image-optimizer/hyperweb-lighthouse-image-optimizer.php',
-			'0.1.0-alpha.3',
+			'0.1.0-alpha.4',
 			'1',
 			1,
 			static function () use ( $installer ): Installer {

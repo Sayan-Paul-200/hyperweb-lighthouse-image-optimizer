@@ -53,7 +53,7 @@ final class PluginTest extends TestCase {
 		$plugin = Plugin::create();
 
 		self::assertSame( 'hyperweb-lighthouse-image-optimizer', $plugin->slug() );
-		self::assertSame( '0.1.0-alpha.3', $plugin->version() );
+		self::assertSame( '0.1.0-alpha.4', $plugin->version() );
 		self::assertInstanceOf( HookRegistrar::class, $plugin->hooks() );
 		self::assertCount( 27, $plugin->providers() );
 		self::assertInstanceOf( UpgradeRunner::class, $plugin->providers()[0] );

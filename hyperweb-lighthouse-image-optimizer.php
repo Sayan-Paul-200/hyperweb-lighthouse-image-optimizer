@@ -10,7 +10,7 @@
  * Plugin Name:       HyperWeb Lighthouse Image Optimizer
  * Plugin URI:        https://hyperweblabs.in/
  * Description:       Optimize WordPress images for better Lighthouse performance by generating and serving WebP or AVIF versions, reducing image payloads, and preserving original files.
- * Version:           0.1.0-alpha.3
+ * Version:           0.1.0-alpha.4
  * Requires at least: 6.5
  * Requires PHP:      7.4
  * Author:            Sayan Paul
@@ -27,7 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_VERSION' ) ) {
-	define( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_VERSION', '0.1.0-alpha.3' );
+	define( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_VERSION', '0.1.0-alpha.4' );
 }
 
 if ( ! defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_DB_VERSION' ) ) {

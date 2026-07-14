@@ -5,6 +5,7 @@
 	var globalClientName = 'hwlioAdmin';
 	var defaults = {
 		bulk: {
+			statusRoute: '/status',
 			jobsScanRoute: '/jobs/scan',
 			jobsQueueRoute: '/jobs/queue',
 			jobsRetryRoute: '/jobs/retry',
@@ -503,6 +504,10 @@
 		var template = (config.diagnostics && config.diagnostics.pageSpeedRoute) || defaults.diagnostics.pageSpeedRoute;
 
 		return String(template || '').replace('{content_id}', String(contentId || '0'));
+	}
+
+	function statusUrl(config) {
+		return restUrl(config, (config.bulk && config.bulk.statusRoute) || defaults.bulk.statusRoute);
 	}
 
 	function diagnosticsSummaryValue(root, key) {
@@ -1508,7 +1513,7 @@
 
 		function loadStatus(isPolling) {
 			return client.request({
-				path: '/status',
+				url: statusUrl(config),
 				method: 'GET',
 				suppressNotices: true
 			}).then(function (payload) {
@@ -1524,7 +1529,7 @@
 			updateButton(true);
 
 			return client.request({
-				path: '/status',
+				url: statusUrl(config),
 				method: 'POST'
 			}).then(function (payload) {
 				var code = payload && payload.result_code ? payload.result_code : '';
@@ -1847,7 +1852,7 @@
 
 		function loadQueueControl() {
 			return client.request({
-				path: '/status',
+				url: statusUrl(config),
 				method: 'GET',
 				suppressNotices: true
 			}).then(function (payload) {

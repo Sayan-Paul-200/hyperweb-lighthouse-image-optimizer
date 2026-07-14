@@ -203,7 +203,7 @@ final class Plugin {
 	public static function create(): self {
 		$version = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_VERSION' )
 			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_VERSION' )
-			: '0.1.0-alpha.3';
+			: '0.1.0-alpha.4';
 
 		$basename = defined( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_BASENAME' )
 			? (string) constant( 'HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_BASENAME' )

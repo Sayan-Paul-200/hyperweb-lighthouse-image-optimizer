@@ -34,7 +34,7 @@ final class InstallerTest extends TestCase {
 		self::assertTrue( $result->has_code( InstallerResult::CODE_SETTINGS_INITIALIZED ) );
 		self::assertTrue( $result->has_code( InstallerResult::CODE_LOG_TABLE_READY ) );
 		self::assertSame( SettingsSchema::defaults(), $options->options[ Installer::OPTION_SETTINGS ] );
-		self::assertSame( '0.1.0-alpha.3', $options->options[ Installer::OPTION_VERSION ] );
+		self::assertSame( '0.1.0-alpha.4', $options->options[ Installer::OPTION_VERSION ] );
 		self::assertSame( '1', $options->options[ Installer::OPTION_DB_VERSION ] );
 		self::assertSame( 'yes', $options->autoload[ Installer::OPTION_SETTINGS ] );
 		self::assertSame( 'no', $options->autoload[ Installer::OPTION_ACTIVATION_STATE ] );
@@ -94,7 +94,7 @@ final class InstallerTest extends TestCase {
 		self::assertSame( 1, $options->options[ Installer::OPTION_SETTINGS ]['schema_version'] );
 		self::assertTrue( $options->options[ Installer::OPTION_SETTINGS ]['automatic_optimization'] );
 		self::assertFalse( $options->options[ Installer::OPTION_SETTINGS ]['delivery_enabled'] );
-		self::assertSame( '0.1.0-alpha.3', $options->options[ Installer::OPTION_VERSION ] );
+		self::assertSame( '0.1.0-alpha.4', $options->options[ Installer::OPTION_VERSION ] );
 		self::assertSame( '1', $options->options[ Installer::OPTION_DB_VERSION ] );
 		self::assertFalse( $installer->needs_upgrade() );
 	}
@@ -162,7 +162,7 @@ final class InstallerTest extends TestCase {
 		return new Installer(
 			$options,
 			$log_table,
-			'0.1.0-alpha.3',
+			'0.1.0-alpha.4',
 			'1',
 			1,
 			static function (): string {

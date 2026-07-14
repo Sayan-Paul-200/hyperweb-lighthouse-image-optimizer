@@ -97,6 +97,7 @@ final class AdminBootstrapConfig {
 				'progressMs' => 5000,
 			),
 			'bulk'        => array(
+				'statusRoute'      => '/status',
 				'jobsScanRoute'    => '/jobs/scan',
 				'jobsQueueRoute'   => '/jobs/queue',
 				'jobsRetryRoute'   => '/jobs/retry',
