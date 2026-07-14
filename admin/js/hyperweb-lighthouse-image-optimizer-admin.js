@@ -272,6 +272,37 @@
 		}
 	}
 
+	function restUrl(config, path) {
+		var root = config && config.rest && config.rest.root ? String(config.rest.root) : '';
+		var route = 'string' === typeof path ? path : '';
+
+		if (!root || !route) {
+			return route;
+		}
+
+		return root.replace(/\/+$/, '') + '/' + route.replace(/^\/+/, '');
+	}
+
+	function normalizeRequestOptions(config, options) {
+		var normalized = {};
+		var key;
+
+		options = options || {};
+
+		for (key in options) {
+			if (Object.prototype.hasOwnProperty.call(options, key)) {
+				normalized[key] = options[key];
+			}
+		}
+
+		if (normalized.path && !normalized.url) {
+			normalized.url = restUrl(config, normalized.path);
+			delete normalized.path;
+		}
+
+		return normalized;
+	}
+
 	function sleep(delay) {
 		return new window.Promise(function (resolve) {
 			window.setTimeout(resolve, delay);
@@ -326,7 +357,9 @@
 
 	function requestWrapper(apiFetch, config) {
 		return function (options) {
-			return apiFetch(options).catch(function (error) {
+			var requestOptions = normalizeRequestOptions(config, options);
+
+			return apiFetch(requestOptions).catch(function (error) {
 				if (!options || true !== options.suppressNotices) {
 					reportError(config, error, config.strings.requestError);
 				}
@@ -2413,10 +2446,6 @@
 		}
 
 		apiFetch = wp.apiFetch;
-
-		if ('function' === typeof apiFetch.createRootURLMiddleware) {
-			apiFetch.use(apiFetch.createRootURLMiddleware(config.rest.root));
-		}
 
 		if ('function' === typeof apiFetch.createNonceMiddleware) {
 			apiFetch.use(apiFetch.createNonceMiddleware(config.rest.nonce));
