@@ -76,7 +76,45 @@ final class WordPressEnvironmentProbe implements EnvironmentProbeInterface {
 	 * @return bool
 	 */
 	public function class_available( string $class_name ): bool {
+		$this->maybe_load_wordpress_image_editor_class( $class_name );
+
 		return class_exists( $class_name );
+	}
+
+	/**
+	 * Load WordPress core image-editor class files when probing known editors.
+	 *
+	 * WordPress loads these lazily from media APIs, so raw class_exists() can
+	 * otherwise report false before Site Health or wp_image_editor_supports()
+	 * has selected an editor.
+	 *
+	 * @param string $class_name Candidate class name.
+	 * @return void
+	 */
+	private function maybe_load_wordpress_image_editor_class( string $class_name ): void {
+		if ( ! defined( 'ABSPATH' ) || ! defined( 'WPINC' ) ) {
+			return;
+		}
+
+		$files = array(
+			'WP_Image_Editor'         => ABSPATH . WPINC . '/class-wp-image-editor.php',
+			'WP_Image_Editor_Imagick' => ABSPATH . WPINC . '/class-wp-image-editor-imagick.php',
+			'WP_Image_Editor_GD'      => ABSPATH . WPINC . '/class-wp-image-editor-gd.php',
+		);
+
+		if ( ! isset( $files[ $class_name ] ) ) {
+			return;
+		}
+
+		$base_file = $files['WP_Image_Editor'];
+		if ( ! class_exists( 'WP_Image_Editor', false ) && is_string( $base_file ) && file_exists( $base_file ) ) {
+			require_once $base_file;
+		}
+
+		$class_file = $files[ $class_name ];
+		if ( ! class_exists( $class_name, false ) && is_string( $class_file ) && file_exists( $class_file ) ) {
+			require_once $class_file;
+		}
 	}
 
 	/**
