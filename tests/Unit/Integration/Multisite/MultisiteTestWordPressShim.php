@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- Test shim intentionally mirrors WordPress signatures, including reserved parameter names.
 /**
  * WordPress multisite test shims.
  *
@@ -39,9 +40,9 @@ if ( ! function_exists( 'switch_to_blog' ) ) {
 			$GLOBALS['hwlio_test_blog_stack'] = array();
 		}
 
-		$GLOBALS['hwlio_test_blog_stack'][]      = get_current_blog_id();
-		$GLOBALS['hwlio_test_current_blog_id']   = $site_id;
-		$GLOBALS['hwlio_test_switched_sites'][]  = $site_id;
+		$GLOBALS['hwlio_test_blog_stack'][]     = get_current_blog_id();
+		$GLOBALS['hwlio_test_current_blog_id']  = $site_id;
+		$GLOBALS['hwlio_test_switched_sites'][] = $site_id;
 
 		return true;
 	}

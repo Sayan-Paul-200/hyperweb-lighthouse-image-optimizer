@@ -140,7 +140,6 @@ final class NewUploadIntegration implements HookProviderInterface {
 				$runtime,
 				$adapter,
 				$offload,
-				$files,
 				new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer()
 			),
 			new AttachmentFingerprintBuilder(),
@@ -489,8 +488,7 @@ final class NewUploadIntegration implements HookProviderInterface {
 					'queued_formats' => $queued_formats,
 					'failed_formats' => $failed_formats,
 					'result_codes'   => $result_codes,
-				)
-				,
+				),
 				$attachment_id
 			);
 

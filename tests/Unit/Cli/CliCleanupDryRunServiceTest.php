@@ -16,6 +16,7 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\SystemAttachmentClock;
 use HyperWeb\LighthouseImageOptimizer\Cli\CliCleanupDryRunService;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Admin\Bulk\FakeBulkScannerRuntime;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentJobCleaner;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
@@ -37,9 +38,9 @@ final class CliCleanupDryRunServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_cleanup_dry_run_reports_orphan_sidecars(): void {
-		$bulk = new FakeBulkScannerRuntime();
-		$bulk->pages[0] = array( 15 );
-		$store = new FakeAttachmentMetaStore();
+		$bulk            = new FakeBulkScannerRuntime();
+		$bulk->pages[0]  = array( 15 );
+		$store           = new FakeAttachmentMetaStore();
 		$store->meta[15] = array(
 			LifecyclePolicy::META_DERIVATIVES => array(
 				'schema_version' => 1,
@@ -83,14 +84,14 @@ final class CliCleanupDryRunServiceTest extends TestCase {
 				'excluded'   => false,
 			),
 		);
-		$filesystem = new FakeFilesystem(
+		$filesystem      = new FakeFilesystem(
 			array(
 				self::UPLOADS . '/2026/07/hero.jpg.hwlio.webp',
 				self::UPLOADS . '/2026/07/hero.jpg.hwlio.avif',
 			),
 			array( self::UPLOADS )
 		);
-		$probe = new FakeImageFileProbe( array( self::UPLOADS ) );
+		$probe           = new FakeImageFileProbe( array( self::UPLOADS ) );
 		$probe->add_file(
 			self::UPLOADS . '/2026/07/hero.jpg',
 			920000,
@@ -104,18 +105,20 @@ final class CliCleanupDryRunServiceTest extends TestCase {
 			$store,
 			new DerivativeFileCleaner( self::UPLOADS, $filesystem ),
 			new FakeAttachmentJobCleaner(),
-			new SourceCollector(
-				new FakeAttachmentSourceProvider(
-					self::UPLOADS . '/2026/07/hero.jpg',
-					array(
-						'file'   => '2026/07/hero.jpg',
-						'width'  => 2400,
-						'height' => 1600,
-						'sizes'  => array(),
+			new LocalAttachmentSourceCollector(
+				new SourceCollector(
+					new FakeAttachmentSourceProvider(
+						self::UPLOADS . '/2026/07/hero.jpg',
+						array(
+							'file'   => '2026/07/hero.jpg',
+							'width'  => 2400,
+							'height' => 1600,
+							'sizes'  => array(),
+						),
+						self::UPLOADS
 					),
-					self::UPLOADS
-				),
-				$probe
+					$probe
+				)
 			)
 		);
 		$service = new CliCleanupDryRunService( $bulk, $cleanup );

@@ -131,7 +131,6 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 				$runtime,
 				$adapter,
 				$offload,
-				$files,
 				new DerivativeManifestSanitizer()
 			),
 			new AttachmentFingerprintBuilder(),
@@ -154,15 +153,15 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 	 * Create processor.
 	 *
 	 * @param AttachmentSourceCollectorInterface $collector Source collector.
-	 * @param AttachmentFingerprintBuilder $fingerprinter Fingerprint builder.
-	 * @param DerivativeRepository         $repository Derivative repository.
-	 * @param SourceImageValidator         $validator Source validator.
-	 * @param SettingsRepositoryInterface  $settings Settings repository.
-	 * @param ConversionPolicy             $policy Conversion policy.
-	 * @param ImageConverter               $converter Image converter.
-	 * @param DestinationResolver          $resolver Destination resolver.
-	 * @param OffloadSupportService|null   $offload Offload support service.
-	 * @param DerivativePushInterface|null $push Derivative push service.
+	 * @param AttachmentFingerprintBuilder       $fingerprinter Fingerprint builder.
+	 * @param DerivativeRepository               $repository Derivative repository.
+	 * @param SourceImageValidator               $validator Source validator.
+	 * @param SettingsRepositoryInterface        $settings Settings repository.
+	 * @param ConversionPolicy                   $policy Conversion policy.
+	 * @param ImageConverter                     $converter Image converter.
+	 * @param DestinationResolver                $resolver Destination resolver.
+	 * @param OffloadSupportService|null         $offload Offload support service.
+	 * @param DerivativePushInterface|null       $push Derivative push service.
 	 */
 	public function __construct(
 		AttachmentSourceCollectorInterface $collector,
@@ -460,8 +459,8 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 			}
 		}
 
-		$complete       = $next_cursor >= $source_count;
-		$offload_codes  = array();
+		$complete         = $next_cursor >= $source_count;
+		$offload_codes    = array();
 		$offload_messages = array();
 
 		if (
@@ -470,15 +469,15 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 			&& $this->offload->attachment_support( $attachment_id )->is_offloaded()
 			&& $this->offload->attachment_support( $attachment_id )->is_supported()
 		) {
-			$published = $this->push->publish(
+			$published        = $this->push->publish(
 				new DerivativePushRequest(
 					$attachment_id,
 					$this->offload->attachment_support( $attachment_id ),
 					$results
 				)
 			);
-			$results   = $published->results();
-			$offload_codes = $published->codes();
+			$results          = $published->results();
+			$offload_codes    = $published->codes();
 			$offload_messages = $published->messages();
 		}
 

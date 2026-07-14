@@ -99,15 +99,15 @@ final class InventoryOccurrence {
 		array $evidence = array(),
 		array $context = array()
 	) {
-		$this->id           = $this->normalize_id( $id );
-		$this->source       = $source;
-		$this->presentation = $presentation;
-		$this->origin       = $origin;
+		$this->id            = $this->normalize_id( $id );
+		$this->source        = $source;
+		$this->presentation  = $presentation;
+		$this->origin        = $origin;
 		$this->attachment_id = null !== $attachment_id && $attachment_id > 0 ? $attachment_id : null;
-		$this->url          = is_string( $url ) && '' !== trim( $url ) ? trim( $url ) : null;
-		$this->attachment   = is_array( $attachment ) ? $attachment : null;
-		$this->evidence     = $evidence;
-		$this->context      = $this->sanitize_context( $context );
+		$this->url           = is_string( $url ) && '' !== trim( $url ) ? trim( $url ) : null;
+		$this->attachment    = is_array( $attachment ) ? $attachment : null;
+		$this->evidence      = $evidence;
+		$this->context       = $this->sanitize_context( $context );
 	}
 
 	/**

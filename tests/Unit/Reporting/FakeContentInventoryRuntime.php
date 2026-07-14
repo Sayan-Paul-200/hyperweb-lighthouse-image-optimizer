@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- Test fake intentionally keeps interface methods compact.
 /**
  * Fake content inventory runtime.
  *

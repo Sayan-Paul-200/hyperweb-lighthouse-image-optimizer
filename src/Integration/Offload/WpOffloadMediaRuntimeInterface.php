@@ -108,10 +108,10 @@ interface WpOffloadMediaRuntimeInterface {
 	/**
 	 * Publish one derivative to remote storage.
 	 *
-	 * @param int         $attachment_id Attachment ID.
-	 * @param string      $relative_path Relative derivative path.
-	 * @param string      $absolute_path Local absolute derivative path.
-	 * @param string|null $mime_type MIME type.
+	 * @param int                 $attachment_id Attachment ID.
+	 * @param string              $relative_path Relative derivative path.
+	 * @param string              $absolute_path Local absolute derivative path.
+	 * @param string|null         $mime_type MIME type.
 	 * @param array<string,mixed> $context Safe context.
 	 * @return bool
 	 */

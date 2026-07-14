@@ -39,13 +39,6 @@ final class ContentIssueReportService {
 	private $attachments;
 
 	/**
-	 * Uploads runtime.
-	 *
-	 * @var UploadsRuntimeInterface
-	 */
-	private $uploads;
-
-	/**
 	 * File probe.
 	 *
 	 * @var ImageFileProbeInterface
@@ -67,13 +60,6 @@ final class ContentIssueReportService {
 	private $analyzer;
 
 	/**
-	 * Source extractor.
-	 *
-	 * @var AttachmentImageSourceExtractor
-	 */
-	private $extractor;
-
-	/**
 	 * Attachment size resolver.
 	 *
 	 * @var AttachmentSizeResolver
@@ -93,13 +79,6 @@ final class ContentIssueReportService {
 	 * @var ContentCriticalImageSelector
 	 */
 	private $critical_selector;
-
-	/**
-	 * Path sanitizer.
-	 *
-	 * @var DerivativeManifestSanitizer
-	 */
-	private $sanitizer;
 
 	/**
 	 * Shared occurrence asset mapper.
@@ -136,18 +115,15 @@ final class ContentIssueReportService {
 		ContentCriticalImageSelector $critical_selector,
 		DerivativeManifestSanitizer $sanitizer
 	) {
-		$this->settings         = $settings;
-		$this->attachments      = $attachments;
-		$this->uploads          = $uploads;
-		$this->files            = $files;
-		$this->animation        = $animation;
-		$this->analyzer         = $analyzer;
-		$this->extractor        = $extractor;
-		$this->resolver         = $resolver;
-		$this->dimension_repair = $dimension_repair;
+		$this->settings          = $settings;
+		$this->attachments       = $attachments;
+		$this->files             = $files;
+		$this->animation         = $animation;
+		$this->analyzer          = $analyzer;
+		$this->resolver          = $resolver;
+		$this->dimension_repair  = $dimension_repair;
 		$this->critical_selector = $critical_selector;
-		$this->sanitizer        = $sanitizer;
-		$this->mapper           = new OccurrenceAssetMapper(
+		$this->mapper            = new OccurrenceAssetMapper(
 			$attachments,
 			$uploads,
 			$analyzer,
@@ -240,7 +216,7 @@ final class ContentIssueReportService {
 				$this->external_image_finding( $occurrence ),
 				$this->animated_gif_finding( $occurrence ),
 				$this->broken_image_url_finding( $occurrence ),
-				$this->css_background_image_finding( $occurrence )
+				$this->css_background_image_finding( $occurrence ),
 			) as $finding
 		) {
 			if ( $finding instanceof ImageIssueFinding ) {
@@ -261,6 +237,7 @@ final class ContentIssueReportService {
 		$data = $finding->to_array();
 		$json = function_exists( 'wp_json_encode' )
 			? wp_json_encode( array( $data['occurrence_ids'], $data['attachment_ids'], $data['evidence'] ) )
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Safe fallback outside WordPress bootstrap.
 			: json_encode( array( $data['occurrence_ids'], $data['attachment_ids'], $data['evidence'] ) );
 
 		return $finding->code() . ':' . md5( is_string( $json ) ? $json : '' );
@@ -269,7 +246,7 @@ final class ContentIssueReportService {
 	/**
 	 * Report missing ready derivatives for one attachment.
 	 *
-	 * @param int                  $attachment_id Attachment ID.
+	 * @param int                   $attachment_id Attachment ID.
 	 * @param InventoryOccurrence[] $occurrences Attachment occurrences.
 	 * @return ImageIssueFinding|null
 	 */
@@ -589,9 +566,9 @@ final class ContentIssueReportService {
 			array( $occurrence->id() ),
 			null !== $occurrence->attachment_id() ? array( $occurrence->attachment_id() ) : array(),
 			array(
-				'mime_type'     => $mime_type,
+				'mime_type'      => $mime_type,
 				'animation_code' => $status->code(),
-				'relative_path' => $local['relative_path'],
+				'relative_path'  => $local['relative_path'],
 			)
 		);
 	}

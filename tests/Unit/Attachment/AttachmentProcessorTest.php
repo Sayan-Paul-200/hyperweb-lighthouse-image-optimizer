@@ -26,6 +26,7 @@ use HyperWeb\LighthouseImageOptimizer\Image\SourceImageValidator;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\FormatSupportProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\MemoryLimit;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAnimationDetector;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAttachmentSourceProvider;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeConversionEditor;
@@ -52,9 +53,11 @@ final class AttachmentProcessorTest extends TestCase {
 		$clock = new FixedAttachmentClock( 1783526500 );
 
 		$processor = new AttachmentProcessor(
-			new SourceCollector(
-				new FakeAttachmentSourceProvider( null, null, '/uploads' ),
-				new FakeImageFileProbe( array( '/uploads' ) )
+			new LocalAttachmentSourceCollector(
+				new SourceCollector(
+					new FakeAttachmentSourceProvider( null, null, '/uploads' ),
+					new FakeImageFileProbe( array( '/uploads' ) )
+				)
 			),
 			new AttachmentFingerprintBuilder(),
 			new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock ),
@@ -96,9 +99,11 @@ final class AttachmentProcessorTest extends TestCase {
 		);
 
 		$processor = $this->build_processor(
-			new SourceCollector(
-				new FakeAttachmentSourceProvider( null, null, '/uploads' ),
-				new FakeImageFileProbe( array( '/uploads' ) )
+			new LocalAttachmentSourceCollector(
+				new SourceCollector(
+					new FakeAttachmentSourceProvider( null, null, '/uploads' ),
+					new FakeImageFileProbe( array( '/uploads' ) )
+				)
 			),
 			new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock )
 		);
@@ -130,7 +135,7 @@ final class AttachmentProcessorTest extends TestCase {
 		$throwing_provider->method( 'uploads_base_dir' )->willThrowException( new \RuntimeException( 'Collector should not be used.' ) );
 		$throwing_probe = $this->createMock( ImageFileProbeInterface::class );
 
-		$collector   = new SourceCollector( $throwing_provider, $throwing_probe );
+		$collector   = new LocalAttachmentSourceCollector( new SourceCollector( $throwing_provider, $throwing_probe ) );
 		$repository  = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
 		$settings    = new FakeSettingsRepository( array( 'enabled_formats' => array( 'webp', 'avif' ) ) );
 		$fingerprint = new AttachmentFingerprintBuilder();
@@ -167,11 +172,11 @@ final class AttachmentProcessorTest extends TestCase {
 	/**
 	 * Build a processor with deterministic dependencies.
 	 *
-	 * @param SourceCollector      $collector Source collector.
-	 * @param DerivativeRepository $repository Derivative repository.
+	 * @param LocalAttachmentSourceCollector $collector Source collector.
+	 * @param DerivativeRepository           $repository Derivative repository.
 	 * @return AttachmentProcessor
 	 */
-	private function build_processor( SourceCollector $collector, DerivativeRepository $repository ): AttachmentProcessor {
+	private function build_processor( LocalAttachmentSourceCollector $collector, DerivativeRepository $repository ): AttachmentProcessor {
 		$settings = new FakeSettingsRepository( array( 'enabled_formats' => array( 'webp' ) ) );
 
 		return new AttachmentProcessor(

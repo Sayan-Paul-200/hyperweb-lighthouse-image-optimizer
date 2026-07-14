@@ -55,8 +55,8 @@ final class ContentInventoryController implements RestControllerInterface {
 	/**
 	 * Create controller.
 	 *
-	 * @param RestRuntimeInterface   $runtime REST runtime.
-	 * @param RestErrorFactory       $errors Error factory.
+	 * @param RestRuntimeInterface      $runtime REST runtime.
+	 * @param RestErrorFactory          $errors Error factory.
 	 * @param ContentInventoryService   $inventory Inventory service.
 	 * @param ContentIssueReportService $issues Issue service.
 	 * @param ContentByteReportService  $bytes Byte reporting service.
@@ -137,9 +137,9 @@ final class ContentInventoryController implements RestControllerInterface {
 			$issues   = $this->issues->report( $snapshot );
 			$bytes    = $this->bytes->report( $snapshot );
 
-			$report['issue_summary']   = $issues->summary();
-			$report['issues']          = $issues->to_array();
-			$report['byte_summary']    = $bytes->summary();
+			$report['issue_summary']    = $issues->summary();
+			$report['issues']           = $issues->to_array();
+			$report['byte_summary']     = $bytes->summary();
 			$report['byte_occurrences'] = $bytes->occurrences();
 
 			return $this->runtime->response( $report, 200 );

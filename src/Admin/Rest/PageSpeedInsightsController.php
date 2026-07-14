@@ -47,9 +47,9 @@ final class PageSpeedInsightsController implements RestControllerInterface {
 	/**
 	 * Create controller.
 	 *
-	 * @param RestRuntimeInterface   $runtime REST runtime.
-	 * @param RestErrorFactory       $errors Error factory.
-	 * @param ContentInventoryService $inventory Content inventory service.
+	 * @param RestRuntimeInterface     $runtime REST runtime.
+	 * @param RestErrorFactory         $errors Error factory.
+	 * @param ContentInventoryService  $inventory Content inventory service.
 	 * @param PageSpeedInsightsService $pagespeed PSI service.
 	 */
 	public function __construct(
@@ -58,10 +58,10 @@ final class PageSpeedInsightsController implements RestControllerInterface {
 		ContentInventoryService $inventory,
 		PageSpeedInsightsService $pagespeed
 	) {
-		$this->runtime    = $runtime;
-		$this->errors     = $errors;
-		$this->inventory  = $inventory;
-		$this->pagespeed  = $pagespeed;
+		$this->runtime   = $runtime;
+		$this->errors    = $errors;
+		$this->inventory = $inventory;
+		$this->pagespeed = $pagespeed;
 	}
 
 	/**

@@ -48,8 +48,8 @@ final class WordPressPageSpeedReportStore implements PageSpeedReportStoreInterfa
 			return false;
 		}
 
-		$stored = \get_post_meta( $report->content_id(), self::META_KEY, true );
-		$stored = is_array( $stored ) ? $stored : array();
+		$stored                        = \get_post_meta( $report->content_id(), self::META_KEY, true );
+		$stored                        = is_array( $stored ) ? $stored : array();
 		$stored[ $report->strategy() ] = $report->to_storage_array();
 
 		return false !== \update_post_meta( $report->content_id(), self::META_KEY, $stored );

@@ -9,7 +9,6 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Reporting;
 
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
-use HyperWeb\LighthouseImageOptimizer\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentImageSourceExtractor;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentSizeResolver;
 use HyperWeb\LighthouseImageOptimizer\Delivery\IntrinsicDimensionRepair;
@@ -25,6 +24,7 @@ use HyperWeb\LighthouseImageOptimizer\Reporting\TrustedAttachmentMarkerParser;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery\FakeAttachmentImageRuntime;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery\FakeCriticalImagePostMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery\FakeUploadsUrlRuntime;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAnimationDetector;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
@@ -225,7 +225,7 @@ final class ContentIssueReportServiceTest extends TestCase {
 		);
 
 		$meta = new FakeAttachmentMetaStore();
-		foreach ( array( 901, 902, 903 ) as $attachment_id ) {
+		foreach ( array( 902, 903, 904 ) as $attachment_id ) {
 			$meta->meta[ $attachment_id ][ LifecyclePolicy::META_STATUS ] = array(
 				'state'    => 'excluded',
 				'formats'  => array(),
@@ -238,9 +238,21 @@ final class ContentIssueReportServiceTest extends TestCase {
 
 		$attachment_runtime               = new FakeAttachmentImageRuntime();
 		$attachment_runtime->metadata_map = array(
-			901 => array( 'file' => '2026/07/hero.jpg', 'width' => 1600, 'height' => 900 ),
-			902 => array( 'file' => '2026/07/hero-tablet.jpg', 'width' => 1200, 'height' => 900 ),
-			903 => array( 'file' => '2026/07/hero-mobile.jpg', 'width' => 800, 'height' => 900 ),
+			902 => array(
+				'file'   => '2026/07/responsive-desktop.jpg',
+				'width'  => 1600,
+				'height' => 900,
+			),
+			903 => array(
+				'file'   => '2026/07/responsive-tablet.jpg',
+				'width'  => 1200,
+				'height' => 900,
+			),
+			904 => array(
+				'file'   => '2026/07/responsive-mobile.jpg',
+				'width'  => 800,
+				'height' => 900,
+			),
 		);
 
 		$report = $this->issue_service(
@@ -261,9 +273,9 @@ final class ContentIssueReportServiceTest extends TestCase {
 	/**
 	 * Build the inventory service.
 	 *
-	 * @param FakeContentInventoryRuntime|null     $runtime Runtime.
-	 * @param FakeAttachmentMetaStore|null         $meta Meta store.
-	 * @param FakeElementorDocumentDataStore|null  $store Elementor store.
+	 * @param FakeContentInventoryRuntime|null    $runtime Runtime.
+	 * @param FakeAttachmentMetaStore|null        $meta Meta store.
+	 * @param FakeElementorDocumentDataStore|null $store Elementor store.
 	 * @return ContentInventoryService
 	 */
 	private function inventory_service(
@@ -303,9 +315,9 @@ final class ContentIssueReportServiceTest extends TestCase {
 		FakeAnimationDetector $animation,
 		FakeCriticalImagePostMetaStore $critical_store
 	): ContentIssueReportService {
-		$analyzer        = new WordPressImageMarkupAnalyzer();
-		$sanitizer       = new DerivativeManifestSanitizer();
-		$size_resolver   = new AttachmentSizeResolver( $sanitizer );
+		$analyzer      = new WordPressImageMarkupAnalyzer();
+		$sanitizer     = new DerivativeManifestSanitizer();
+		$size_resolver = new AttachmentSizeResolver( $sanitizer );
 
 		return new ContentIssueReportService(
 			$settings,

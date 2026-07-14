@@ -12,10 +12,10 @@ namespace HyperWeb\LighthouseImageOptimizer\Integration\Offload;
  */
 final class OffloadAttachmentSupport {
 
-	public const MODE_LOCAL_NATIVE         = 'local_native';
-	public const MODE_OFFLOADED_KEEP_LOCAL = 'offloaded_keep_local';
+	public const MODE_LOCAL_NATIVE          = 'local_native';
+	public const MODE_OFFLOADED_KEEP_LOCAL  = 'offloaded_keep_local';
 	public const MODE_OFFLOADED_REMOTE_ONLY = 'offloaded_remote_only';
-	public const MODE_UNSUPPORTED          = 'unsupported';
+	public const MODE_UNSUPPORTED           = 'unsupported';
 
 	/**
 	 * Attachment ID.

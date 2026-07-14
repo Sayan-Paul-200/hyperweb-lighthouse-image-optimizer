@@ -57,12 +57,12 @@ final class OccurrenceAssetMapping {
 	/**
 	 * Create mapping.
 	 *
-	 * @param string                   $raw_img_html Raw IMG HTML.
-	 * @param array<string,mixed>      $image_meta Attachment metadata.
+	 * @param string                         $raw_img_html Raw IMG HTML.
+	 * @param array<string,mixed>            $image_meta Attachment metadata.
 	 * @param array<int,array<string,mixed>> $source_candidates Extracted sources.
-	 * @param array<string,mixed>|null $matched_candidate Matched metadata candidate.
-	 * @param array<string,string>|null $local_file_reference Local file reference.
-	 * @param string|null              $concrete_source_url Strongest concrete source URL.
+	 * @param array<string,mixed>|null       $matched_candidate Matched metadata candidate.
+	 * @param array<string,string>|null      $local_file_reference Local file reference.
+	 * @param string|null                    $concrete_source_url Strongest concrete source URL.
 	 */
 	public function __construct(
 		string $raw_img_html,
@@ -72,12 +72,12 @@ final class OccurrenceAssetMapping {
 		?array $local_file_reference,
 		?string $concrete_source_url
 	) {
-		$this->raw_img_html        = trim( $raw_img_html );
-		$this->image_meta          = $image_meta;
-		$this->source_candidates   = $source_candidates;
-		$this->matched_candidate   = is_array( $matched_candidate ) ? $matched_candidate : null;
+		$this->raw_img_html         = trim( $raw_img_html );
+		$this->image_meta           = $image_meta;
+		$this->source_candidates    = $source_candidates;
+		$this->matched_candidate    = is_array( $matched_candidate ) ? $matched_candidate : null;
 		$this->local_file_reference = is_array( $local_file_reference ) ? $local_file_reference : null;
-		$this->concrete_source_url = is_string( $concrete_source_url ) && '' !== trim( $concrete_source_url ) ? trim( $concrete_source_url ) : null;
+		$this->concrete_source_url  = is_string( $concrete_source_url ) && '' !== trim( $concrete_source_url ) ? trim( $concrete_source_url ) : null;
 	}
 
 	/**
@@ -162,11 +162,13 @@ final class OccurrenceAssetMapping {
 	 * @return string|null
 	 */
 	public function relative_path(): ?string {
-		if ( ! is_array( $this->local_file_reference ) || ! isset( $this->local_file_reference['relative_path'] ) || ! is_string( $this->local_file_reference['relative_path'] ) ) {
+		$reference = $this->local_file_reference;
+
+		if ( null === $reference || ! is_string( $reference['relative_path'] ) ) {
 			return null;
 		}
 
-		return $this->local_file_reference['relative_path'];
+		return $reference['relative_path'];
 	}
 
 	/**
@@ -175,11 +177,13 @@ final class OccurrenceAssetMapping {
 	 * @return string|null
 	 */
 	public function absolute_path(): ?string {
-		if ( ! is_array( $this->local_file_reference ) || ! isset( $this->local_file_reference['absolute_path'] ) || ! is_string( $this->local_file_reference['absolute_path'] ) ) {
+		$reference = $this->local_file_reference;
+
+		if ( null === $reference || ! is_string( $reference['absolute_path'] ) ) {
 			return null;
 		}
 
-		return $this->local_file_reference['absolute_path'];
+		return $reference['absolute_path'];
 	}
 
 	/**

@@ -52,7 +52,7 @@ final class OffloadSupportService {
 	/**
 	 * Create service.
 	 *
-	 * @param WpOffloadMediaAdapter         $adapter Adapter.
+	 * @param WpOffloadMediaAdapter            $adapter Adapter.
 	 * @param SiteContextRuntimeInterface|null $site_context Optional site-context runtime.
 	 */
 	public function __construct( WpOffloadMediaAdapter $adapter, ?SiteContextRuntimeInterface $site_context = null ) {

@@ -142,11 +142,16 @@ final class BulkQueueService {
 	 * @param int    $owner_user_id Owner user ID.
 	 * @param string $mode Queue mode.
 	 * @throws BulkScanSessionIncompleteException When the scan session is not complete.
+	 * @throws OffloadUnsupportedException When offload blocks site-level queue operations.
 	 * @return BulkScanSession
 	 */
 	private function process( string $token, int $owner_user_id, string $mode ): BulkScanSession {
 		if ( null !== $this->offload && $this->offload->blocks_site_operations() ) {
-			throw new OffloadUnsupportedException( $this->offload->site_support()->message() );
+			$message = $this->offload->site_support()->message();
+			$message = function_exists( 'esc_html' ) ? \esc_html( $message ) : $message;
+
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not rendered directly to output here.
+			throw new OffloadUnsupportedException( $message );
 		}
 
 		$session = $this->scans->load_owned_session( $token, $owner_user_id );

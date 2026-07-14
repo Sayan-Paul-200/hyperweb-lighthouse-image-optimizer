@@ -65,7 +65,7 @@ final class CliCleanupDryRunService {
 			}
 
 			++$pages;
-			$cursor  = max( $ids );
+			$cursor   = max( $ids );
 			$scanned += count( $ids );
 
 			foreach ( $ids as $attachment_id ) {

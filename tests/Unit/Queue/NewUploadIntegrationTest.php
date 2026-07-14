@@ -14,6 +14,7 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
 use HyperWeb\LighthouseImageOptimizer\Queue\NewUploadIntegration;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
@@ -358,7 +359,7 @@ final class NewUploadIntegrationTest extends TestCase {
 			$queue,
 			$settings,
 			new AttachmentExclusionRepository( $store ),
-			new SourceCollector( $provider, $probe ),
+			new LocalAttachmentSourceCollector( new SourceCollector( $provider, $probe ) ),
 			new AttachmentFingerprintBuilder(),
 			$repository,
 			$logger,
@@ -378,7 +379,7 @@ final class NewUploadIntegrationTest extends TestCase {
 		);
 
 		$fingerprint = ( new AttachmentFingerprintBuilder() )->build(
-			( new SourceCollector( $provider, $probe ) )->collect( 123 )
+			( new LocalAttachmentSourceCollector( new SourceCollector( $provider, $probe ) ) )->collect( 123 )->collection()
 		);
 
 		return array(

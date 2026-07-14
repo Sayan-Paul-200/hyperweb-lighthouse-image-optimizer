@@ -100,7 +100,7 @@ final class PageInventoryReport {
 			PageInventoryItem::PRESENTATION_INLINE     => 0,
 			PageInventoryItem::PRESENTATION_BACKGROUND => 0,
 		);
-		$attachments      = array();
+		$attachments     = array();
 
 		foreach ( $this->items as $item ) {
 			++$by_origin[ $item->origin() ];
@@ -112,11 +112,11 @@ final class PageInventoryReport {
 		}
 
 		return array(
-			'total_items'              => count( $this->items ),
-			'by_origin'                => $by_origin,
-			'by_presentation'          => $by_presentation,
-			'unique_attachment_count'  => count( $attachments ),
-			'unsupported_count'        => count( $this->unsupported ),
+			'total_items'             => count( $this->items ),
+			'by_origin'               => $by_origin,
+			'by_presentation'         => $by_presentation,
+			'unique_attachment_count' => count( $attachments ),
+			'unsupported_count'       => count( $this->unsupported ),
 		);
 	}
 
@@ -128,12 +128,12 @@ final class PageInventoryReport {
 	 */
 	private function sanitize_content( array $content ): array {
 		return array(
-			'id'                    => isset( $content['id'] ) && is_numeric( $content['id'] ) ? max( 0, (int) $content['id'] ) : 0,
-			'type'                  => isset( $content['type'] ) && is_string( $content['type'] ) ? trim( $content['type'] ) : '',
-			'title'                 => isset( $content['title'] ) && is_string( $content['title'] ) ? trim( $content['title'] ) : '',
-			'status'                => isset( $content['status'] ) && is_string( $content['status'] ) ? trim( $content['status'] ) : '',
+			'id'                     => isset( $content['id'] ) && is_numeric( $content['id'] ) ? max( 0, (int) $content['id'] ) : 0,
+			'type'                   => isset( $content['type'] ) && is_string( $content['type'] ) ? trim( $content['type'] ) : '',
+			'title'                  => isset( $content['title'] ) && is_string( $content['title'] ) ? trim( $content['title'] ) : '',
+			'status'                 => isset( $content['status'] ) && is_string( $content['status'] ) ? trim( $content['status'] ) : '',
 			'has_elementor_document' => ! empty( $content['has_elementor_document'] ),
-			'is_woo_product'        => ! empty( $content['is_woo_product'] ),
+			'is_woo_product'         => ! empty( $content['is_woo_product'] ),
 		);
 	}
 }

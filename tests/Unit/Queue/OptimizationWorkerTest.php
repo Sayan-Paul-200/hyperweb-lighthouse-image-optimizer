@@ -22,6 +22,7 @@ use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImage;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
 use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationJob;
 use HyperWeb\LighthouseImageOptimizer\Queue\OptimizationRetryPolicy;
@@ -474,9 +475,9 @@ final class OptimizationWorkerTest extends TestCase {
 			$probe->add_file( $file[0], $file[1], $file[2], $file[3], $file[4], $file[5] );
 		}
 
-		$collector     = new SourceCollector( $provider, $probe );
+		$collector     = new LocalAttachmentSourceCollector( new SourceCollector( $provider, $probe ) );
 		$fingerprinter = new AttachmentFingerprintBuilder();
-		$collection    = $collector->collect( 123 );
+		$collection    = $collector->collect( 123 )->collection();
 		$fingerprint   = $fingerprinter->build( $collection );
 		$repository    = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
 		$processor     = new FakeAttachmentProcessor();

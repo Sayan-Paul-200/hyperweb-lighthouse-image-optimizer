@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- Small test fake; strict docblock repetition is not useful here.
 /**
  * Fake site-context runtime.
  *
@@ -74,7 +75,7 @@ final class FakeSiteContextRuntime implements SiteContextRuntimeInterface {
 	 * {@inheritDoc}
 	 */
 	public function switch_to_site( int $site_id ): void {
-		$this->current_site_id = $site_id;
+		$this->current_site_id  = $site_id;
 		$this->switched_sites[] = $site_id;
 	}
 

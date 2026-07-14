@@ -37,7 +37,7 @@ final class SettingsPage extends AbstractAdminPage {
 	/**
 	 * Create the page.
 	 *
-	 * @param SettingsRepositoryInterface|null $settings Settings repository.
+	 * @param SettingsRepositoryInterface|null        $settings Settings repository.
 	 * @param PageSpeedCredentialsStoreInterface|null $pagespeed_credentials PageSpeed credentials store.
 	 */
 	public function __construct(

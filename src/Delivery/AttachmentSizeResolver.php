@@ -120,9 +120,9 @@ final class AttachmentSizeResolver {
 	/**
 	 * Resolve one metadata candidate directly from a concrete source URL.
 	 *
-	 * @param string                 $url Source URL.
-	 * @param array<string,mixed>    $image_meta Image metadata.
-	 * @param int|null               $known_width Known width.
+	 * @param string              $url Source URL.
+	 * @param array<string,mixed> $image_meta Image metadata.
+	 * @param int|null            $known_width Known width.
 	 * @return array<string,mixed>|null
 	 */
 	public function resolve_from_url( string $url, array $image_meta, ?int $known_width = null ): ?array {

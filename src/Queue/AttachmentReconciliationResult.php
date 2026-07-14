@@ -59,9 +59,9 @@ final class AttachmentReconciliationResult {
 	 * @param QueueStatus|null $queue_status Queue status.
 	 */
 	public function __construct( bool $successful, string $code, string $message, ?QueueStatus $queue_status = null ) {
-		$this->successful  = $successful;
-		$this->code        = strtolower( trim( $code ) );
-		$this->message     = trim( $message );
+		$this->successful   = $successful;
+		$this->code         = strtolower( trim( $code ) );
+		$this->message      = trim( $message );
 		$this->queue_status = $queue_status;
 	}
 

@@ -112,7 +112,7 @@ final class MarkupEligibility {
 			&& $analysis->is_renderable_img();
 
 		if ( $eligible && null !== $this->offload ) {
-			$support = $this->offload->attachment_support( $attachment_id );
+			$support  = $this->offload->attachment_support( $attachment_id );
 			$eligible = $support->is_supported();
 		}
 

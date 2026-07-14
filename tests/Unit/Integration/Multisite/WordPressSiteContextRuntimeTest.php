@@ -39,9 +39,12 @@ final class WordPressSiteContextRuntimeTest extends TestCase {
 	 * @return void
 	 */
 	public function test_runtime_reads_and_mutates_site_context_conservatively(): void {
-		$GLOBALS['hwlio_test_current_blog_id']      = 7;
-		$GLOBALS['hwlio_test_is_multisite']         = true;
+		$GLOBALS['hwlio_test_current_blog_id']        = 7;
+		$GLOBALS['hwlio_test_is_multisite']           = true;
 		$GLOBALS['hwlio_test_network_active_plugins'] = array( 'hyperweb-lighthouse-image-optimizer/hyperweb-lighthouse-image-optimizer.php' );
+		$GLOBALS['hwlio_test_blog_stack']             = array();
+		$GLOBALS['hwlio_test_switched_sites']         = array();
+		$GLOBALS['hwlio_test_restore_count']          = 0;
 
 		$runtime = new WordPressSiteContextRuntime();
 

@@ -12,7 +12,7 @@ namespace HyperWeb\LighthouseImageOptimizer\Reporting;
  */
 final class UnsupportedInventoryCase {
 
-	public const SOURCE_CORE_CONTENT        = 'core_content';
+	public const SOURCE_CORE_CONTENT         = 'core_content';
 	public const SOURCE_ELEMENTOR_BACKGROUND = 'elementor_background';
 
 	/**

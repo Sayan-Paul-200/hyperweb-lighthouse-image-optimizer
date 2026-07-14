@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- Test-only fakes share this file with the controller tests on purpose.
 /**
  * Tests for the PageSpeed Insights REST controller.
  *
@@ -18,8 +19,8 @@ use HyperWeb\LighthouseImageOptimizer\Reporting\PageSpeedReport;
 use HyperWeb\LighthouseImageOptimizer\Reporting\PageSpeedReportStoreInterface;
 use HyperWeb\LighthouseImageOptimizer\Reporting\TrustedAttachmentMarkerParser;
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
-use HyperWeb\LighthouseImageOptimizer\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundDiscovery;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Integration\FakeElementorDocumentDataStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Reporting\FakeContentInventoryRuntime;
@@ -37,8 +38,8 @@ final class PageSpeedInsightsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_register_routes_adds_only_pagespeed_route(): void {
-		$runtime     = new FakeRestRuntime();
-		$controller  = $this->controller( $runtime );
+		$runtime    = new FakeRestRuntime();
+		$controller = $this->controller( $runtime );
 
 		$controller->register_routes();
 
@@ -71,9 +72,9 @@ final class PageSpeedInsightsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_get_pagespeed_returns_cached_report_only(): void {
-		$runtime     = new FakeRestRuntime();
-		$client      = new ControllerFakePageSpeedInsightsClient();
-		$store       = new ControllerFakePageSpeedReportStore();
+		$runtime                  = new FakeRestRuntime();
+		$client                   = new ControllerFakePageSpeedInsightsClient();
+		$store                    = new ControllerFakePageSpeedReportStore();
 		$store->reports['mobile'] = new PageSpeedReport(
 			55,
 			'mobile',
@@ -86,7 +87,7 @@ final class PageSpeedInsightsControllerTest extends TestCase {
 			'2026-07-14 10:00:00',
 			new PageSpeedMetrics( array( 'performance_score' => 90 ) )
 		);
-		$controller = $this->controller( $runtime, true, true, $client, $store );
+		$controller               = $this->controller( $runtime, true, true, $client, $store );
 
 		$response = $controller->get_pagespeed(
 			array(
@@ -107,8 +108,8 @@ final class PageSpeedInsightsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_run_pagespeed_returns_disabled_error_when_feature_is_off(): void {
-		$runtime     = new FakeRestRuntime();
-		$controller  = $this->controller( $runtime, true, false );
+		$runtime    = new FakeRestRuntime();
+		$controller = $this->controller( $runtime, true, false );
 
 		$response = $controller->run_pagespeed(
 			array(
@@ -127,8 +128,8 @@ final class PageSpeedInsightsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_run_pagespeed_returns_public_url_error_when_missing(): void {
-		$runtime     = new FakeRestRuntime();
-		$controller  = $this->controller( $runtime, true, true, null, null, '' );
+		$runtime    = new FakeRestRuntime();
+		$controller = $this->controller( $runtime, true, true, null, null, '' );
 
 		$response = $controller->run_pagespeed(
 			array(
@@ -147,10 +148,10 @@ final class PageSpeedInsightsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_run_pagespeed_returns_quota_error_when_client_reports_quota_failure(): void {
-		$runtime         = new FakeRestRuntime();
-		$client          = new ControllerFakePageSpeedInsightsClient();
-		$client->result  = PageSpeedClientResult::failure( 'pagespeed_quota_exceeded', 'https://example.test/landing-page/' );
-		$controller      = $this->controller( $runtime, true, true, $client );
+		$runtime        = new FakeRestRuntime();
+		$client         = new ControllerFakePageSpeedInsightsClient();
+		$client->result = PageSpeedClientResult::failure( 'pagespeed_quota_exceeded', 'https://example.test/landing-page/' );
+		$controller     = $this->controller( $runtime, true, true, $client );
 
 		$response = $controller->run_pagespeed(
 			array(
@@ -200,12 +201,12 @@ final class PageSpeedInsightsControllerTest extends TestCase {
 	/**
 	 * Build the controller under test.
 	 *
-	 * @param FakeRestRuntime $runtime Runtime.
-	 * @param bool            $content_exists Whether content exists.
-	 * @param bool            $enabled Whether PSI integration is enabled.
+	 * @param FakeRestRuntime                            $runtime Runtime.
+	 * @param bool                                       $content_exists Whether content exists.
+	 * @param bool                                       $enabled Whether PSI integration is enabled.
 	 * @param ControllerFakePageSpeedInsightsClient|null $client PSI client.
 	 * @param ControllerFakePageSpeedReportStore|null    $store Report store.
-	 * @param string          $public_url Safe public URL.
+	 * @param string                                     $public_url Safe public URL.
 	 * @return PageSpeedInsightsController
 	 */
 	private function controller(
@@ -216,9 +217,9 @@ final class PageSpeedInsightsControllerTest extends TestCase {
 		?ControllerFakePageSpeedReportStore $store = null,
 		string $public_url = 'https://example.test/landing-page/'
 	): PageSpeedInsightsController {
-		$client   = $client ?? new ControllerFakePageSpeedInsightsClient();
-		$store    = $store ?? new ControllerFakePageSpeedReportStore();
-		$service  = new PageSpeedInsightsService(
+		$client  = $client ?? new ControllerFakePageSpeedInsightsClient();
+		$store   = $store ?? new ControllerFakePageSpeedReportStore();
+		$service = new PageSpeedInsightsService(
 			new FakeSettingsRepository( array( 'pagespeed_insights_enabled' => $enabled ) ),
 			new FakePageSpeedCredentialsStore( 'saved-key' ),
 			$this->content_runtime( $content_exists, $public_url ),
@@ -245,7 +246,7 @@ final class PageSpeedInsightsControllerTest extends TestCase {
 		$runtime = new FakeContentInventoryRuntime();
 
 		if ( $exists ) {
-			$runtime->content[55] = array(
+			$runtime->content[55]     = array(
 				'type'   => 'page',
 				'status' => 'publish',
 				'title'  => 'Landing page',

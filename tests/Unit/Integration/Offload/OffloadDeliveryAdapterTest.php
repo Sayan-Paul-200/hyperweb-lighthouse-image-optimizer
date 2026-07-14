@@ -82,14 +82,14 @@ final class OffloadDeliveryAdapterTest extends TestCase {
 	 * @return void
 	 */
 	public function test_supported_offloaded_attachment_rewrites_urls(): void {
-		$runtime                               = new FakeWpOffloadMediaRuntime();
-		$runtime->active_plugins               = array( WpOffloadMediaAdapter::PLUGIN_BASENAME );
-		$runtime->attachment_urls[11]          = 'https://cdn.example.test/uploads/2026/07/hero.jpg';
-		$runtime->metadata[11]                 = array( 'file' => '2026/07/hero.jpg' );
-		$runtime->attached_files[11]           = 'C:/site/wp-content/uploads/2026/07/hero.jpg';
+		$runtime                      = new FakeWpOffloadMediaRuntime();
+		$runtime->active_plugins      = array( WpOffloadMediaAdapter::PLUGIN_BASENAME );
+		$runtime->attachment_urls[11] = 'https://cdn.example.test/uploads/2026/07/hero.jpg';
+		$runtime->metadata[11]        = array( 'file' => '2026/07/hero.jpg' );
+		$runtime->attached_files[11]  = 'C:/site/wp-content/uploads/2026/07/hero.jpg';
 		$runtime->existing_files['C:/site/wp-content/uploads/2026/07/hero.jpg'] = true;
 		$runtime->readable_files['C:/site/wp-content/uploads/2026/07/hero.jpg'] = true;
-		$provider                              = new OffloadDeliveryAdapter( $this->support_service( $runtime ) );
+		$provider = new OffloadDeliveryAdapter( $this->support_service( $runtime ) );
 
 		self::assertSame(
 			'https://cdn.example.test/uploads',

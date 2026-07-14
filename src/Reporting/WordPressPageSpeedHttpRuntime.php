@@ -28,7 +28,7 @@ final class WordPressPageSpeedHttpRuntime implements PageSpeedHttpRuntimeInterfa
 			? \wp_safe_remote_get(
 				$request_url,
 				array(
-					'timeout'    => 20,
+					'timeout'     => 20,
 					'redirection' => 3,
 				)
 			)

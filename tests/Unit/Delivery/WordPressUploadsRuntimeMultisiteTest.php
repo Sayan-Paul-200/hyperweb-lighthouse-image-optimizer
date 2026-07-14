@@ -39,7 +39,7 @@ final class WordPressUploadsRuntimeMultisiteTest extends TestCase {
 	 * @return void
 	 */
 	public function test_uploads_resolution_follows_the_current_site_after_switch(): void {
-		$GLOBALS['hwlio_test_current_blog_id']   = 1;
+		$GLOBALS['hwlio_test_current_blog_id']       = 1;
 		$GLOBALS['hwlio_test_wp_upload_dir_by_site'] = array(
 			1 => array(
 				'error'   => '',

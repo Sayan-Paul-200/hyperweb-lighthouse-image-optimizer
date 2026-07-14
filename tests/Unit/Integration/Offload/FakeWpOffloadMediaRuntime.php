@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- Test fake prioritizes deterministic behavior over full docblock duplication.
 /**
  * Fake WP Offload Media runtime.
  *

@@ -21,6 +21,7 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Admin\Bulk\FakeBulkScannerRuntime;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FixedAttachmentClock;
@@ -274,18 +275,20 @@ final class AttachmentsControllerTest extends TestCase {
 			new FakeSettingsRepository(),
 			$store,
 			$repository,
-			new SourceCollector(
-				new FakeAttachmentSourceProvider(
-					'C:/site/wp-content/uploads/2026/07/hero.jpg',
-					array(
-						'file'   => '2026/07/hero.jpg',
-						'width'  => 2400,
-						'height' => 1600,
-						'sizes'  => array(),
+			new LocalAttachmentSourceCollector(
+				new SourceCollector(
+					new FakeAttachmentSourceProvider(
+						'C:/site/wp-content/uploads/2026/07/hero.jpg',
+						array(
+							'file'   => '2026/07/hero.jpg',
+							'width'  => 2400,
+							'height' => 1600,
+							'sizes'  => array(),
+						),
+						'C:/site/wp-content/uploads'
 					),
-					'C:/site/wp-content/uploads'
-				),
-				$probe
+					$probe
+				)
 			),
 			new AttachmentFingerprintBuilder(),
 			$clock,

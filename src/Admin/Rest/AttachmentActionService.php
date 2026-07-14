@@ -30,13 +30,6 @@ use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 final class AttachmentActionService {
 
 	/**
-	 * Queue adapter.
-	 *
-	 * @var QueueInterface
-	 */
-	private $queue;
-
-	/**
 	 * Settings repository.
 	 *
 	 * @var SettingsRepositoryInterface
@@ -56,20 +49,6 @@ final class AttachmentActionService {
 	 * @var DerivativeRepository
 	 */
 	private $repository;
-
-	/**
-	 * Source collector.
-	 *
-	 * @var AttachmentSourceCollectorInterface
-	 */
-	private $collector;
-
-	/**
-	 * Fingerprint builder.
-	 *
-	 * @var AttachmentFingerprintBuilder
-	 */
-	private $fingerprinter;
 
 	/**
 	 * Clock.
@@ -100,13 +79,6 @@ final class AttachmentActionService {
 	private $reconciliation;
 
 	/**
-	 * Queue control state store.
-	 *
-	 * @var QueueControlStateStoreInterface|null
-	 */
-	private $controls;
-
-	/**
 	 * Offload support service.
 	 *
 	 * @var OffloadSupportService|null
@@ -127,6 +99,7 @@ final class AttachmentActionService {
 	 * @param AttachmentQueueService|null          $queueing Shared attachment queue service.
 	 * @param QueueControlStateStoreInterface|null $controls Queue control state store.
 	 * @param OffloadSupportService|null           $offload Offload support service.
+	 * @param AttachmentReconciliationService|null $reconciliation Shared attachment reconciliation service.
 	 */
 	public function __construct(
 		QueueInterface $queue,
@@ -142,17 +115,13 @@ final class AttachmentActionService {
 		?OffloadSupportService $offload = null,
 		?AttachmentReconciliationService $reconciliation = null
 	) {
-		$this->queue         = $queue;
-		$this->settings      = $settings;
-		$this->meta          = $meta;
-		$this->repository    = $repository;
-		$this->collector     = $collector;
-		$this->fingerprinter = $fingerprinter;
-		$this->clock         = $clock;
-		$this->details       = $details;
-		$this->controls      = $controls;
-		$this->offload       = $offload;
-		$this->queueing      = $queueing ?? new AttachmentQueueService(
+		$this->settings       = $settings;
+		$this->meta           = $meta;
+		$this->repository     = $repository;
+		$this->clock          = $clock;
+		$this->details        = $details;
+		$this->offload        = $offload;
+		$this->queueing       = $queueing ?? new AttachmentQueueService(
 			$queue,
 			$meta,
 			$repository,
@@ -193,7 +162,9 @@ final class AttachmentActionService {
 			);
 		}
 
-		if ( $response = $this->offload_unsupported_response( 'optimize', $attachment_id ) ) {
+		$response = $this->offload_unsupported_response( 'optimize', $attachment_id );
+
+		if ( $response instanceof AttachmentActionResult ) {
 			return $response;
 		}
 
@@ -229,7 +200,9 @@ final class AttachmentActionService {
 			);
 		}
 
-		if ( $response = $this->offload_unsupported_response( 'retry', $attachment_id ) ) {
+		$response = $this->offload_unsupported_response( 'retry', $attachment_id );
+
+		if ( $response instanceof AttachmentActionResult ) {
 			return $response;
 		}
 
@@ -278,7 +251,9 @@ final class AttachmentActionService {
 			);
 		}
 
-		if ( $response = $this->offload_unsupported_response( 'reconcile', $attachment_id ) ) {
+		$response = $this->offload_unsupported_response( 'reconcile', $attachment_id );
+
+		if ( $response instanceof AttachmentActionResult ) {
 			return $response;
 		}
 
@@ -396,8 +371,8 @@ final class AttachmentActionService {
 	/**
 	 * Convert a shared reconciliation result into an attachment action response.
 	 *
-	 * @param string                        $action Action name.
-	 * @param int                           $attachment_id Attachment ID.
+	 * @param string                         $action Action name.
+	 * @param int                            $attachment_id Attachment ID.
 	 * @param AttachmentReconciliationResult $result Shared result.
 	 * @return AttachmentActionResult
 	 */

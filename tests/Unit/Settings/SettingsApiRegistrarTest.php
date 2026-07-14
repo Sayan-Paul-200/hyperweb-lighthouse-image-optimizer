@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- Test-only doubles share this file for readability.
 /**
  * Tests for Settings API registration.
  *
@@ -147,7 +148,7 @@ final class SettingsApiRegistrarTest extends TestCase {
 		$settings_api = new FakeSettingsApi();
 		$options      = new FakeOptionStore(
 			array(
-				SettingsRepository::OPTION_NAME                  => SettingsSchema::defaults(),
+				SettingsRepository::OPTION_NAME => SettingsSchema::defaults(),
 				WordPressPageSpeedCredentialsStore::OPTION_NAME => array(
 					'api_key' => 'saved-key',
 				),
@@ -175,7 +176,7 @@ final class SettingsApiRegistrarTest extends TestCase {
 		$settings_api = new FakeSettingsApi();
 		$options      = new FakeOptionStore(
 			array(
-				SettingsRepository::OPTION_NAME                  => SettingsSchema::defaults(),
+				SettingsRepository::OPTION_NAME => SettingsSchema::defaults(),
 				WordPressPageSpeedCredentialsStore::OPTION_NAME => array(
 					'api_key' => 'saved-key',
 				),
@@ -185,8 +186,8 @@ final class SettingsApiRegistrarTest extends TestCase {
 
 		$result = $registrar->sanitize_pagespeed_credentials(
 			array(
-				'api_key'        => '',
-				'clear_api_key'  => '1',
+				'api_key'       => '',
+				'clear_api_key' => '1',
 			)
 		);
 
@@ -205,7 +206,7 @@ final class SettingsApiRegistrarTest extends TestCase {
 		$settings_api->can = false;
 		$options           = new FakeOptionStore(
 			array(
-				SettingsRepository::OPTION_NAME                  => SettingsSchema::defaults(),
+				SettingsRepository::OPTION_NAME => SettingsSchema::defaults(),
 				WordPressPageSpeedCredentialsStore::OPTION_NAME => array(
 					'api_key' => 'saved-key',
 				),
@@ -398,9 +399,9 @@ final class SettingsApiRegistrarTest extends TestCase {
 		?FakeOptionStore $options = null,
 		?PageSpeedCredentialsStoreInterface $pagespeed_credentials = null
 	): SettingsApiRegistrar {
-		$options        = $options ?? new FakeOptionStore( array( SettingsRepository::OPTION_NAME => SettingsSchema::defaults() ) );
-		$settings_api   = $settings_api ?? new FakeSettingsApi();
-		$format_support = $format_support ?? new FakeFormatSupportProvider();
+		$options               = $options ?? new FakeOptionStore( array( SettingsRepository::OPTION_NAME => SettingsSchema::defaults() ) );
+		$settings_api          = $settings_api ?? new FakeSettingsApi();
+		$format_support        = $format_support ?? new FakeFormatSupportProvider();
 		$pagespeed_credentials = $pagespeed_credentials ?? WordPressPageSpeedCredentialsStore::for_options( $options );
 
 		return new SettingsApiRegistrar(

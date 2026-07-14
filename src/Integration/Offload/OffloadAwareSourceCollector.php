@@ -8,7 +8,6 @@
 namespace HyperWeb\LighthouseImageOptimizer\Integration\Offload;
 
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
-use HyperWeb\LighthouseImageOptimizer\Image\ImageFileProbeInterface;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImage;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImageCollection;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImageIssue;
@@ -47,13 +46,6 @@ final class OffloadAwareSourceCollector implements AttachmentSourceCollectorInte
 	private $support;
 
 	/**
-	 * File probe.
-	 *
-	 * @var ImageFileProbeInterface
-	 */
-	private $files;
-
-	/**
 	 * Path sanitizer.
 	 *
 	 * @var DerivativeManifestSanitizer
@@ -67,7 +59,6 @@ final class OffloadAwareSourceCollector implements AttachmentSourceCollectorInte
 	 * @param WpOffloadMediaRuntimeInterface     $runtime Runtime.
 	 * @param LocalSourceResolverInterface       $resolver Resolver.
 	 * @param OffloadSupportService              $support Support service.
-	 * @param ImageFileProbeInterface            $files File probe.
 	 * @param DerivativeManifestSanitizer        $sanitizer Path sanitizer.
 	 */
 	public function __construct(
@@ -75,14 +66,12 @@ final class OffloadAwareSourceCollector implements AttachmentSourceCollectorInte
 		WpOffloadMediaRuntimeInterface $runtime,
 		LocalSourceResolverInterface $resolver,
 		OffloadSupportService $support,
-		ImageFileProbeInterface $files,
 		DerivativeManifestSanitizer $sanitizer
 	) {
 		$this->local     = $local;
 		$this->runtime   = $runtime;
 		$this->resolver  = $resolver;
 		$this->support   = $support;
-		$this->files     = $files;
 		$this->sanitizer = $sanitizer;
 	}
 
@@ -244,8 +233,8 @@ final class OffloadAwareSourceCollector implements AttachmentSourceCollectorInte
 	/**
 	 * Resolve a candidate remote URL.
 	 *
-	 * @param int                            $attachment_id Attachment ID.
-	 * @param array<string,mixed>            $candidate Candidate record.
+	 * @param int                      $attachment_id Attachment ID.
+	 * @param array<string,mixed>      $candidate Candidate record.
 	 * @param OffloadAttachmentSupport $support Attachment support facts.
 	 * @return string
 	 */
@@ -294,7 +283,9 @@ final class OffloadAwareSourceCollector implements AttachmentSourceCollectorInte
 	 * @return bool
 	 */
 	private function url_suffix_matches_relative_file( string $url, string $relative_file ): bool {
-		$path = parse_url( $url, PHP_URL_PATH );
+		$path = function_exists( 'wp_parse_url' )
+			? \wp_parse_url( $url, PHP_URL_PATH )
+			: parse_url( $url, PHP_URL_PATH ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Safe fallback outside WordPress bootstrap.
 
 		if ( ! is_string( $path ) || '' === $path ) {
 			return false;
@@ -305,6 +296,6 @@ final class OffloadAwareSourceCollector implements AttachmentSourceCollectorInte
 
 		return '' !== $relative_file
 			&& strlen( $path ) >= strlen( $relative_file )
-			&& $relative_file === substr( $path, -strlen( $relative_file ) );
+			&& substr( $path, -strlen( $relative_file ) ) === $relative_file;
 	}
 }

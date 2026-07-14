@@ -23,10 +23,10 @@ final class WordPressCliRuntimeTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		\WP_CLI::$commands           = array();
-		\WP_CLI::$lines              = array();
-		\WP_CLI::$warnings           = array();
-		\WP_CLI::$halts              = array();
+		\WP_CLI::$commands                = array();
+		\WP_CLI::$lines                   = array();
+		\WP_CLI::$warnings                = array();
+		\WP_CLI::$halts                   = array();
 		$GLOBALS['hwlio_test_cli_tables'] = array();
 	}
 

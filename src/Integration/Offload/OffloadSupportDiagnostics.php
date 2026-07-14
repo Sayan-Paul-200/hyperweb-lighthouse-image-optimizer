@@ -50,7 +50,7 @@ final class OffloadSupportDiagnostics {
 			);
 		}
 
-		if ( ! $site->supported() ) {
+		if ( ! $site->is_supported() ) {
 			return new DiagnosticResult(
 				'media_offload_support',
 				DiagnosticStatus::WARNING,

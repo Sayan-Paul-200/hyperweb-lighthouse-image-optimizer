@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- Test file intentionally reads local source files directly for policy assertions.
 /**
  * Tests for reporting scope boundaries.
  *
@@ -53,7 +54,7 @@ final class ReportingScopePolicyTest extends TestCase {
 	 * @return void
 	 */
 	public function test_pagespeed_http_usage_is_confined_to_dedicated_reporting_files(): void {
-		$allowed_http = array(
+		$allowed_http     = array(
 			'src/Reporting/WordPressPageSpeedHttpRuntime.php',
 		);
 		$allowed_endpoint = array(

@@ -164,7 +164,7 @@ final class WordPressContentInventoryRuntime implements ContentInventoryRuntimeI
 		if ( function_exists( 'wp_upload_dir' ) ) {
 			$uploads = \wp_upload_dir( null, false );
 
-			if ( is_array( $uploads ) && isset( $uploads['baseurl'] ) && is_string( $uploads['baseurl'] ) ) {
+			if ( is_array( $uploads ) ) {
 				return trim( $uploads['baseurl'] );
 			}
 		}

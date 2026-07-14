@@ -46,9 +46,9 @@ final class ByteOccurrenceReport {
 			$status = 'unavailable';
 		}
 
-		$this->estimate_status = $status;
-		$this->estimate_reason = (string) preg_replace( '/[^a-z0-9_]/', '_', $reason );
-		$this->payload         = $this->sanitize_payload( $payload );
+		$this->estimate_status            = $status;
+		$this->estimate_reason            = (string) preg_replace( '/[^a-z0-9_]/', '_', $reason );
+		$this->payload                    = $this->sanitize_payload( $payload );
 		$this->payload['estimate_status'] = $this->estimate_status;
 		$this->payload['estimate_reason'] = $this->estimate_reason;
 	}
@@ -115,14 +115,14 @@ final class ByteOccurrenceReport {
 	 */
 	private function sanitize_payload( array $payload ): array {
 		$sanitized = array(
-			'occurrence_id'   => isset( $payload['occurrence_id'] ) && is_scalar( $payload['occurrence_id'] ) ? substr( trim( (string) $payload['occurrence_id'] ), 0, 64 ) : 'occ-0',
-			'source'          => isset( $payload['source'] ) && is_scalar( $payload['source'] ) ? substr( trim( (string) $payload['source'] ), 0, 64 ) : 'core_content',
-			'presentation'    => isset( $payload['presentation'] ) && is_scalar( $payload['presentation'] ) ? substr( trim( (string) $payload['presentation'] ), 0, 32 ) : PageInventoryItem::PRESENTATION_INLINE,
-			'origin'          => isset( $payload['origin'] ) && is_scalar( $payload['origin'] ) ? substr( trim( (string) $payload['origin'] ), 0, 64 ) : PageInventoryItem::ORIGIN_UNKNOWN,
-			'attachment_id'   => isset( $payload['attachment_id'] ) && is_numeric( $payload['attachment_id'] ) ? max( 0, (int) $payload['attachment_id'] ) : null,
-			'url'             => isset( $payload['url'] ) && is_string( $payload['url'] ) && '' !== trim( $payload['url'] ) ? trim( $payload['url'] ) : null,
-			'download_key'    => isset( $payload['download_key'] ) && is_string( $payload['download_key'] ) ? trim( $payload['download_key'] ) : '',
-			'basis'           => isset( $payload['basis'] ) && is_string( $payload['basis'] ) ? substr( trim( $payload['basis'] ), 0, 64 ) : 'unavailable',
+			'occurrence_id'     => isset( $payload['occurrence_id'] ) && is_scalar( $payload['occurrence_id'] ) ? substr( trim( (string) $payload['occurrence_id'] ), 0, 64 ) : 'occ-0',
+			'source'            => isset( $payload['source'] ) && is_scalar( $payload['source'] ) ? substr( trim( (string) $payload['source'] ), 0, 64 ) : 'core_content',
+			'presentation'      => isset( $payload['presentation'] ) && is_scalar( $payload['presentation'] ) ? substr( trim( (string) $payload['presentation'] ), 0, 32 ) : PageInventoryItem::PRESENTATION_INLINE,
+			'origin'            => isset( $payload['origin'] ) && is_scalar( $payload['origin'] ) ? substr( trim( (string) $payload['origin'] ), 0, 64 ) : PageInventoryItem::ORIGIN_UNKNOWN,
+			'attachment_id'     => isset( $payload['attachment_id'] ) && is_numeric( $payload['attachment_id'] ) ? max( 0, (int) $payload['attachment_id'] ) : null,
+			'url'               => isset( $payload['url'] ) && is_string( $payload['url'] ) && '' !== trim( $payload['url'] ) ? trim( $payload['url'] ) : null,
+			'download_key'      => isset( $payload['download_key'] ) && is_string( $payload['download_key'] ) ? trim( $payload['download_key'] ) : '',
+			'basis'             => isset( $payload['basis'] ) && is_string( $payload['basis'] ) ? substr( trim( $payload['basis'] ), 0, 64 ) : 'unavailable',
 			'matched_size_name' => isset( $payload['matched_size_name'] ) && is_string( $payload['matched_size_name'] ) && '' !== trim( $payload['matched_size_name'] ) ? substr( trim( $payload['matched_size_name'] ), 0, 64 ) : null,
 			'best_ready_format' => isset( $payload['best_ready_format'] ) && is_string( $payload['best_ready_format'] ) && '' !== trim( $payload['best_ready_format'] ) ? substr( trim( $payload['best_ready_format'] ), 0, 16 ) : null,
 		);

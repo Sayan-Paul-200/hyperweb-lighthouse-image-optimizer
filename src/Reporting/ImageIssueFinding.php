@@ -243,7 +243,7 @@ final class ImageIssueFinding {
 			}
 
 			if ( is_string( $value ) ) {
-				$value = trim( preg_replace( '/\s+/', ' ', $value ) ?? '' );
+				$value             = trim( preg_replace( '/\s+/', ' ', $value ) ?? '' );
 				$sanitized[ $key ] = strlen( $value ) > 255 ? substr( $value, 0, 252 ) . '...' : $value;
 				continue;
 			}

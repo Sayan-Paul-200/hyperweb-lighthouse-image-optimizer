@@ -84,8 +84,8 @@ final class WpOffloadMediaAdapter implements LocalSourceResolverInterface, Deriv
 	 * @return OffloadAttachmentSupport
 	 */
 	public function attachment_support( int $attachment_id, ?OffloadSiteSupport $site_support = null ): OffloadAttachmentSupport {
-		$attachment_id = max( 0, $attachment_id );
-		$site_support  = $site_support ?? $this->site_support();
+		$attachment_id  = max( 0, $attachment_id );
+		$site_support   = $site_support ?? $this->site_support();
 		$attachment_url = $this->runtime->attachment_url( $attachment_id );
 		$metadata       = $this->runtime->attachment_metadata( $attachment_id );
 		$relative_file  = $this->metadata_file( $metadata );
@@ -129,7 +129,7 @@ final class WpOffloadMediaAdapter implements LocalSourceResolverInterface, Deriv
 			);
 		}
 
-		if ( ! $site_support->supported() ) {
+		if ( ! $site_support->is_supported() ) {
 			return OffloadAttachmentSupport::unsupported(
 				$attachment_id,
 				$site_support->code(),
@@ -257,10 +257,10 @@ final class WpOffloadMediaAdapter implements LocalSourceResolverInterface, Deriv
 				$result->destination()->absolute_path(),
 				$result->output()->mime_type(),
 				array(
-					'mode'              => $support->mode(),
-					'remote_base_url'   => $support->remote_base_url(),
-					'attachment_url'    => $support->attachment_url(),
-					'target_format'     => $result->target_format(),
+					'mode'            => $support->mode(),
+					'remote_base_url' => $support->remote_base_url(),
+					'attachment_url'  => $support->attachment_url(),
+					'target_format'   => $result->target_format(),
 				)
 			);
 
@@ -378,7 +378,9 @@ final class WpOffloadMediaAdapter implements LocalSourceResolverInterface, Deriv
 	 * @return bool
 	 */
 	private function url_suffix_matches_relative_file( string $url, string $relative_file ): bool {
-		$path = parse_url( $url, PHP_URL_PATH );
+		$path = function_exists( 'wp_parse_url' )
+			? \wp_parse_url( $url, PHP_URL_PATH )
+			: parse_url( $url, PHP_URL_PATH ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Safe fallback outside WordPress bootstrap.
 
 		if ( ! is_string( $path ) || '' === $path ) {
 			return false;

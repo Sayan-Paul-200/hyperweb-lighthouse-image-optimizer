@@ -73,9 +73,9 @@ final class WordPressCliRuntime implements CliRuntimeInterface {
 	/**
 	 * Format items for command output.
 	 *
-	 * @param string                           $format Output format.
-	 * @param array<int,array<string,mixed>>   $items Items.
-	 * @param string[]                         $fields Fields.
+	 * @param string                         $format Output format.
+	 * @param array<int,array<string,mixed>> $items Items.
+	 * @param string[]                       $fields Fields.
 	 * @return void
 	 */
 	public function format_items( string $format, array $items, array $fields ): void {
@@ -93,6 +93,7 @@ final class WordPressCliRuntime implements CliRuntimeInterface {
 	public function json( array $data ): void {
 		$json = function_exists( 'wp_json_encode' )
 			? \wp_json_encode( $data )
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Safe fallback outside WordPress bootstrap.
 			: json_encode( $data );
 
 		$this->line( is_string( $json ) ? $json : '{}' );

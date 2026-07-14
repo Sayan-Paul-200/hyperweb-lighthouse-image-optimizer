@@ -34,7 +34,8 @@ final class WordPressCacheInvalidationDispatcherTest extends TestCase {
 	 * @return void
 	 */
 	public function test_dispatcher_emits_the_stable_action_with_the_formal_payload(): void {
-		$dispatcher = new WordPressCacheInvalidationDispatcher();
+		$GLOBALS['hwlio_test_actions'] = array();
+		$dispatcher                    = new WordPressCacheInvalidationDispatcher();
 
 		$dispatcher->dispatch(
 			new CacheInvalidationRequest(
@@ -47,9 +48,20 @@ final class WordPressCacheInvalidationDispatcherTest extends TestCase {
 			)
 		);
 
-		self::assertCount( 1, $GLOBALS['hwlio_test_actions'] );
-		self::assertSame( LifecyclePolicy::HOOK_CACHE_INVALIDATION_REQUESTED, $GLOBALS['hwlio_test_actions'][0]['hook'] );
-		self::assertSame( 45, $GLOBALS['hwlio_test_actions'][0]['args'][0] );
+		$actions = $GLOBALS['hwlio_test_actions'];
+
+		self::assertIsArray( $actions );
+		self::assertCount( 1, $actions );
+		$action = reset( $actions );
+
+		self::assertIsArray( $action );
+		self::assertArrayHasKey( 'hook', $action );
+		self::assertArrayHasKey( 'args', $action );
+		self::assertIsArray( $action['args'] );
+		self::assertArrayHasKey( 0, $action['args'] );
+		self::assertArrayHasKey( 1, $action['args'] );
+		self::assertSame( LifecyclePolicy::HOOK_CACHE_INVALIDATION_REQUESTED, $action['hook'] );
+		self::assertSame( 45, $action['args'][0] );
 		self::assertSame(
 			array(
 				'event'          => 'derivatives_saved',
@@ -59,7 +71,7 @@ final class WordPressCacheInvalidationDispatcherTest extends TestCase {
 				'formats'        => array( 'webp' ),
 				'timestamp_gmt'  => '2026-07-13 14:00:00',
 			),
-			$GLOBALS['hwlio_test_actions'][0]['args'][1]
+			$action['args'][1]
 		);
 	}
 

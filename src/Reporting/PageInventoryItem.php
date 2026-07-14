@@ -22,10 +22,10 @@ final class PageInventoryItem {
 	public const PRESENTATION_INLINE     = 'inline';
 	public const PRESENTATION_BACKGROUND = 'background';
 
-	public const ORIGIN_LOCAL_ATTACHMENT    = 'local_attachment';
-	public const ORIGIN_LOCAL_UNREGISTERED  = 'local_unregistered_url';
-	public const ORIGIN_EXTERNAL            = 'external';
-	public const ORIGIN_UNKNOWN             = 'unknown';
+	public const ORIGIN_LOCAL_ATTACHMENT   = 'local_attachment';
+	public const ORIGIN_LOCAL_UNREGISTERED = 'local_unregistered_url';
+	public const ORIGIN_EXTERNAL           = 'external';
+	public const ORIGIN_UNKNOWN            = 'unknown';
 
 	/**
 	 * Source family.
@@ -98,10 +98,10 @@ final class PageInventoryItem {
 		?array $attachment = null,
 		array $evidence = array()
 	) {
-		$this->id           = $this->normalize_occurrence_id( $id );
-		$this->source       = $this->normalize_key( $source, 'core_content' );
-		$this->presentation = in_array( $presentation, array( self::PRESENTATION_INLINE, self::PRESENTATION_BACKGROUND ), true ) ? $presentation : self::PRESENTATION_INLINE;
-		$this->origin       = in_array(
+		$this->id            = $this->normalize_occurrence_id( $id );
+		$this->source        = $this->normalize_key( $source, 'core_content' );
+		$this->presentation  = in_array( $presentation, array( self::PRESENTATION_INLINE, self::PRESENTATION_BACKGROUND ), true ) ? $presentation : self::PRESENTATION_INLINE;
+		$this->origin        = in_array(
 			$origin,
 			array(
 				self::ORIGIN_LOCAL_ATTACHMENT,
@@ -151,14 +151,14 @@ final class PageInventoryItem {
 	 */
 	public function to_array(): array {
 		return array(
-			'id'           => $this->id,
-			'source'       => $this->source,
-			'presentation' => $this->presentation,
-			'origin'       => $this->origin,
+			'id'            => $this->id,
+			'source'        => $this->source,
+			'presentation'  => $this->presentation,
+			'origin'        => $this->origin,
 			'attachment_id' => $this->attachment_id,
-			'url'          => $this->url,
-			'attachment'   => $this->attachment,
-			'evidence'     => $this->evidence,
+			'url'           => $this->url,
+			'attachment'    => $this->attachment,
+			'evidence'      => $this->evidence,
 		);
 	}
 
@@ -247,7 +247,7 @@ final class PageInventoryItem {
 			}
 
 			if ( is_string( $value ) ) {
-				$value = trim( preg_replace( '/\s+/', ' ', $value ) ?? '' );
+				$value             = trim( preg_replace( '/\s+/', ' ', $value ) ?? '' );
 				$sanitized[ $key ] = strlen( $value ) > 255 ? substr( $value, 0, 252 ) . '...' : $value;
 			}
 		}

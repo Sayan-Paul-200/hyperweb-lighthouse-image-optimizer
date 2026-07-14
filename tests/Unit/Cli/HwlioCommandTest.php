@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- This fixture-heavy command test keeps local anonymous doubles inline for clarity.
 /**
  * Tests for the root WP-CLI command.
  *
@@ -35,6 +36,7 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentInspector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictDetector;
 use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictRuntimeInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogPruner;
 use HyperWeb\LighthouseImageOptimizer\Logging\RecentFailureLogReader;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueService;
@@ -275,11 +277,11 @@ final class HwlioCommandTest extends TestCase {
 	 * @return void
 	 */
 	public function test_attachment_rejects_non_image_attachments(): void {
-		$runtime           = new FakeCliRuntime();
-		$lookup            = new FakeAttachmentLookup();
-		$lookup->existing  = array( 123 => true );
-		$lookup->images    = array( 123 => false );
-		$command           = $this->command( $runtime, null, null, $lookup );
+		$runtime          = new FakeCliRuntime();
+		$lookup           = new FakeAttachmentLookup();
+		$lookup->existing = array( 123 => true );
+		$lookup->images   = array( 123 => false );
+		$command          = $this->command( $runtime, null, null, $lookup );
 
 		$exit = $command->attachment( array( '123' ), array() );
 
@@ -293,11 +295,11 @@ final class HwlioCommandTest extends TestCase {
 	 * @return void
 	 */
 	public function test_attachment_renders_summary_and_derivative_table(): void {
-		$runtime = new FakeCliRuntime();
-		$lookup  = new FakeAttachmentLookup();
+		$runtime          = new FakeCliRuntime();
+		$lookup           = new FakeAttachmentLookup();
 		$lookup->existing = array( 123 => true );
 		$lookup->images   = array( 123 => true );
-		$command = $this->command( $runtime, null, $this->attachment_details_service( false ), $lookup );
+		$command          = $this->command( $runtime, null, $this->attachment_details_service( false ), $lookup );
 
 		$exit = $command->attachment( array( '123' ), array() );
 
@@ -313,13 +315,19 @@ final class HwlioCommandTest extends TestCase {
 	 * @return void
 	 */
 	public function test_attachment_filters_output_to_requested_target_format(): void {
-		$runtime = new FakeCliRuntime();
-		$lookup  = new FakeAttachmentLookup();
+		$runtime          = new FakeCliRuntime();
+		$lookup           = new FakeAttachmentLookup();
 		$lookup->existing = array( 123 => true );
 		$lookup->images   = array( 123 => true );
-		$command = $this->command( $runtime, null, $this->attachment_details_service( false ), $lookup );
+		$command          = $this->command( $runtime, null, $this->attachment_details_service( false ), $lookup );
 
-		$exit = $command->attachment( array( '123' ), array( 'output' => 'json', 'target-format' => 'avif' ) );
+		$exit = $command->attachment(
+			array( '123' ),
+			array(
+				'output'        => 'json',
+				'target-format' => 'avif',
+			)
+		);
 
 		self::assertSame( CliExitCode::SUCCESS, $exit );
 		self::assertSame( 'avif', $runtime->json_payloads[0]['requested_target_format'] );
@@ -333,11 +341,11 @@ final class HwlioCommandTest extends TestCase {
 	 * @return void
 	 */
 	public function test_attachment_rejects_invalid_target_format(): void {
-		$runtime = new FakeCliRuntime();
-		$lookup  = new FakeAttachmentLookup();
+		$runtime          = new FakeCliRuntime();
+		$lookup           = new FakeAttachmentLookup();
 		$lookup->existing = array( 123 => true );
 		$lookup->images   = array( 123 => true );
-		$command = $this->command( $runtime, null, $this->attachment_details_service( false ), $lookup );
+		$command          = $this->command( $runtime, null, $this->attachment_details_service( false ), $lookup );
 
 		$exit = $command->attachment( array( '123' ), array( 'target-format' => 'jpeg' ) );
 
@@ -351,11 +359,11 @@ final class HwlioCommandTest extends TestCase {
 	 * @return void
 	 */
 	public function test_attachment_returns_degraded_exit_when_repository_has_warnings(): void {
-		$runtime = new FakeCliRuntime();
-		$lookup  = new FakeAttachmentLookup();
+		$runtime          = new FakeCliRuntime();
+		$lookup           = new FakeAttachmentLookup();
 		$lookup->existing = array( 123 => true );
 		$lookup->images   = array( 123 => true );
-		$command = $this->command( $runtime, null, $this->attachment_details_service( true ), $lookup );
+		$command          = $this->command( $runtime, null, $this->attachment_details_service( true ), $lookup );
 
 		$exit = $command->attachment( array( '123' ), array( 'output' => 'json' ) );
 
@@ -369,10 +377,10 @@ final class HwlioCommandTest extends TestCase {
 	/**
 	 * Build the command under test.
 	 *
-	 * @param FakeCliRuntime                    $runtime Fake runtime.
-	 * @param DiagnosticsServiceInterface|null  $diagnostics Optional diagnostics service.
-	 * @param AttachmentDetailsService|null     $attachments Optional attachment service.
-	 * @param FakeAttachmentLookup|null         $lookup Optional lookup.
+	 * @param FakeCliRuntime                   $runtime Fake runtime.
+	 * @param DiagnosticsServiceInterface|null $diagnostics Optional diagnostics service.
+	 * @param AttachmentDetailsService|null    $attachments Optional attachment service.
+	 * @param FakeAttachmentLookup|null        $lookup Optional lookup.
 	 * @return HwlioCommand
 	 */
 	private function command(
@@ -425,16 +433,16 @@ final class HwlioCommandTest extends TestCase {
 	 * @return CliBulkOperationsService
 	 */
 	private function bulk_operations_service(): CliBulkOperationsService {
-		$bulk       = new FakeBulkScannerRuntime();
+		$bulk           = new FakeBulkScannerRuntime();
 		$bulk->pages[0] = range( 1, 3 );
-		$store      = new FakeAttachmentMetaStore();
-		$clock      = new FixedAttachmentClock( 1783612800 );
-		$repository = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
-		$transients = new FakeTransientStore();
-		$sessions   = new WordPressTransientBulkScanSessionStore( $transients );
-		$statuses   = new AttachmentStatusReader( $store );
-		$settings   = new FakeSettingsRepository( array( 'enabled_formats' => array( 'webp' ) ) );
-		$scans      = new BulkScanService(
+		$store          = new FakeAttachmentMetaStore();
+		$clock          = new FixedAttachmentClock( 1783612800 );
+		$repository     = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
+		$transients     = new FakeTransientStore();
+		$sessions       = new WordPressTransientBulkScanSessionStore( $transients );
+		$statuses       = new AttachmentStatusReader( $store );
+		$settings       = new FakeSettingsRepository( array( 'enabled_formats' => array( 'webp' ) ) );
+		$scans          = new BulkScanService(
 			$bulk,
 			$sessions,
 			$statuses,
@@ -446,29 +454,31 @@ final class HwlioCommandTest extends TestCase {
 				return 'feedfacefeedfacefeedfacefeedface';
 			}
 		);
-		$probe      = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
+		$probe          = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
 		$probe->add_file( '/uploads/2026/07/hero.jpg', 1000, 1783526400, 'image/jpeg', 2400, 1600 );
-		$collector = new SourceCollector(
-			new FakeAttachmentSourceProvider(
-				'/uploads/2026/07/hero.jpg',
-				array(
-					'file'   => '2026/07/hero.jpg',
-					'width'  => 2400,
-					'height' => 1600,
-					'sizes'  => array(),
+		$collector = new LocalAttachmentSourceCollector(
+			new SourceCollector(
+				new FakeAttachmentSourceProvider(
+					'/uploads/2026/07/hero.jpg',
+					array(
+						'file'   => '2026/07/hero.jpg',
+						'width'  => 2400,
+						'height' => 1600,
+						'sizes'  => array(),
+					),
+					'/uploads'
 				),
-				'/uploads'
-			),
-			$probe
+				$probe
+			)
 		);
-		$controls = new QueueControlStateStore(
+		$controls  = new QueueControlStateStore(
 			new FakeOptionStore(),
 			LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE,
 			static function (): string {
 				return '2026-07-12 00:00:00';
 			}
 		);
-		$queue = new FakeQueue();
+		$queue     = new FakeQueue();
 
 		return new CliBulkOperationsService(
 			$scans,
@@ -498,28 +508,30 @@ final class HwlioCommandTest extends TestCase {
 	 * @return CliReconcileStaleService
 	 */
 	private function stale_reconcile_service(): CliReconcileStaleService {
-		$bulk                    = new FakeBulkScannerRuntime();
-		$bulk->pages[0]          = array( 10 );
-		$store                   = new FakeAttachmentMetaStore();
+		$bulk           = new FakeBulkScannerRuntime();
+		$bulk->pages[0] = array( 10 );
+		$store          = new FakeAttachmentMetaStore();
 		$store->meta[10][ LifecyclePolicy::META_STATUS ] = array( 'state' => 'stale' );
-		$clock                   = new FixedAttachmentClock( 1783612800 );
-		$repository              = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
-		$probe                   = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
+		$clock      = new FixedAttachmentClock( 1783612800 );
+		$repository = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
+		$probe      = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
 		$probe->add_file( '/uploads/2026/07/hero.jpg', 1000, 1783526400, 'image/jpeg', 2400, 1600 );
-		$collector = new SourceCollector(
-			new FakeAttachmentSourceProvider(
-				'/uploads/2026/07/hero.jpg',
-				array(
-					'file'   => '2026/07/hero.jpg',
-					'width'  => 2400,
-					'height' => 1600,
-					'sizes'  => array(),
+		$collector = new LocalAttachmentSourceCollector(
+			new SourceCollector(
+				new FakeAttachmentSourceProvider(
+					'/uploads/2026/07/hero.jpg',
+					array(
+						'file'   => '2026/07/hero.jpg',
+						'width'  => 2400,
+						'height' => 1600,
+						'sizes'  => array(),
+					),
+					'/uploads'
 				),
-				'/uploads'
-			),
-			$probe
+				$probe
+			)
 		);
-		$controls = new QueueControlStateStore(
+		$controls  = new QueueControlStateStore(
 			new FakeOptionStore(),
 			LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE,
 			static function (): string {
@@ -560,9 +572,9 @@ final class HwlioCommandTest extends TestCase {
 	 * @return CliCleanupDryRunService
 	 */
 	private function cleanup_dry_run_service(): CliCleanupDryRunService {
-		$bulk            = new FakeBulkScannerRuntime();
-		$bulk->pages[0]  = array( 15 );
-		$store           = new FakeAttachmentMetaStore();
+		$bulk           = new FakeBulkScannerRuntime();
+		$bulk->pages[0] = array( 15 );
+		$store          = new FakeAttachmentMetaStore();
 		$store->meta[15][ LifecyclePolicy::META_DERIVATIVES ] = array(
 			'schema_version' => 1,
 			'fingerprint'    => array(
@@ -597,7 +609,7 @@ final class HwlioCommandTest extends TestCase {
 				),
 			),
 		);
-		$store->meta[15][ LifecyclePolicy::META_STATUS ] = array(
+		$store->meta[15][ LifecyclePolicy::META_STATUS ]      = array(
 			'state'      => 'optimized',
 			'formats'    => array( 'webp' ),
 			'updated_at' => 1783526510,
@@ -611,7 +623,7 @@ final class HwlioCommandTest extends TestCase {
 			),
 			array( 'C:/site/wp-content/uploads' )
 		);
-		$probe = new FakeImageFileProbe( array( 'C:/site/wp-content/uploads' ) );
+		$probe      = new FakeImageFileProbe( array( 'C:/site/wp-content/uploads' ) );
 		$probe->add_file(
 			'C:/site/wp-content/uploads/2026/07/hero.jpg',
 			920000,
@@ -628,18 +640,20 @@ final class HwlioCommandTest extends TestCase {
 				$store,
 				new DerivativeFileCleaner( 'C:/site/wp-content/uploads', $filesystem ),
 				new FakeAttachmentJobCleaner(),
-				new SourceCollector(
-					new FakeAttachmentSourceProvider(
-						'C:/site/wp-content/uploads/2026/07/hero.jpg',
-						array(
-							'file'   => '2026/07/hero.jpg',
-							'width'  => 2400,
-							'height' => 1600,
-							'sizes'  => array(),
+				new LocalAttachmentSourceCollector(
+					new SourceCollector(
+						new FakeAttachmentSourceProvider(
+							'C:/site/wp-content/uploads/2026/07/hero.jpg',
+							array(
+								'file'   => '2026/07/hero.jpg',
+								'width'  => 2400,
+								'height' => 1600,
+								'sizes'  => array(),
+							),
+							'C:/site/wp-content/uploads'
 						),
-						'C:/site/wp-content/uploads'
-					),
-					$probe
+						$probe
+					)
 				)
 			)
 		);
@@ -651,7 +665,7 @@ final class HwlioCommandTest extends TestCase {
 	 * @return StatusSummaryService
 	 */
 	private function status_service(): StatusSummaryService {
-		$options  = new FakeOptionStore();
+		$options = new FakeOptionStore();
 		$options->options[ LifecyclePolicy::OPTION_STATISTICS_CACHE ] = array(
 			'schema_version'    => 1,
 			'generated_at_gmt'  => '2026-07-14 00:00:00',
@@ -697,6 +711,10 @@ final class HwlioCommandTest extends TestCase {
 						public function network_active_plugin_basenames(): array {
 							return array();
 						}
+
+						public function is_multisite(): bool {
+							return false;
+						}
 					}
 				)
 			),
@@ -723,7 +741,7 @@ final class HwlioCommandTest extends TestCase {
 	 */
 	private function attachment_details_service( bool $warnings ): AttachmentDetailsService {
 		$store = new FakeAttachmentMetaStore();
-		$store->meta[123][ LifecyclePolicy::META_STATUS ] = array(
+		$store->meta[123][ LifecyclePolicy::META_STATUS ]      = array(
 			'state'    => 'optimized',
 			'formats'  => array( 'webp', 'avif' ),
 			'excluded' => false,

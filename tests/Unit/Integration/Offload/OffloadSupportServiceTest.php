@@ -26,11 +26,11 @@ final class OffloadSupportServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_attachment_support_cache_is_flushed_after_site_switch(): void {
-		$runtime                               = new FakeWpOffloadMediaRuntime();
-		$runtime->active_plugins               = array( WpOffloadMediaAdapter::PLUGIN_BASENAME );
-		$runtime->attachment_urls[10]          = 'https://example.test/wp-content/uploads/2026/07/hero.jpg';
-		$runtime->metadata[10]                 = array( 'file' => '2026/07/hero.jpg' );
-		$runtime->attached_files[10]           = 'C:/site/wp-content/uploads/2026/07/hero.jpg';
+		$runtime                      = new FakeWpOffloadMediaRuntime();
+		$runtime->active_plugins      = array( WpOffloadMediaAdapter::PLUGIN_BASENAME );
+		$runtime->attachment_urls[10] = 'https://example.test/wp-content/uploads/2026/07/hero.jpg';
+		$runtime->metadata[10]        = array( 'file' => '2026/07/hero.jpg' );
+		$runtime->attached_files[10]  = 'C:/site/wp-content/uploads/2026/07/hero.jpg';
 		$runtime->existing_files['C:/site/wp-content/uploads/2026/07/hero.jpg'] = true;
 		$runtime->readable_files['C:/site/wp-content/uploads/2026/07/hero.jpg'] = true;
 

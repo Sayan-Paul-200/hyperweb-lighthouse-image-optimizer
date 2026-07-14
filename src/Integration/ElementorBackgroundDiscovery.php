@@ -76,7 +76,7 @@ final class ElementorBackgroundDiscovery {
 	/**
 	 * Discover supported structured background-image mappings from a pre-read document payload.
 	 *
-	 * @param int                  $document_id Document/post ID.
+	 * @param int                   $document_id Document/post ID.
 	 * @param ElementorDocumentData $data Pre-read document data.
 	 * @return ElementorBackgroundDiscoveryResult
 	 */

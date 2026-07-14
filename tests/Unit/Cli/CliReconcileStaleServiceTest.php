@@ -16,6 +16,7 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
 use HyperWeb\LighthouseImageOptimizer\Cli\CliReconcileStaleService;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentReconciliationService;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Admin\Bulk\FakeBulkScannerRuntime;
@@ -38,38 +39,43 @@ final class CliReconcileStaleServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_reconcile_queues_only_stale_attachments(): void {
-		$bulk                    = new FakeBulkScannerRuntime();
-		$bulk->pages[0]          = array( 10, 11, 12 );
-		$store                   = new FakeAttachmentMetaStore();
+		$bulk           = new FakeBulkScannerRuntime();
+		$bulk->pages[0] = array( 10, 11, 12 );
+		$store          = new FakeAttachmentMetaStore();
 		$store->meta[10][ LifecyclePolicy::META_STATUS ] = array( 'state' => AttachmentStatus::STATE_STALE );
 		$store->meta[11][ LifecyclePolicy::META_STATUS ] = array( 'state' => AttachmentStatus::STATE_FAILED );
-		$store->meta[12][ LifecyclePolicy::META_STATUS ] = array( 'state' => AttachmentStatus::STATE_STALE, 'excluded' => true );
-		$clock                   = new FixedAttachmentClock( 1783612800 );
-		$repository              = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
-		$probe                   = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
-		$probe->add_file( '/uploads/2026/07/hero.jpg', 1000, 1783526400, 'image/jpeg', 2400, 1600 );
-		$collector = new SourceCollector(
-			new FakeAttachmentSourceProvider(
-				'/uploads/2026/07/hero.jpg',
-				array(
-					'file'   => '2026/07/hero.jpg',
-					'width'  => 2400,
-					'height' => 1600,
-					'sizes'  => array(),
-				),
-				'/uploads'
-			),
-			$probe
+		$store->meta[12][ LifecyclePolicy::META_STATUS ] = array(
+			'state'    => AttachmentStatus::STATE_STALE,
+			'excluded' => true,
 		);
-		$queue      = new FakeQueue();
-		$controls   = new QueueControlStateStore(
+		$clock      = new FixedAttachmentClock( 1783612800 );
+		$repository = new DerivativeRepository( $store, new DerivativeManifestSanitizer(), $clock );
+		$probe      = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
+		$probe->add_file( '/uploads/2026/07/hero.jpg', 1000, 1783526400, 'image/jpeg', 2400, 1600 );
+		$collector = new LocalAttachmentSourceCollector(
+			new SourceCollector(
+				new FakeAttachmentSourceProvider(
+					'/uploads/2026/07/hero.jpg',
+					array(
+						'file'   => '2026/07/hero.jpg',
+						'width'  => 2400,
+						'height' => 1600,
+						'sizes'  => array(),
+					),
+					'/uploads'
+				),
+				$probe
+			)
+		);
+		$queue     = new FakeQueue();
+		$controls  = new QueueControlStateStore(
 			new FakeOptionStore(),
 			LifecyclePolicy::OPTION_QUEUE_CONTROL_STATE,
 			static function (): string {
 				return '2026-07-12 00:00:00';
 			}
 		);
-		$service    = new CliReconcileStaleService(
+		$service   = new CliReconcileStaleService(
 			$bulk,
 			new AttachmentStatusReader( $store ),
 			new AttachmentReconciliationService(

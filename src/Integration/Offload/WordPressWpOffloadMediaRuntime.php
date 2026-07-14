@@ -301,7 +301,7 @@ final class WordPressWpOffloadMediaRuntime implements WpOffloadMediaRuntimeInter
 			return null;
 		}
 
-		if ( isset( $uploads['error'] ) && is_string( $uploads['error'] ) && '' !== trim( $uploads['error'] ) ) {
+		if ( is_string( $uploads['error'] ) && '' !== trim( $uploads['error'] ) ) {
 			return null;
 		}
 

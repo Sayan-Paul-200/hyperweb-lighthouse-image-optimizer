@@ -26,11 +26,11 @@ final class PageSpeedMetrics {
 	 */
 	public function __construct( array $metrics = array() ) {
 		$this->metrics = array(
-			'performance_score'         => $this->score( $metrics['performance_score'] ?? null ),
+			'performance_score'           => $this->score( $metrics['performance_score'] ?? null ),
 			'largest_contentful_paint_ms' => $this->integer( $metrics['largest_contentful_paint_ms'] ?? null ),
-			'cumulative_layout_shift'   => $this->decimal( $metrics['cumulative_layout_shift'] ?? null ),
-			'speed_index_ms'            => $this->integer( $metrics['speed_index_ms'] ?? null ),
-			'total_blocking_time_ms'    => $this->integer( $metrics['total_blocking_time_ms'] ?? null ),
+			'cumulative_layout_shift'     => $this->decimal( $metrics['cumulative_layout_shift'] ?? null ),
+			'speed_index_ms'              => $this->integer( $metrics['speed_index_ms'] ?? null ),
+			'total_blocking_time_ms'      => $this->integer( $metrics['total_blocking_time_ms'] ?? null ),
 		);
 	}
 

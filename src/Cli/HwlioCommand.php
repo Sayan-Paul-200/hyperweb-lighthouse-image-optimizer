@@ -87,11 +87,15 @@ final class HwlioCommand {
 	/**
 	 * Create the root command.
 	 *
-	 * @param CliRuntimeInterface        $runtime CLI runtime.
-	 * @param StatusSummaryService       $status Status service.
+	 * @param CliRuntimeInterface         $runtime CLI runtime.
+	 * @param StatusSummaryService        $status Status service.
 	 * @param DiagnosticsServiceInterface $diagnostics Diagnostics service.
-	 * @param AttachmentDetailsService   $attachments Attachment details service.
-	 * @param AttachmentLookupInterface  $lookup Attachment lookup runtime.
+	 * @param AttachmentDetailsService    $attachments Attachment details service.
+	 * @param AttachmentLookupInterface   $lookup Attachment lookup runtime.
+	 * @param CliBulkOperationsService    $bulk Bulk operations service.
+	 * @param CliReconcileStaleService    $stale_reconcile Stale reconciliation service.
+	 * @param CliLogPruneService          $log_prune Log prune service.
+	 * @param CliCleanupDryRunService     $cleanup Cleanup dry-run service.
 	 */
 	public function __construct(
 		CliRuntimeInterface $runtime,
@@ -104,15 +108,15 @@ final class HwlioCommand {
 		CliLogPruneService $log_prune,
 		CliCleanupDryRunService $cleanup
 	) {
-		$this->runtime          = $runtime;
-		$this->status           = $status;
-		$this->diagnostics      = $diagnostics;
-		$this->attachments      = $attachments;
-		$this->lookup           = $lookup;
-		$this->bulk             = $bulk;
-		$this->stale_reconcile  = $stale_reconcile;
-		$this->log_prune        = $log_prune;
-		$this->cleanup          = $cleanup;
+		$this->runtime         = $runtime;
+		$this->status          = $status;
+		$this->diagnostics     = $diagnostics;
+		$this->attachments     = $attachments;
+		$this->lookup          = $lookup;
+		$this->bulk            = $bulk;
+		$this->stale_reconcile = $stale_reconcile;
+		$this->log_prune       = $log_prune;
+		$this->cleanup         = $cleanup;
 	}
 
 	/**
@@ -123,8 +127,8 @@ final class HwlioCommand {
 	 * [--output=<table|json>]
 	 * : Output mode.
 	 *
-	 * @param array<int,string>     $args Positional args.
-	 * @param array<string,string>  $assoc_args Assoc args.
+	 * @param array<int,string>    $args Positional args.
+	 * @param array<string,string> $assoc_args Assoc args.
 	 * @return int
 	 */
 	public function status( array $args, array $assoc_args ): int {
@@ -174,8 +178,8 @@ final class HwlioCommand {
 		unset( $args );
 
 		try {
-			$output  = $this->output_mode( $assoc_args );
-			$report  = $this->normalize_diagnostics_report( $this->diagnostics->report() );
+			$output   = $this->output_mode( $assoc_args );
+			$report   = $this->normalize_diagnostics_report( $this->diagnostics->report() );
 			$degraded = $this->diagnostics_degraded( $report );
 
 			if ( null === $output ) {
@@ -325,7 +329,7 @@ final class HwlioCommand {
 		unset( $args );
 
 		try {
-			$output = $this->output_mode( $assoc_args );
+			$output  = $this->output_mode( $assoc_args );
 			$filters = $this->bulk_filters(
 				$assoc_args,
 				array(
@@ -386,7 +390,7 @@ final class HwlioCommand {
 		unset( $args );
 
 		try {
-			$output = $this->output_mode( $assoc_args );
+			$output  = $this->output_mode( $assoc_args );
 			$filters = $this->bulk_filters(
 				$assoc_args,
 				array(
@@ -442,7 +446,7 @@ final class HwlioCommand {
 		unset( $args );
 
 		try {
-			$output = $this->output_mode( $assoc_args );
+			$output  = $this->output_mode( $assoc_args );
 			$filters = $this->fixed_scope_filters( $assoc_args, BulkScanFilters::SCOPE_FAILED_ONLY, true );
 
 			if ( null === $output ) {
@@ -489,7 +493,7 @@ final class HwlioCommand {
 		unset( $args );
 
 		try {
-			$output = $this->output_mode( $assoc_args );
+			$output  = $this->output_mode( $assoc_args );
 			$filters = $this->fixed_scope_filters( $assoc_args, BulkScanFilters::SCOPE_STALE_ONLY, false );
 
 			if ( null === $output ) {
@@ -569,7 +573,7 @@ final class HwlioCommand {
 		unset( $args );
 
 		try {
-			$output = $this->output_mode( $assoc_args );
+			$output  = $this->output_mode( $assoc_args );
 			$filters = $this->fixed_scope_filters( $assoc_args, BulkScanFilters::SCOPE_ALL_ELIGIBLE, false );
 
 			if ( null === $output ) {
@@ -598,7 +602,7 @@ final class HwlioCommand {
 	 * @return string|null
 	 */
 	private function output_mode( array $assoc_args ): ?string {
-		$output = isset( $assoc_args['output'] ) && is_scalar( $assoc_args['output'] )
+		$output = isset( $assoc_args['output'] )
 			? strtolower( trim( (string) $assoc_args['output'] ) )
 			: self::OUTPUT_TABLE;
 
@@ -629,22 +633,22 @@ final class HwlioCommand {
 	 * @return BulkScanFilters|null
 	 */
 	private function bulk_filters( array $assoc_args, array $allowed_scopes ): ?BulkScanFilters {
-		$raw_scope = array_key_exists( 'scan-scope', $assoc_args )
+		$raw_scope      = array_key_exists( 'scan-scope', $assoc_args )
 			? strtolower( trim( (string) $assoc_args['scan-scope'] ) )
 			: BulkScanFilters::SCOPE_ALL_ELIGIBLE;
-		$scope = array_key_exists( 'scan-scope', $assoc_args )
+		$scope          = array_key_exists( 'scan-scope', $assoc_args )
 			? BulkScanFilters::normalize_scan_scope( $raw_scope )
 			: BulkScanFilters::SCOPE_ALL_ELIGIBLE;
-		$raw_target = array_key_exists( 'target-format', $assoc_args )
+		$raw_target     = array_key_exists( 'target-format', $assoc_args )
 			? strtolower( trim( (string) $assoc_args['target-format'] ) )
 			: BulkScanFilters::TARGET_ALL_ENABLED;
-		$target = array_key_exists( 'target-format', $assoc_args )
+		$target         = array_key_exists( 'target-format', $assoc_args )
 			? BulkScanFilters::normalize_target_format( $raw_target )
 			: BulkScanFilters::TARGET_ALL_ENABLED;
-		$date_from = array_key_exists( 'date-from', $assoc_args )
+		$date_from      = array_key_exists( 'date-from', $assoc_args )
 			? BulkScanFilters::normalize_date( $assoc_args['date-from'] )
 			: null;
-		$date_to = array_key_exists( 'date-to', $assoc_args )
+		$date_to        = array_key_exists( 'date-to', $assoc_args )
 			? BulkScanFilters::normalize_date( $assoc_args['date-to'] )
 			: null;
 		$attachment_ids = array_key_exists( 'attachment-ids', $assoc_args )
@@ -681,16 +685,16 @@ final class HwlioCommand {
 			return null;
 		}
 
-		$raw_target = $allow_target && array_key_exists( 'target-format', $assoc_args )
+		$raw_target     = $allow_target && array_key_exists( 'target-format', $assoc_args )
 			? strtolower( trim( (string) $assoc_args['target-format'] ) )
 			: BulkScanFilters::TARGET_ALL_ENABLED;
-		$target = $allow_target && array_key_exists( 'target-format', $assoc_args )
+		$target         = $allow_target && array_key_exists( 'target-format', $assoc_args )
 			? BulkScanFilters::normalize_target_format( $raw_target )
 			: BulkScanFilters::TARGET_ALL_ENABLED;
-		$date_from = array_key_exists( 'date-from', $assoc_args )
+		$date_from      = array_key_exists( 'date-from', $assoc_args )
 			? BulkScanFilters::normalize_date( $assoc_args['date-from'] )
 			: null;
-		$date_to = array_key_exists( 'date-to', $assoc_args )
+		$date_to        = array_key_exists( 'date-to', $assoc_args )
 			? BulkScanFilters::normalize_date( $assoc_args['date-to'] )
 			: null;
 		$attachment_ids = array_key_exists( 'attachment-ids', $assoc_args )
@@ -716,7 +720,7 @@ final class HwlioCommand {
 	 * @return int
 	 */
 	private function attachment_id_from_args( array $args ): int {
-		if ( ! isset( $args[0] ) || ! is_scalar( $args[0] ) || ! is_numeric( $args[0] ) ) {
+		if ( ! isset( $args[0] ) || ! is_numeric( $args[0] ) ) {
 			return 0;
 		}
 
@@ -733,15 +737,15 @@ final class HwlioCommand {
 		$queue_control = isset( $summary['queueControl'] ) && is_array( $summary['queueControl'] ) ? $summary['queueControl'] : array();
 
 		return array(
-			'queue'          => isset( $summary['queue'] ) && is_array( $summary['queue'] ) ? $summary['queue'] : array(),
-			'settings'       => isset( $summary['settings'] ) && is_array( $summary['settings'] ) ? $summary['settings'] : array(),
-			'statistics'     => isset( $summary['statistics'] ) && is_array( $summary['statistics'] ) ? $summary['statistics'] : array(),
-			'environment'    => isset( $summary['environment'] ) && is_array( $summary['environment'] ) ? $summary['environment'] : array(),
-			'offload'        => isset( $summary['offload'] ) && is_array( $summary['offload'] ) ? $summary['offload'] : null,
-			'conflicts'      => isset( $summary['conflicts'] ) && is_array( $summary['conflicts'] ) ? array_values( $summary['conflicts'] ) : array(),
+			'queue'           => isset( $summary['queue'] ) && is_array( $summary['queue'] ) ? $summary['queue'] : array(),
+			'settings'        => isset( $summary['settings'] ) && is_array( $summary['settings'] ) ? $summary['settings'] : array(),
+			'statistics'      => isset( $summary['statistics'] ) && is_array( $summary['statistics'] ) ? $summary['statistics'] : array(),
+			'environment'     => isset( $summary['environment'] ) && is_array( $summary['environment'] ) ? $summary['environment'] : array(),
+			'offload'         => isset( $summary['offload'] ) && is_array( $summary['offload'] ) ? $summary['offload'] : null,
+			'conflicts'       => isset( $summary['conflicts'] ) && is_array( $summary['conflicts'] ) ? array_values( $summary['conflicts'] ) : array(),
 			'recent_failures' => isset( $summary['recentFailures'] ) && is_array( $summary['recentFailures'] ) ? array_values( $summary['recentFailures'] ) : array(),
-			'refresh'        => isset( $summary['refresh'] ) && is_array( $summary['refresh'] ) ? $summary['refresh'] : array(),
-			'queue_control'  => array(
+			'refresh'         => isset( $summary['refresh'] ) && is_array( $summary['refresh'] ) ? $summary['refresh'] : array(),
+			'queue_control'   => array(
 				'paused'             => ! empty( $queue_control['paused'] ),
 				'updated_at_gmt'     => isset( $queue_control['updated_at_gmt'] ) ? (string) $queue_control['updated_at_gmt'] : '',
 				'updated_by_user_id' => isset( $queue_control['updated_by_user_id'] ) ? (int) $queue_control['updated_by_user_id'] : 0,
@@ -758,11 +762,11 @@ final class HwlioCommand {
 	 * @return array<int,array<string,string>>
 	 */
 	private function status_rows( array $summary ): array {
-		$statistics = isset( $summary['statistics'] ) && is_array( $summary['statistics'] ) ? $summary['statistics'] : array();
-		$states     = isset( $statistics['attachment_states'] ) && is_array( $statistics['attachment_states'] ) ? $statistics['attachment_states'] : array();
-		$totals     = isset( $statistics['totals'] ) && is_array( $statistics['totals'] ) ? $statistics['totals'] : array();
-		$settings   = isset( $summary['settings'] ) && is_array( $summary['settings'] ) ? $summary['settings'] : array();
-		$environment = isset( $summary['environment'] ) && is_array( $summary['environment'] ) ? $summary['environment'] : array();
+		$statistics    = isset( $summary['statistics'] ) && is_array( $summary['statistics'] ) ? $summary['statistics'] : array();
+		$states        = isset( $statistics['attachment_states'] ) && is_array( $statistics['attachment_states'] ) ? $statistics['attachment_states'] : array();
+		$totals        = isset( $statistics['totals'] ) && is_array( $statistics['totals'] ) ? $statistics['totals'] : array();
+		$settings      = isset( $summary['settings'] ) && is_array( $summary['settings'] ) ? $summary['settings'] : array();
+		$environment   = isset( $summary['environment'] ) && is_array( $summary['environment'] ) ? $summary['environment'] : array();
 		$queue_control = isset( $summary['queue_control'] ) && is_array( $summary['queue_control'] ) ? $summary['queue_control'] : array();
 
 		$rows = array(
@@ -896,7 +900,7 @@ final class HwlioCommand {
 					continue;
 				}
 
-				$size['formats']   = array( $formats[0] => $size['formats'][ $formats[0] ] );
+				$size['formats']     = array( $formats[0] => $size['formats'][ $formats[0] ] );
 				$sizes[ $size_name ] = $size;
 			}
 
@@ -970,14 +974,14 @@ final class HwlioCommand {
 				}
 
 				$rows[] = array(
-					'size'            => $size_name,
-					'format'          => $format,
-					'source_file'     => isset( $source['file'] ) ? (string) $source['file'] : '',
-					'source_bytes'    => (string) (int) ( $source['bytes'] ?? 0 ),
-					'derivative_file' => isset( $entry['file'] ) ? (string) $entry['file'] : '',
+					'size'             => $size_name,
+					'format'           => $format,
+					'source_file'      => isset( $source['file'] ) ? (string) $source['file'] : '',
+					'source_bytes'     => (string) (int) ( $source['bytes'] ?? 0 ),
+					'derivative_file'  => isset( $entry['file'] ) ? (string) $entry['file'] : '',
 					'derivative_bytes' => (string) (int) ( $entry['bytes'] ?? 0 ),
-					'savings_bytes'   => (string) (int) ( $entry['savings_bytes'] ?? 0 ),
-					'savings_percent' => isset( $entry['savings_percent'] ) && is_numeric( $entry['savings_percent'] )
+					'savings_bytes'    => (string) (int) ( $entry['savings_bytes'] ?? 0 ),
+					'savings_percent'  => isset( $entry['savings_percent'] ) && is_numeric( $entry['savings_percent'] )
 						? (string) $entry['savings_percent']
 						: '',
 				);

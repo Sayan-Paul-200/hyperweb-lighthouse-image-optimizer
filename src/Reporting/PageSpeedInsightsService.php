@@ -53,11 +53,11 @@ final class PageSpeedInsightsService {
 	/**
 	 * Create the service.
 	 *
-	 * @param SettingsRepositoryInterface       $settings Settings repository.
+	 * @param SettingsRepositoryInterface        $settings Settings repository.
 	 * @param PageSpeedCredentialsStoreInterface $credentials Credentials store.
-	 * @param ContentInventoryRuntimeInterface  $content Content runtime.
-	 * @param PageSpeedInsightsClientInterface  $client PSI client.
-	 * @param PageSpeedReportStoreInterface     $store Report store.
+	 * @param ContentInventoryRuntimeInterface   $content Content runtime.
+	 * @param PageSpeedInsightsClientInterface   $client PSI client.
+	 * @param PageSpeedReportStoreInterface      $store Report store.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $settings,

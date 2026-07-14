@@ -141,9 +141,9 @@ final class OccurrenceAssetMapper {
 	/**
 	 * Resolve a matched metadata candidate when confidence is sufficient.
 	 *
-	 * @param InventoryOccurrence  $occurrence Occurrence.
-	 * @param string               $raw_img_html Raw IMG HTML.
-	 * @param array<string,mixed>  $image_meta Attachment metadata.
+	 * @param InventoryOccurrence $occurrence Occurrence.
+	 * @param string              $raw_img_html Raw IMG HTML.
+	 * @param array<string,mixed> $image_meta Attachment metadata.
 	 * @return array<string,mixed>|null
 	 */
 	private function matched_candidate( InventoryOccurrence $occurrence, string $raw_img_html, array $image_meta ): ?array {
@@ -171,8 +171,8 @@ final class OccurrenceAssetMapper {
 	/**
 	 * Build a local file reference when uploads mapping is safe.
 	 *
-	 * @param InventoryOccurrence   $occurrence Occurrence.
-	 * @param array<string,mixed>   $image_meta Attachment metadata.
+	 * @param InventoryOccurrence      $occurrence Occurrence.
+	 * @param array<string,mixed>      $image_meta Attachment metadata.
 	 * @param array<string,mixed>|null $matched_candidate Matched candidate.
 	 * @return array<string,string>|null
 	 */
@@ -251,7 +251,7 @@ final class OccurrenceAssetMapper {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Conservative read-only URL parsing outside guaranteed WordPress contexts.
 			$base_parts = parse_url( $base_url );
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Conservative read-only URL parsing outside guaranteed WordPress contexts.
-			$url_parts  = parse_url( $url );
+			$url_parts = parse_url( $url );
 
 			if ( ! is_array( $base_parts ) || ! is_array( $url_parts ) ) {
 				return '';

@@ -38,6 +38,10 @@ final class WooCommerceScopePolicyTest extends TestCase {
 			'src/Integration/WooCommercePrimaryImageMatcher.php',
 			'src/Integration/WooCommerceRuntimeInterface.php',
 			'src/Integration/WordPressWooCommerceRuntime.php',
+			'src/Reporting/ContentCriticalImageSelector.php',
+			'src/Reporting/ContentInventoryService.php',
+			'src/Reporting/ContentInventoryRuntimeInterface.php',
+			'src/Reporting/WordPressContentInventoryRuntime.php',
 		);
 
 		foreach ( $this->source_files() as $file => $contents ) {

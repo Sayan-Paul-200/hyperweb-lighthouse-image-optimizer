@@ -59,8 +59,8 @@ final class CliBulkOperationsService {
 	/**
 	 * Run a dry-run scan to completion.
 	 *
-	 * @param BulkScanFilters  $filters Normalized filters.
-	 * @param callable|null    $progress Optional progress callback.
+	 * @param BulkScanFilters $filters Normalized filters.
+	 * @param callable|null   $progress Optional progress callback.
 	 * @return CliOperationResult
 	 */
 	public function scan( BulkScanFilters $filters, ?callable $progress = null ): CliOperationResult {
@@ -135,14 +135,14 @@ final class CliBulkOperationsService {
 				);
 			}
 
-			$payload = array(
+			$payload  = array(
 				'filters'        => $filters->to_array(),
 				'scan_progress'  => $session->progress()->to_array(),
 				'scan_summary'   => $session->summary()->to_array(),
 				'queue_progress' => $session->queue_progress()->to_array(),
 				'queue_summary'  => $session->queue_summary()->to_array(),
 			);
-			$codes   = array();
+			$codes    = array();
 			$messages = array();
 			$degraded = false;
 

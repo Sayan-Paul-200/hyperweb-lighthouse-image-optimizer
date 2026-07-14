@@ -53,9 +53,9 @@ final class CliReconcileStaleService {
 		AttachmentStatusReader $statuses,
 		AttachmentReconciliationService $reconciliation
 	) {
-		$this->runtime         = $runtime;
-		$this->statuses        = $statuses;
-		$this->reconciliation  = $reconciliation;
+		$this->runtime        = $runtime;
+		$this->statuses       = $statuses;
+		$this->reconciliation = $reconciliation;
 	}
 
 	/**
@@ -69,12 +69,12 @@ final class CliReconcileStaleService {
 		$cursor   = 0;
 		$pages    = 0;
 		$summary  = array(
-			'scanned'         => 0,
-			'stale_candidates'=> 0,
-			'queued'          => 0,
-			'already_queued'  => 0,
-			'skipped'         => 0,
-			'failed_to_queue' => 0,
+			'scanned'          => 0,
+			'stale_candidates' => 0,
+			'queued'           => 0,
+			'already_queued'   => 0,
+			'skipped'          => 0,
+			'failed_to_queue'  => 0,
 		);
 		$codes    = array();
 		$messages = array();
@@ -87,7 +87,7 @@ final class CliReconcileStaleService {
 			}
 
 			++$pages;
-			$cursor            = max( $ids );
+			$cursor              = max( $ids );
 			$summary['scanned'] += count( $ids );
 
 			foreach ( $ids as $attachment_id ) {
@@ -134,10 +134,10 @@ final class CliReconcileStaleService {
 						array(
 							'filters'  => $filters->to_array(),
 							'progress' => array(
-								'pages'     => $pages,
-								'cursor'    => $cursor,
-								'complete'  => false,
-								'status'    => 'blocked',
+								'pages'    => $pages,
+								'cursor'   => $cursor,
+								'complete' => false,
+								'status'   => 'blocked',
 							),
 							'summary'  => $summary,
 						),

@@ -49,10 +49,10 @@ final class CompositeDiagnosticsService implements DiagnosticsServiceInterface {
 	/**
 	 * Create service.
 	 *
-	 * @param EnvironmentDiagnostics      $environment Environment diagnostics.
-	 * @param DerivativeHealthDiagnostics $derivatives Derivative health diagnostics.
-	 * @param ConflictDiagnostics              $conflicts Conflict diagnostics.
-	 * @param OffloadSupportDiagnostics|null   $offload Offload support diagnostics.
+	 * @param EnvironmentDiagnostics         $environment Environment diagnostics.
+	 * @param DerivativeHealthDiagnostics    $derivatives Derivative health diagnostics.
+	 * @param ConflictDiagnostics            $conflicts Conflict diagnostics.
+	 * @param OffloadSupportDiagnostics|null $offload Offload support diagnostics.
 	 */
 	public function __construct(
 		EnvironmentDiagnostics $environment,

@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- Test fixture uses lightweight local helpers and safe JSON assertions.
 /**
  * Tests for the content byte report service.
  *
@@ -9,7 +10,6 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Reporting;
 
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
-use HyperWeb\LighthouseImageOptimizer\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Attachment\SystemAttachmentClock;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentImageSourceExtractor;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentSizeResolver;
@@ -22,6 +22,7 @@ use HyperWeb\LighthouseImageOptimizer\Reporting\OccurrenceAssetMapper;
 use HyperWeb\LighthouseImageOptimizer\Reporting\PageInventoryItem;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery\FakeAttachmentImageRuntime;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery\FakeUploadsUrlRuntime;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
 use PHPUnit\Framework\TestCase;
@@ -37,10 +38,10 @@ final class ContentByteReportServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_report_builds_actual_and_theoretical_byte_sections_conservatively(): void {
-		$store      = new FakeAttachmentMetaStore();
+		$store       = new FakeAttachmentMetaStore();
 		$attachments = new FakeAttachmentImageRuntime();
-		$uploads    = new FakeUploadsUrlRuntime();
-		$files      = new FakeImageFileProbe( array( 'C:/site/wp-content/uploads' ) );
+		$uploads     = new FakeUploadsUrlRuntime();
+		$files       = new FakeImageFileProbe( array( 'C:/site/wp-content/uploads' ) );
 
 		$store->meta[123][ LifecyclePolicy::META_DERIVATIVES ] = $this->manifest(
 			array(

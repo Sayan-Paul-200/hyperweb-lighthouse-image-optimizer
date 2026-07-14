@@ -76,10 +76,10 @@ final class CriticalImageRegistry {
 	/**
 	 * Create registry.
 	 *
-	 * @param AttachmentImageRuntimeInterface        $runtime Runtime seam.
-	 * @param SettingsRepositoryInterface            $settings Settings repository.
-	 * @param CriticalImagePostMetaStoreInterface    $post_meta Post meta store.
-	 * @param SiteContextRuntimeInterface|null       $site_context Optional site-context runtime.
+	 * @param AttachmentImageRuntimeInterface     $runtime Runtime seam.
+	 * @param SettingsRepositoryInterface         $settings Settings repository.
+	 * @param CriticalImagePostMetaStoreInterface $post_meta Post meta store.
+	 * @param SiteContextRuntimeInterface|null    $site_context Optional site-context runtime.
 	 */
 	public function __construct(
 		AttachmentImageRuntimeInterface $runtime,
@@ -87,12 +87,12 @@ final class CriticalImageRegistry {
 		CriticalImagePostMetaStoreInterface $post_meta,
 		?SiteContextRuntimeInterface $site_context = null
 	) {
-		$this->runtime           = $runtime;
-		$this->settings          = $settings;
-		$this->post_meta         = $post_meta;
-		$this->site_context      = $site_context;
-		$this->resolved          = null;
-		$this->resolved_site_id  = null;
+		$this->runtime          = $runtime;
+		$this->settings         = $settings;
+		$this->post_meta        = $post_meta;
+		$this->site_context     = $site_context;
+		$this->resolved         = null;
+		$this->resolved_site_id = null;
 	}
 
 	/**

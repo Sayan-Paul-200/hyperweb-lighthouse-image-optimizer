@@ -70,6 +70,11 @@ final class ElementorScopePolicyTest extends TestCase {
 			'src/Integration/WordPressElementorDocumentDataStore.php',
 			'src/Integration/WordPressElementorHeroBackgroundPostMetaStore.php',
 			'src/Integration/WordPressElementorRuntime.php',
+			'src/Reporting/ContentInventoryService.php',
+			'src/Reporting/ContentInventorySnapshot.php',
+			'src/Reporting/ContentIssueReportService.php',
+			'src/Reporting/PageInventoryReport.php',
+			'src/Reporting/UnsupportedInventoryCase.php',
 		);
 
 		foreach ( $this->source_files() as $file => $contents ) {

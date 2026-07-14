@@ -29,7 +29,7 @@ final class ContentByteReport {
 	/**
 	 * Create report.
 	 *
-	 * @param ContentByteSummary    $summary Summary.
+	 * @param ContentByteSummary     $summary Summary.
 	 * @param ByteOccurrenceReport[] $occurrences Occurrence rows.
 	 */
 	public function __construct( ContentByteSummary $summary, array $occurrences = array() ) {

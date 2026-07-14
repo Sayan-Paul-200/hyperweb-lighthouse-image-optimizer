@@ -105,6 +105,9 @@ final class DiagnosticsScopePolicyTest extends TestCase {
 			'src/Integration/WordPressElementorHeroBackgroundPostMetaStore.php' => array(
 				'attachment metadata write',
 			),
+			'src/Reporting/WordPressPageSpeedReportStore.php' => array(
+				'attachment metadata write',
+			),
 			'src/Delivery/LoadingAttributeManager.php'     => array(
 				'delivery loading hook',
 			),

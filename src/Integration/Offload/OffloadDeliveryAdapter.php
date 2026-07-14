@@ -46,11 +46,11 @@ final class OffloadDeliveryAdapter implements HookProviderInterface {
 	/**
 	 * Rewrite uploads base URL when the attachment is safely offloaded.
 	 *
-	 * @param string      $base_url Current base URL.
-	 * @param string      $relative_path Relative derivative path.
-	 * @param int|null    $attachment_id Attachment ID.
-	 * @param string|null $size_name Size name.
-	 * @param string|null $format Format.
+	 * @param string              $base_url Current base URL.
+	 * @param string              $relative_path Relative derivative path.
+	 * @param int|null            $attachment_id Attachment ID.
+	 * @param string|null         $size_name Size name.
+	 * @param string|null         $format Format.
 	 * @param array<string,mixed> $context Context.
 	 * @return string
 	 */
@@ -80,11 +80,11 @@ final class OffloadDeliveryAdapter implements HookProviderInterface {
 	/**
 	 * Rewrite the final derivative URL when the attachment is safely offloaded.
 	 *
-	 * @param string      $url Current derivative URL.
-	 * @param string      $relative_path Relative derivative path.
-	 * @param int|null    $attachment_id Attachment ID.
-	 * @param string|null $size_name Size name.
-	 * @param string|null $format Format.
+	 * @param string              $url Current derivative URL.
+	 * @param string              $relative_path Relative derivative path.
+	 * @param int|null            $attachment_id Attachment ID.
+	 * @param string|null         $size_name Size name.
+	 * @param string|null         $format Format.
 	 * @param array<string,mixed> $context Context.
 	 * @return string
 	 */

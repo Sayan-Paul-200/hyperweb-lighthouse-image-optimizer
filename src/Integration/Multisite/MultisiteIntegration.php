@@ -97,7 +97,7 @@ final class MultisiteIntegration implements HookProviderInterface {
 	/**
 	 * Initialize plugin state for one newly created site when network-active.
 	 *
-	 * @param mixed                $site Site object.
+	 * @param mixed               $site Site object.
 	 * @param array<string,mixed> $args Initialization args.
 	 * @return void
 	 */

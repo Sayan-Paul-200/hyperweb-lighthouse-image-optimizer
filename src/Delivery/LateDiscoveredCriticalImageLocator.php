@@ -40,6 +40,7 @@ final class LateDiscoveredCriticalImageLocator {
 	 *
 	 * @param AttachmentImageRuntimeInterface $runtime Runtime seam.
 	 * @param ImageMarkupAnalyzerInterface    $analyzer Markup analyzer.
+	 * @param TrustedAttachmentMarkerParser   $markers Trusted attachment marker parser.
 	 */
 	public function __construct(
 		AttachmentImageRuntimeInterface $runtime,

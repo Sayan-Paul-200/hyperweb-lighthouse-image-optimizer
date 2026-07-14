@@ -85,10 +85,10 @@ final class MultisiteIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function test_network_active_new_site_initializes_and_restores(): void {
-		$runtime                        = new FakeSiteContextRuntime();
+		$runtime                         = new FakeSiteContextRuntime();
 		$runtime->network_active_plugins = array( 'hyperweb-lighthouse-image-optimizer/hyperweb-lighthouse-image-optimizer.php' );
-		$installer                      = $this->installer();
-		$provider                       = $this->provider( $runtime, $installer );
+		$installer                       = $this->installer();
+		$provider                        = $this->provider( $runtime, $installer );
 
 		$provider->initialize_site( (object) array( 'blog_id' => 23 ), array() );
 
@@ -103,9 +103,9 @@ final class MultisiteIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function test_restore_always_happens_when_installer_throws(): void {
-		$runtime                        = new FakeSiteContextRuntime();
+		$runtime                         = new FakeSiteContextRuntime();
 		$runtime->network_active_plugins = array( 'hyperweb-lighthouse-image-optimizer/hyperweb-lighthouse-image-optimizer.php' );
-		$provider                       = new MultisiteIntegration(
+		$provider                        = new MultisiteIntegration(
 			$runtime,
 			'hyperweb-lighthouse-image-optimizer/hyperweb-lighthouse-image-optimizer.php',
 			'0.1.0-alpha.3',

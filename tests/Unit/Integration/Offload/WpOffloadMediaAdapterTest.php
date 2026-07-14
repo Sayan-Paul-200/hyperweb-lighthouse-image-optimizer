@@ -25,9 +25,9 @@ final class WpOffloadMediaAdapterTest extends TestCase {
 	 * @return void
 	 */
 	public function test_inactive_environment_returns_local_native_support(): void {
-		$runtime               = new FakeWpOffloadMediaRuntime();
+		$runtime                      = new FakeWpOffloadMediaRuntime();
 		$runtime->attachment_urls[15] = 'https://example.test/wp-content/uploads/2026/07/hero.jpg';
-		$runtime->metadata[15] = array(
+		$runtime->metadata[15]        = array(
 			'file' => '2026/07/hero.jpg',
 		);
 
@@ -48,10 +48,10 @@ final class WpOffloadMediaAdapterTest extends TestCase {
 	 * @return void
 	 */
 	public function test_remote_keep_local_attachment_is_supported_when_base_can_be_inferred(): void {
-		$runtime                               = $this->active_runtime();
-		$runtime->attachment_urls[21]          = 'https://cdn.example.test/uploads/2026/07/hero.jpg';
-		$runtime->metadata[21]                 = array( 'file' => '2026/07/hero.jpg' );
-		$runtime->attached_files[21]           = 'C:/site/wp-content/uploads/2026/07/hero.jpg';
+		$runtime                      = $this->active_runtime();
+		$runtime->attachment_urls[21] = 'https://cdn.example.test/uploads/2026/07/hero.jpg';
+		$runtime->metadata[21]        = array( 'file' => '2026/07/hero.jpg' );
+		$runtime->attached_files[21]  = 'C:/site/wp-content/uploads/2026/07/hero.jpg';
 		$runtime->existing_files['C:/site/wp-content/uploads/2026/07/hero.jpg'] = true;
 		$runtime->readable_files['C:/site/wp-content/uploads/2026/07/hero.jpg'] = true;
 

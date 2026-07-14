@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile -- Test doubles in this fixture-heavy file intentionally trade strict docblock verbosity for readability.
 /**
  * Tests for the content inventory REST controller.
  *
@@ -10,7 +11,6 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Admin\Rest;
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\ContentInventoryController;
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
-use HyperWeb\LighthouseImageOptimizer\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentImageSourceExtractor;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentSizeResolver;
@@ -29,6 +29,7 @@ use HyperWeb\LighthouseImageOptimizer\Reporting\TrustedAttachmentMarkerParser;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery\FakeAttachmentImageRuntime;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery\FakeCriticalImagePostMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery\FakeUploadsUrlRuntime;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAnimationDetector;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
@@ -122,8 +123,8 @@ final class ContentInventoryControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function test_get_inventory_returns_safe_unavailable_error_when_report_fails(): void {
-		$runtime  = new FakeRestRuntime();
-		$service  = new ContentInventoryService(
+		$runtime    = new FakeRestRuntime();
+		$service    = new ContentInventoryService(
 			new class() implements ContentInventoryRuntimeInterface {
 				public function content_exists( int $content_id ): bool {
 					return 55 === $content_id;
@@ -217,7 +218,7 @@ final class ContentInventoryControllerTest extends TestCase {
 		$store   = new FakeElementorDocumentDataStore();
 
 		if ( $exists ) {
-			$runtime->content[55] = array(
+			$runtime->content[55]                            = array(
 				'type'   => 'page',
 				'status' => 'publish',
 				'title'  => 'Landing page',

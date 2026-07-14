@@ -257,7 +257,6 @@ final class Plugin {
 			$wp_offload_runtime,
 			$wp_offload_adapter,
 			$offload_support,
-			$image_files,
 			$path_sanitizer
 		);
 		$meta                         = new WordPressAttachmentMetaStore();
@@ -335,8 +334,8 @@ final class Plugin {
 			),
 			RecentFailureLogReader::for_wordpress(),
 			$status_refresh,
-				$queue_control
-			);
+			$queue_control
+		);
 		$cli_runtime                  = new WordPressCliRuntime();
 		$cli_diagnostics              = new CompositeDiagnosticsService(
 			EnvironmentDiagnostics::for_wordpress(),

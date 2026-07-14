@@ -97,13 +97,13 @@ final class ContentByteReportService {
 	private function build_actual_conversion_summary( ContentInventorySnapshot $snapshot ): array {
 		$attachment_ids = array();
 		$totals         = array(
-			'attachments_considered'  => 0,
+			'attachments_considered'   => 0,
 			'source_sizes_represented' => 0,
-			'source_bytes'            => 0,
-			'generated_bytes'         => 0,
-			'savings_bytes'           => 0,
-			'savings_percent'         => 0.0,
-			'formats'                 => $this->empty_format_totals(),
+			'source_bytes'             => 0,
+			'generated_bytes'          => 0,
+			'savings_bytes'            => 0,
+			'savings_percent'          => 0.0,
+			'formats'                  => $this->empty_format_totals(),
 		);
 
 		foreach ( $snapshot->occurrences() as $occurrence ) {
@@ -131,7 +131,7 @@ final class ContentByteReportService {
 	/**
 	 * Accumulate one manifest into actual totals.
 	 *
-	 * @param DerivativeManifest      $manifest Manifest.
+	 * @param DerivativeManifest  $manifest Manifest.
 	 * @param array<string,mixed> $totals Totals.
 	 * @return void
 	 */
@@ -187,13 +187,13 @@ final class ContentByteReportService {
 	 */
 	private function build_theoretical_transfer_summary( array $occurrences ): array {
 		$summary = array(
-			'unique_downloads_considered'   => 0,
-			'estimated_downloads'           => 0,
+			'unique_downloads_considered'    => 0,
+			'estimated_downloads'            => 0,
 			'estimate_unavailable_downloads' => 0,
-			'source_bytes'                  => 0,
-			'modern_bytes'                  => 0,
-			'savings_bytes'                 => 0,
-			'savings_percent'               => 0.0,
+			'source_bytes'                   => 0,
+			'modern_bytes'                   => 0,
+			'savings_bytes'                  => 0,
+			'savings_percent'                => 0.0,
 		);
 		$seen    = array();
 
@@ -217,7 +217,7 @@ final class ContentByteReportService {
 
 			if ( 'estimated' === $occurrence->estimate_status() ) {
 				++$summary['estimated_downloads'];
-				$summary['modern_bytes'] += null !== $occurrence->modern_bytes() ? $occurrence->modern_bytes() : 0;
+				$summary['modern_bytes']  += null !== $occurrence->modern_bytes() ? $occurrence->modern_bytes() : 0;
 				$summary['savings_bytes'] += null !== $occurrence->savings_bytes() ? $occurrence->savings_bytes() : 0;
 			} else {
 				++$summary['estimate_unavailable_downloads'];
@@ -429,7 +429,7 @@ final class ContentByteReportService {
 			);
 		}
 
-		$best         = $this->best_ready_modern_candidate( $occurrence->attachment_id(), (string) $mapping->matched_size_name() );
+		$best = $this->best_ready_modern_candidate( $occurrence->attachment_id(), (string) $mapping->matched_size_name() );
 
 		if ( ! is_array( $best ) || ! isset( $best['format'], $best['bytes'] ) ) {
 			return new ByteOccurrenceReport(
@@ -519,8 +519,8 @@ final class ContentByteReportService {
 	/**
 	 * Get the smallest ready enabled-format derivative for one size.
 	 *
-	 * @param int|null  $attachment_id Attachment ID.
-	 * @param string    $size_name Size name.
+	 * @param int|null $attachment_id Attachment ID.
+	 * @param string   $size_name Size name.
 	 * @return array<string,mixed>|null
 	 */
 	private function best_ready_modern_candidate( ?int $attachment_id, string $size_name ): ?array {

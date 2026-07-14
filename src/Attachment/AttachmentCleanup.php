@@ -90,9 +90,9 @@ final class AttachmentCleanup implements HookProviderInterface {
 	 * @return self
 	 */
 	public static function for_wordpress(): self {
-		$meta = new WordPressAttachmentMetaStore();
+		$meta    = new WordPressAttachmentMetaStore();
 		$runtime = new WordPressWpOffloadMediaRuntime();
-		$files = new \HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe();
+		$files   = new \HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe();
 		$adapter = new WpOffloadMediaAdapter(
 			$runtime,
 			$files,
@@ -114,7 +114,6 @@ final class AttachmentCleanup implements HookProviderInterface {
 				$runtime,
 				$adapter,
 				$offload,
-				$files,
 				new DerivativeManifestSanitizer()
 			),
 			new WordPressCacheInvalidationDispatcher(),
@@ -233,7 +232,7 @@ final class AttachmentCleanup implements HookProviderInterface {
 		$manifest            = $read->manifest();
 		$authoritative_files = DerivativeFileCleaner::derivative_files_from_manifest( $manifest );
 		$candidate_sources   = array_keys( DerivativeFileCleaner::source_files_from_manifest( $manifest ) );
-		$collected = $this->collector->collect( $attachment_id );
+		$collected           = $this->collector->collect( $attachment_id );
 
 		try {
 			foreach ( $collected->collection()->sources() as $source ) {

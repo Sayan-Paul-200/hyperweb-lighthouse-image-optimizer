@@ -60,18 +60,18 @@ final class PageSpeedReport {
 		}
 
 		$this->data = array(
-			'content_id'           => max( 0, $content_id ),
-			'strategy'             => $this->normalize_strategy( $strategy ),
-			'source'               => $this->normalize_source( $source ),
-			'result_code'          => trim( $result_code ),
-			'integration_enabled'  => $integration_enabled,
-			'public_url'           => trim( $public_url ),
-			'requested_url'        => trim( $requested_url ),
-			'final_url'            => trim( $final_url ),
-			'fetched_at_gmt'       => $this->timestamp( $fetched_at_gmt ),
-			'available'            => $lab_data instanceof PageSpeedMetrics && $lab_data->has_values(),
-			'lab_data'             => ( $lab_data ?? PageSpeedMetrics::empty() )->to_array(),
-			'image_audits'         => array_map(
+			'content_id'          => max( 0, $content_id ),
+			'strategy'            => $this->normalize_strategy( $strategy ),
+			'source'              => $this->normalize_source( $source ),
+			'result_code'         => trim( $result_code ),
+			'integration_enabled' => $integration_enabled,
+			'public_url'          => trim( $public_url ),
+			'requested_url'       => trim( $requested_url ),
+			'final_url'           => trim( $final_url ),
+			'fetched_at_gmt'      => $this->timestamp( $fetched_at_gmt ),
+			'available'           => $lab_data instanceof PageSpeedMetrics && $lab_data->has_values(),
+			'lab_data'            => ( $lab_data ?? PageSpeedMetrics::empty() )->to_array(),
+			'image_audits'        => array_map(
 				static function ( PageSpeedAuditSummary $audit ): array {
 					return $audit->to_array();
 				},

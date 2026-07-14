@@ -56,11 +56,11 @@ final class ContentInventoryService {
 	/**
 	 * Create service.
 	 *
-	 * @param ContentInventoryRuntimeInterface  $runtime Runtime seam.
-	 * @param AttachmentStatusReader            $attachments Attachment reader.
+	 * @param ContentInventoryRuntimeInterface    $runtime Runtime seam.
+	 * @param AttachmentStatusReader              $attachments Attachment reader.
 	 * @param ElementorDocumentDataStoreInterface $elementor_documents Elementor document store.
-	 * @param ElementorBackgroundDiscovery      $elementor_backgrounds Background discovery.
-	 * @param TrustedAttachmentMarkerParser     $markers Marker parser.
+	 * @param ElementorBackgroundDiscovery        $elementor_backgrounds Background discovery.
+	 * @param TrustedAttachmentMarkerParser       $markers Marker parser.
 	 */
 	public function __construct(
 		ContentInventoryRuntimeInterface $runtime,
@@ -111,12 +111,8 @@ final class ContentInventoryService {
 		$occurrence_id = 1;
 
 		foreach ( $this->content_fragments( $this->runtime->content_body( $content_id ) ) as $index => $fragment ) {
-			$item = $this->inventory_from_content_fragment( 'occ-' . $occurrence_id, $fragment, $index + 1, $unsupported );
-
-			if ( $item instanceof InventoryOccurrence ) {
-				$items[] = $item;
-				++$occurrence_id;
-			}
+			$items[] = $this->inventory_from_content_fragment( 'occ-' . $occurrence_id, $fragment, $index + 1, $unsupported );
+			++$occurrence_id;
 		}
 
 		if ( ! $document_data->is_missing() ) {
@@ -178,12 +174,12 @@ final class ContentInventoryService {
 
 		return new ContentInventorySnapshot(
 			array(
-				'id'                    => $content_id,
-				'type'                  => $content_type,
-				'title'                 => $this->runtime->content_title( $content_id ),
-				'status'                => $this->runtime->content_status( $content_id ),
+				'id'                     => $content_id,
+				'type'                   => $content_type,
+				'title'                  => $this->runtime->content_title( $content_id ),
+				'status'                 => $this->runtime->content_status( $content_id ),
 				'has_elementor_document' => ! $document_data->is_missing(),
-				'is_woo_product'        => 'product' === $content_type,
+				'is_woo_product'         => 'product' === $content_type,
 			),
 			$items,
 			$unsupported
@@ -225,9 +221,9 @@ final class ContentInventoryService {
 	 * @param string                     $fragment IMG fragment.
 	 * @param int                        $occurrence One-based occurrence index.
 	 * @param UnsupportedInventoryCase[] $unsupported Unsupported collector.
-	 * @return InventoryOccurrence|null
+	 * @return InventoryOccurrence
 	 */
-	private function inventory_from_content_fragment( string $id, string $fragment, int $occurrence, array &$unsupported ): ?InventoryOccurrence {
+	private function inventory_from_content_fragment( string $id, string $fragment, int $occurrence, array &$unsupported ): InventoryOccurrence {
 		$attachment_id = $this->markers->parse_attachment_id( $fragment );
 		$url           = $this->attribute_value( $fragment, 'src' );
 		$evidence      = array(
@@ -322,30 +318,30 @@ final class ContentInventoryService {
 	/**
 	 * Map one unsupported Elementor case into the generic inventory shape.
 	 *
-	 * @param ElementorUnsupportedBackgroundCase $case Unsupported case.
+	 * @param ElementorUnsupportedBackgroundCase $unsupported_case Unsupported case.
 	 * @return UnsupportedInventoryCase
 	 */
-	private function inventory_from_elementor_unsupported_case( ElementorUnsupportedBackgroundCase $case ): UnsupportedInventoryCase {
-		$data  = $case->to_array();
-		$label = 'Unsupported Elementor background';
+	private function inventory_from_elementor_unsupported_case( ElementorUnsupportedBackgroundCase $unsupported_case ): UnsupportedInventoryCase {
+		$data    = $unsupported_case->to_array();
+		$label   = 'Unsupported Elementor background';
 		$message = 'This Elementor background reference could not be inventoried as a trusted local attachment.';
 
-		if ( ElementorUnsupportedBackgroundCase::CODE_INVALID_DOCUMENT_DATA === $case->code() ) {
+		if ( ElementorUnsupportedBackgroundCase::CODE_INVALID_DOCUMENT_DATA === $unsupported_case->code() ) {
 			$label   = 'Invalid Elementor document data';
 			$message = 'Stored Elementor document data is invalid, so background inventory could not continue safely.';
-		} elseif ( ElementorUnsupportedBackgroundCase::CODE_UNSUPPORTED_CSS_URL === $case->code() ) {
+		} elseif ( ElementorUnsupportedBackgroundCase::CODE_UNSUPPORTED_CSS_URL === $unsupported_case->code() ) {
 			$label   = 'Elementor custom CSS background';
 			$message = 'A custom CSS background url() token was found and remains unsupported in this inventory pass.';
-		} elseif ( ElementorUnsupportedBackgroundCase::CODE_UNSUPPORTED_BACKGROUND_MODE === $case->code() ) {
+		} elseif ( ElementorUnsupportedBackgroundCase::CODE_UNSUPPORTED_BACKGROUND_MODE === $unsupported_case->code() ) {
 			$label   = 'Unsupported Elementor background mode';
 			$message = 'This Elementor background mode is outside the supported structured attachment-backed inventory scope.';
-		} elseif ( ElementorUnsupportedBackgroundCase::CODE_UNSUPPORTED_BACKGROUND_VALUE === $case->code() ) {
+		} elseif ( ElementorUnsupportedBackgroundCase::CODE_UNSUPPORTED_BACKGROUND_VALUE === $unsupported_case->code() ) {
 			$label   = 'Unregistered Elementor background value';
 			$message = 'This Elementor background value does not expose a trusted attachment ID for conservative inventorying.';
 		}
 
 		return new UnsupportedInventoryCase(
-			'elementor_' . $case->code(),
+			'elementor_' . $unsupported_case->code(),
 			UnsupportedInventoryCase::SOURCE_ELEMENTOR_BACKGROUND,
 			$label,
 			$message,
@@ -414,14 +410,16 @@ final class ContentInventoryService {
 			return PageInventoryItem::ORIGIN_UNKNOWN;
 		}
 
-		$url = trim( $url );
+		$url              = trim( $url );
 		$uploads_base_url = $this->trim_trailing_slash( $this->runtime->uploads_base_url() );
 
 		if ( '' !== $uploads_base_url && 0 === strpos( $url, $uploads_base_url ) ) {
 			return PageInventoryItem::ORIGIN_LOCAL_UNREGISTERED;
 		}
 
-		$parts = parse_url( $url );
+		$parts = function_exists( 'wp_parse_url' )
+			? \wp_parse_url( $url )
+			: parse_url( $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Safe fallback outside WordPress bootstrap.
 
 		if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
 			return PageInventoryItem::ORIGIN_UNKNOWN;
@@ -442,8 +440,12 @@ final class ContentInventoryService {
 	 * @return bool
 	 */
 	private function same_origin( string $left, string $right ): bool {
-		$left_parts  = parse_url( $left );
-		$right_parts = parse_url( $right );
+		$left_parts  = function_exists( 'wp_parse_url' )
+			? \wp_parse_url( $left )
+			: parse_url( $left ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Safe fallback outside WordPress bootstrap.
+		$right_parts = function_exists( 'wp_parse_url' )
+			? \wp_parse_url( $right )
+			: parse_url( $right ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Safe fallback outside WordPress bootstrap.
 
 		if ( ! is_array( $left_parts ) || ! is_array( $right_parts ) ) {
 			return false;

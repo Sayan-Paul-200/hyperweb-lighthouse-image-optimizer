@@ -8,12 +8,12 @@
 namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Reporting;
 
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
-use HyperWeb\LighthouseImageOptimizer\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundDiscovery;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorDocumentData;
 use HyperWeb\LighthouseImageOptimizer\Reporting\ContentInventoryService;
 use HyperWeb\LighthouseImageOptimizer\Reporting\TrustedAttachmentMarkerParser;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Attachment\FakeAttachmentMetaStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Integration\FakeElementorDocumentDataStore;
 use PHPUnit\Framework\TestCase;
 
@@ -28,14 +28,14 @@ final class ContentInventoryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_core_content_inventory_classifies_occurrences_conservatively(): void {
-		$runtime               = new FakeContentInventoryRuntime();
-		$runtime->content[55]  = array(
+		$runtime              = new FakeContentInventoryRuntime();
+		$runtime->content[55] = array(
 			'type'   => 'page',
 			'status' => 'publish',
 			'title'  => 'Landing page',
 			'body'   => '<img class="wp-image-123" src="https://example.test/wp-content/uploads/2026/07/hero.jpg"><img src="https://example.test/wp-content/uploads/2026/07/unregistered.jpg"><img src="https://cdn.example.test/hero.jpg"><img src="/wp-content/uploads/relative.jpg">',
 		);
-		$meta                  = new FakeAttachmentMetaStore();
+		$meta                 = new FakeAttachmentMetaStore();
 		$meta->meta[123][ LifecyclePolicy::META_STATUS ] = array(
 			'state'    => 'optimized',
 			'formats'  => array( 'webp', 'avif' ),
@@ -79,8 +79,8 @@ final class ContentInventoryServiceTest extends TestCase {
 			'formats'  => array( 'webp' ),
 			'excluded' => true,
 		);
-		$store               = new FakeElementorDocumentDataStore();
-		$store->document     = ElementorDocumentData::valid( $this->fixture_elements( 'background-classic-responsive.php' ) );
+		$store           = new FakeElementorDocumentDataStore();
+		$store->document = ElementorDocumentData::valid( $this->fixture_elements( 'background-classic-responsive.php' ) );
 
 		$report = $this->service( $runtime, $meta, $store )->report( 77 )->to_array();
 
@@ -104,8 +104,8 @@ final class ContentInventoryServiceTest extends TestCase {
 			'title'  => 'Elementor page',
 			'body'   => '',
 		);
-		$store               = new FakeElementorDocumentDataStore();
-		$store->document     = ElementorDocumentData::valid( $this->fixture_elements( 'background-url-only.php' ) );
+		$store                = new FakeElementorDocumentDataStore();
+		$store->document      = ElementorDocumentData::valid( $this->fixture_elements( 'background-url-only.php' ) );
 
 		$report = $this->service( $runtime, new FakeAttachmentMetaStore(), $store )->report( 88 )->to_array();
 
@@ -120,8 +120,8 @@ final class ContentInventoryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function test_product_featured_and_gallery_media_are_inventoried(): void {
-		$runtime               = new FakeContentInventoryRuntime();
-		$runtime->content[99]  = array(
+		$runtime              = new FakeContentInventoryRuntime();
+		$runtime->content[99] = array(
 			'type'              => 'product',
 			'status'            => 'publish',
 			'title'             => 'Sample product',
@@ -142,8 +142,8 @@ final class ContentInventoryServiceTest extends TestCase {
 	/**
 	 * Build the service under test.
 	 *
-	 * @param FakeContentInventoryRuntime|null  $runtime Runtime.
-	 * @param FakeAttachmentMetaStore|null      $meta Meta store.
+	 * @param FakeContentInventoryRuntime|null    $runtime Runtime.
+	 * @param FakeAttachmentMetaStore|null        $meta Meta store.
 	 * @param FakeElementorDocumentDataStore|null $store Elementor store.
 	 * @return ContentInventoryService
 	 */

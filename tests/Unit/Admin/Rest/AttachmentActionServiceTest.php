@@ -15,6 +15,7 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueService;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueStatus;
@@ -250,18 +251,20 @@ final class AttachmentActionServiceTest extends TestCase {
 		);
 		$probe      = new FakeImageFileProbe( array( 'C:/site/wp-content/uploads' ) );
 		$probe->add_file( 'C:/site/wp-content/uploads/2026/07/hero.jpg', 5000, 1783526400, 'image/jpeg', 2400, 1600 );
-		$collector = new SourceCollector(
-			new FakeAttachmentSourceProvider(
-				'C:/site/wp-content/uploads/2026/07/hero.jpg',
-				array(
-					'file'   => '2026/07/hero.jpg',
-					'width'  => 2400,
-					'height' => 1600,
-					'sizes'  => array(),
+		$collector = new LocalAttachmentSourceCollector(
+			new SourceCollector(
+				new FakeAttachmentSourceProvider(
+					'C:/site/wp-content/uploads/2026/07/hero.jpg',
+					array(
+						'file'   => '2026/07/hero.jpg',
+						'width'  => 2400,
+						'height' => 1600,
+						'sizes'  => array(),
+					),
+					'C:/site/wp-content/uploads'
 				),
-				'C:/site/wp-content/uploads'
-			),
-			$probe
+				$probe
+			)
 		);
 		$details   = new AttachmentDetailsService( $repository );
 		$controls  = new QueueControlStateStore(

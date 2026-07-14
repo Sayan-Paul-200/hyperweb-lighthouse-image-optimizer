@@ -266,7 +266,7 @@ final class AttachmentReconciliationService {
 	private function queue_message( QueueStatus $status, string $fallback ): string {
 		$messages = $status->messages();
 
-		if ( isset( $messages[0] ) && is_scalar( $messages[0] ) ) {
+		if ( isset( $messages[0] ) ) {
 			return (string) $messages[0];
 		}
 

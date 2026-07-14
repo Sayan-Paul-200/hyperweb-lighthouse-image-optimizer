@@ -24,21 +24,21 @@ final class OffloadScopePolicyTest extends TestCase {
 	 */
 	public function test_offload_slice_stays_isolated_from_unrelated_runtime_surfaces(): void {
 		$forbidden_patterns = array(
-			'REST route registration' => '/\bregister_rest_route\s*\(/',
-			'REST API hook'           => '/\brest_api_init\b/',
-			'admin menu page'         => '/\badd_menu_page\s*\(/',
-			'admin submenu page'      => '/\badd_submenu_page\s*\(/',
-			'global admin asset hook' => '/\badmin_enqueue_scripts\b/',
-			'global frontend hook'    => '/\bwp_enqueue_scripts\b/',
-			'frontend image hook'     => '/\bwp_get_attachment_image\b/',
-			'frontend content hook'   => '/\bwp_content_img_tag\b/',
-			'loading hook'            => '/\bwp_get_loading_optimization_attributes\b/',
-			'output buffering'        => '/\bob_start\s*\(/',
-			'async queue scheduling'  => '/\bas_enqueue_async_action\s*\(/',
-			'single queue scheduling' => '/\bas_schedule_single_action\s*\(/',
+			'REST route registration'   => '/\bregister_rest_route\s*\(/',
+			'REST API hook'             => '/\brest_api_init\b/',
+			'admin menu page'           => '/\badd_menu_page\s*\(/',
+			'admin submenu page'        => '/\badd_submenu_page\s*\(/',
+			'global admin asset hook'   => '/\badmin_enqueue_scripts\b/',
+			'global frontend hook'      => '/\bwp_enqueue_scripts\b/',
+			'frontend image hook'       => '/\bwp_get_attachment_image\b/',
+			'frontend content hook'     => '/\bwp_content_img_tag\b/',
+			'loading hook'              => '/\bwp_get_loading_optimization_attributes\b/',
+			'output buffering'          => '/\bob_start\s*\(/',
+			'async queue scheduling'    => '/\bas_enqueue_async_action\s*\(/',
+			'single queue scheduling'   => '/\bas_schedule_single_action\s*\(/',
 			'runtime hook registration' => '/\b(?:add_action|add_filter)\s*\(/',
-			'plugin deactivation'     => '/\bdeactivate_plugins\s*\(/',
-			'theme file mutation'     => '/\b(?:switch_theme|wp_update_theme)\s*\(/',
+			'plugin deactivation'       => '/\bdeactivate_plugins\s*\(/',
+			'theme file mutation'       => '/\b(?:switch_theme|wp_update_theme)\s*\(/',
 		);
 		$allowed_patterns   = array(
 			'src/Integration/Offload/OffloadDeliveryAdapter.php' => array(

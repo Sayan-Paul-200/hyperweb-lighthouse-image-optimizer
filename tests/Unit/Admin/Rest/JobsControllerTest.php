@@ -17,6 +17,7 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentFingerprintBuilder;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueService;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlService;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStore;
@@ -312,18 +313,20 @@ final class JobsControllerTest extends TestCase {
 		);
 		$probe      = new FakeImageFileProbe( array( '/uploads', '/uploads/2026', '/uploads/2026/07' ) );
 		$probe->add_file( '/uploads/2026/07/hero.jpg', 1000, 1783526400, 'image/jpeg', 2400, 1600 );
-		$collector     = new SourceCollector(
-			new FakeAttachmentSourceProvider(
-				'/uploads/2026/07/hero.jpg',
-				array(
-					'file'   => '2026/07/hero.jpg',
-					'width'  => 2400,
-					'height' => 1600,
-					'sizes'  => array(),
+		$collector     = new LocalAttachmentSourceCollector(
+			new SourceCollector(
+				new FakeAttachmentSourceProvider(
+					'/uploads/2026/07/hero.jpg',
+					array(
+						'file'   => '2026/07/hero.jpg',
+						'width'  => 2400,
+						'height' => 1600,
+						'sizes'  => array(),
+					),
+					'/uploads'
 				),
-				'/uploads'
-			),
-			$probe
+				$probe
+			)
 		);
 		$job_control   = new FakeAttachmentJobControl();
 		$controls      = new QueueControlStateStore(

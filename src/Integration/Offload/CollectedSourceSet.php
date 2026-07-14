@@ -31,7 +31,7 @@ final class CollectedSourceSet {
 	/**
 	 * Create source set.
 	 *
-	 * @param SourceImageCollection $collection Source collection.
+	 * @param SourceImageCollection  $collection Source collection.
 	 * @param TemporarySourceLease[] $leases Temporary source leases.
 	 */
 	public function __construct( SourceImageCollection $collection, array $leases = array() ) {

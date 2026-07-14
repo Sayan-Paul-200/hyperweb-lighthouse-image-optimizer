@@ -115,7 +115,7 @@ final class DashboardEnvironmentSummaryService {
 					'loaded'      => $report->action_scheduler()->is_loaded(),
 					'initialized' => $report->action_scheduler()->is_initialized(),
 				),
-				'offload'               => null !== $this->offload ? $this->offload->site_support()->to_array() : null,
+				'offload'                => null !== $this->offload ? $this->offload->site_support()->to_array() : null,
 				'automatic_optimization' => $this->settings->automatic_optimization_enabled(),
 				'delivery_enabled'       => $this->settings->delivery_enabled(),
 			),

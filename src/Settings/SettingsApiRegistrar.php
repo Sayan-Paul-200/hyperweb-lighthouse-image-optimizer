@@ -82,11 +82,11 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 	/**
 	 * Create the registrar.
 	 *
-	 * @param SettingsRepositoryInterface    $repository Settings repository.
-	 * @param SettingsSanitizer              $sanitizer Settings sanitizer.
-	 * @param SettingsApiInterface           $settings_api Settings API adapter.
-	 * @param FormatSupportProviderInterface $format_support Format support checker.
-	 * @param string                         $capability Required capability.
+	 * @param SettingsRepositoryInterface             $repository Settings repository.
+	 * @param SettingsSanitizer                       $sanitizer Settings sanitizer.
+	 * @param SettingsApiInterface                    $settings_api Settings API adapter.
+	 * @param FormatSupportProviderInterface          $format_support Format support checker.
+	 * @param string                                  $capability Required capability.
 	 * @param PageSpeedCredentialsStoreInterface|null $pagespeed_credentials PageSpeed credentials store.
 	 */
 	public function __construct(
@@ -97,11 +97,11 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 		string $capability = SettingsSchema::CAPABILITY_MANAGE_OPTIONS,
 		?PageSpeedCredentialsStoreInterface $pagespeed_credentials = null
 	) {
-		$this->repository     = $repository;
-		$this->sanitizer      = $sanitizer;
-		$this->settings_api   = $settings_api;
-		$this->format_support = $format_support;
-		$this->capability     = $capability;
+		$this->repository            = $repository;
+		$this->sanitizer             = $sanitizer;
+		$this->settings_api          = $settings_api;
+		$this->format_support        = $format_support;
+		$this->capability            = $capability;
 		$this->pagespeed_credentials = $pagespeed_credentials;
 	}
 

@@ -85,13 +85,13 @@ final class OffloadSiteSupport {
 		string $plugin_name,
 		array $blocked_operations = array()
 	) {
-		$this->plugin_active       = $plugin_active;
-		$this->supported           = $supported;
-		$this->code                = $this->normalize_code( $code );
-		$this->message             = '' === trim( $message ) ? 'Offload support summary.' : trim( $message );
-		$this->plugin_basename     = trim( $plugin_basename );
-		$this->plugin_name         = trim( $plugin_name );
-		$this->blocked_operations  = $this->normalize_operations( $blocked_operations );
+		$this->plugin_active      = $plugin_active;
+		$this->supported          = $supported;
+		$this->code               = $this->normalize_code( $code );
+		$this->message            = '' === trim( $message ) ? 'Offload support summary.' : trim( $message );
+		$this->plugin_basename    = trim( $plugin_basename );
+		$this->plugin_name        = trim( $plugin_name );
+		$this->blocked_operations = $this->normalize_operations( $blocked_operations );
 	}
 
 	/**
@@ -162,7 +162,7 @@ final class OffloadSiteSupport {
 	 *
 	 * @return bool
 	 */
-	public function supported(): bool {
+	public function is_supported(): bool {
 		return $this->supported;
 	}
 
@@ -172,7 +172,7 @@ final class OffloadSiteSupport {
 	 * @return bool
 	 */
 	public function blocks_operations(): bool {
-		return $this->plugin_active() && ! $this->supported();
+		return $this->plugin_active() && ! $this->is_supported();
 	}
 
 	/**
@@ -209,13 +209,13 @@ final class OffloadSiteSupport {
 	 */
 	public function to_array(): array {
 		return array(
-			'pluginActive'       => $this->plugin_active(),
-			'supported'          => $this->supported(),
-			'code'               => $this->code(),
-			'message'            => $this->message(),
-			'pluginBasename'     => $this->plugin_basename,
-			'pluginName'         => $this->plugin_name,
-			'blockedOperations'  => $this->blocked_operations(),
+			'pluginActive'      => $this->plugin_active(),
+			'supported'         => $this->is_supported(),
+			'code'              => $this->code(),
+			'message'           => $this->message(),
+			'pluginBasename'    => $this->plugin_basename,
+			'pluginName'        => $this->plugin_name,
+			'blockedOperations' => $this->blocked_operations(),
 		);
 	}
 

@@ -38,8 +38,8 @@ final class DerivativePushRequest {
 	/**
 	 * Create request.
 	 *
-	 * @param int                      $attachment_id Attachment ID.
-	 * @param OffloadAttachmentSupport $support Attachment support facts.
+	 * @param int                        $attachment_id Attachment ID.
+	 * @param OffloadAttachmentSupport   $support Attachment support facts.
 	 * @param ConversionResultCollection $results Conversion results.
 	 */
 	public function __construct( int $attachment_id, OffloadAttachmentSupport $support, ConversionResultCollection $results ) {

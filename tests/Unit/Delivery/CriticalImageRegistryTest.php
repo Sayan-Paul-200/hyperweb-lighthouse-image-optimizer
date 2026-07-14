@@ -144,13 +144,13 @@ final class CriticalImageRegistryTest extends TestCase {
 	 * @return void
 	 */
 	public function test_cached_selection_is_recomputed_after_site_switch(): void {
-		$runtime                   = new FakeAttachmentImageRuntime();
-		$runtime->post_id          = 55;
-		$runtime->post_type        = 'post';
-		$store                     = new FakeCriticalImagePostMetaStore();
-		$store->values[55]         = 123;
-		$site_context              = new FakeSiteContextRuntime();
-		$registry                  = $this->registry( $runtime, new FakeSettingsRepository(), $store, $site_context );
+		$runtime            = new FakeAttachmentImageRuntime();
+		$runtime->post_id   = 55;
+		$runtime->post_type = 'post';
+		$store              = new FakeCriticalImagePostMetaStore();
+		$store->values[55]  = 123;
+		$site_context       = new FakeSiteContextRuntime();
+		$registry           = $this->registry( $runtime, new FakeSettingsRepository(), $store, $site_context );
 
 		self::assertSame( 123, $registry->resolve()->primary_attachment_id() );
 
@@ -165,8 +165,8 @@ final class CriticalImageRegistryTest extends TestCase {
 	 *
 	 * @param FakeAttachmentImageRuntime|null     $runtime Runtime seam.
 	 * @param FakeSettingsRepository|null         $settings Settings repository.
-	 * @param FakeCriticalImagePostMetaStore|null                  $store Meta store.
-	 * @param FakeSiteContextRuntime|null                          $site_context Site context.
+	 * @param FakeCriticalImagePostMetaStore|null $store Meta store.
+	 * @param FakeSiteContextRuntime|null         $site_context Site context.
 	 * @return CriticalImageRegistry
 	 */
 	private function registry(

@@ -155,7 +155,6 @@ final class OptimizationWorker implements HookProviderInterface {
 				$runtime,
 				$adapter,
 				$offload,
-				$files,
 				new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer()
 			),
 			new AttachmentFingerprintBuilder(),

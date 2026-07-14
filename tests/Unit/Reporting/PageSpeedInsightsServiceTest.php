@@ -298,7 +298,17 @@ final class FakePageSpeedReportStore implements PageSpeedReportStoreInterface {
 	 * @return PageSpeedReport|null
 	 */
 	public function read( int $content_id, string $strategy, bool $integration_enabled, string $public_url = '' ): ?PageSpeedReport {
-		return $this->reports[ $strategy ] ?? null;
+		if ( ! isset( $this->reports[ $strategy ] ) || ! $this->reports[ $strategy ] instanceof PageSpeedReport ) {
+			return null;
+		}
+
+		return PageSpeedReport::from_storage(
+			$content_id,
+			$strategy,
+			$this->reports[ $strategy ]->to_storage_array(),
+			$integration_enabled,
+			$public_url
+		);
 	}
 
 	/**

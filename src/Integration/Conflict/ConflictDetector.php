@@ -43,8 +43,8 @@ final class ConflictDetector {
 	 * @param OffloadSupportService|null $offload Offload support service.
 	 */
 	public function __construct( ConflictRuntimeInterface $runtime, ?OffloadSupportService $offload = null ) {
-		$this->runtime  = $runtime;
-		$this->offload  = $offload;
+		$this->runtime = $runtime;
+		$this->offload = $offload;
 	}
 
 	/**
@@ -114,7 +114,7 @@ final class ConflictDetector {
 	/**
 	 * Build the media-offload conflict result with supported WP Offload Media refinement.
 	 *
-	 * @param string[]          $matched Matched plugin names.
+	 * @param string[]           $matched Matched plugin names.
 	 * @param array<string,bool> $active_lookup Active plugin lookup.
 	 * @return ConflictResult|null
 	 */
@@ -135,7 +135,7 @@ final class ConflictDetector {
 
 		$site = $this->offload->site_support();
 
-		if ( $site->supported() ) {
+		if ( $site->is_supported() ) {
 			$others = array_values( array_diff( $matched, array( WpOffloadMediaAdapter::PLUGIN_NAME ) ) );
 
 			if ( array() === $others ) {

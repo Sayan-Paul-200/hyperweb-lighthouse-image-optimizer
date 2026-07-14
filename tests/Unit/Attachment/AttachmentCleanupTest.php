@@ -16,6 +16,7 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\SystemAttachmentClock;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAttachmentSourceProvider;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeCacheInvalidationDispatcher;
@@ -247,7 +248,7 @@ final class AttachmentCleanupTest extends TestCase {
 			$store,
 			new DerivativeFileCleaner( self::UPLOADS, $filesystem ),
 			$jobs,
-			new SourceCollector( $provider, $probe ),
+			new LocalAttachmentSourceCollector( new SourceCollector( $provider, $probe ) ),
 			$dispatcher
 		);
 	}

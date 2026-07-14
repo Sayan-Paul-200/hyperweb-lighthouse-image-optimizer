@@ -73,7 +73,7 @@ final class ImageIssueReport {
 
 		foreach ( $this->findings as $finding ) {
 			++$by_severity[ $finding->severity() ];
-			$code              = $finding->code();
+			$code             = $finding->code();
 			$by_code[ $code ] = isset( $by_code[ $code ] ) ? (int) $by_code[ $code ] + 1 : 1;
 		}
 

@@ -52,10 +52,10 @@ final class LocalSourceResolutionResult {
 	/**
 	 * Create result.
 	 *
-	 * @param bool                     $successful Success flag.
-	 * @param string                   $code Code.
-	 * @param string                   $message Message.
-	 * @param SourceImage|null         $source Source image.
+	 * @param bool                      $successful Success flag.
+	 * @param string                    $code Code.
+	 * @param string                    $message Message.
+	 * @param SourceImage|null          $source Source image.
 	 * @param TemporarySourceLease|null $lease Temporary lease.
 	 */
 	public function __construct(
@@ -75,7 +75,7 @@ final class LocalSourceResolutionResult {
 	/**
 	 * Build success result.
 	 *
-	 * @param SourceImage         $source Source image.
+	 * @param SourceImage          $source Source image.
 	 * @param TemporarySourceLease $lease Temporary lease.
 	 * @return self
 	 */

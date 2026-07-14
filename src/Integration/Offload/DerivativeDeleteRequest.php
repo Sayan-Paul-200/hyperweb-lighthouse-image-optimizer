@@ -55,7 +55,7 @@ final class DerivativeDeleteRequest {
 			array_filter(
 				array_map(
 					static function ( $path ): string {
-						return is_scalar( $path ) ? ltrim( str_replace( '\\', '/', trim( (string) $path ) ), '/' ) : '';
+						return ltrim( str_replace( '\\', '/', trim( (string) $path ) ), '/' );
 					},
 					$relative_paths
 				)

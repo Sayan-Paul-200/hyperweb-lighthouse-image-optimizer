@@ -55,9 +55,9 @@ interface CliRuntimeInterface {
 	/**
 	 * Format items for command output.
 	 *
-	 * @param string                 $format Output format.
+	 * @param string                         $format Output format.
 	 * @param array<int,array<string,mixed>> $items Items.
-	 * @param string[]               $fields Fields.
+	 * @param string[]                       $fields Fields.
 	 * @return void
 	 */
 	public function format_items( string $format, array $items, array $fields ): void;
