@@ -114,11 +114,20 @@ final class AssetsTest extends TestCase {
 		self::assertStringContainsString( '"jobsPauseRoute":"\\/jobs\\/pause"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"attachmentsRoute":"\\/attachments"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"route":"\\/diagnostics"', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"contentInventoryRoute":"\\/content\\/{content_id}\\/inventory"', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"pageSpeedRoute":"\\/content\\/{content_id}\\/pagespeed"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"retentionRoute":"\\/logs\\/retention"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"storageKey":"hwlioBulkScanToken"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"queueModeKey":"hwlioBulkQueueMode"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"recalculateAction":"Recalculate Statistics"', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"diagnosticsLoadError":"Diagnostics could not be loaded right now."', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"inventoryLoadError":"The requested content inventory could not be loaded right now."', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"inventoryIssueSummaryTotal":"Total Findings"', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"inventoryByteActualTitle":"Actual Conversion"', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"inventoryByteOccurrencesEmpty":"No page-transfer byte occurrence rows are available for this content record."', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"inventoryIssuesEmpty":"No conservative image issue findings were generated for this content record."', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"pageSpeedRunAction":"Run PageSpeed Insights"', $asset_runtime->inline_scripts[0]['data'] );
+		self::assertStringContainsString( '"pageSpeedNoCache":"No cached PageSpeed Insights data is available for this content record and strategy yet."', $asset_runtime->inline_scripts[0]['data'] );
 		self::assertStringContainsString( '"logsLoadError":"Logs could not be loaded right now."', $asset_runtime->inline_scripts[0]['data'] );
 	}
 

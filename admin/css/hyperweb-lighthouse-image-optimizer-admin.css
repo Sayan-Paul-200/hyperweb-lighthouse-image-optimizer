@@ -443,6 +443,198 @@
 	gap: 16px;
 }
 
+.hwlio-diagnostics__inventory {
+	display: grid;
+	gap: 16px;
+}
+
+.hwlio-diagnostics__inventory-header,
+.hwlio-diagnostics__inventory-results {
+	display: grid;
+	gap: 16px;
+}
+
+.hwlio-diagnostics__inventory-intro p {
+	margin: 0;
+}
+
+.hwlio-diagnostics__inventory-form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px;
+}
+
+.hwlio-diagnostics__inventory-field {
+	display: grid;
+	gap: 6px;
+	min-width: 180px;
+}
+
+.hwlio-diagnostics__field-label {
+	color: #50575e;
+	font-weight: 600;
+}
+
+.hwlio-diagnostics__inventory-content,
+.hwlio-diagnostics__inventory-summary,
+.hwlio-diagnostics__inventory-issue-summary,
+.hwlio-diagnostics__inventory-issues,
+.hwlio-diagnostics__inventory-items,
+.hwlio-diagnostics__inventory-unsupported {
+	display: grid;
+	gap: 12px;
+}
+
+.hwlio-diagnostics__inventory-summary,
+.hwlio-diagnostics__inventory-issue-summary,
+.hwlio-diagnostics__inventory-byte-summary {
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.hwlio-diagnostics__inventory-byte-summary,
+.hwlio-diagnostics__inventory-bytes {
+	display: grid;
+	gap: 16px;
+}
+
+.hwlio-diagnostics__inventory-pagespeed {
+	display: grid;
+	gap: 12px;
+	padding: 14px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f6f7f7;
+}
+
+.hwlio-diagnostics__inventory-pagespeed-header {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 16px;
+}
+
+.hwlio-diagnostics__inventory-pagespeed-intro {
+	max-width: 780px;
+}
+
+.hwlio-diagnostics__inventory-pagespeed-intro h4,
+.hwlio-diagnostics__inventory-pagespeed-intro p {
+	margin: 0;
+}
+
+.hwlio-diagnostics__inventory-pagespeed-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px;
+}
+
+.hwlio-diagnostics__inventory-byte-panel {
+	padding: 14px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+}
+
+.hwlio-diagnostics__inventory-byte-panel h4 {
+	margin: 0 0 12px;
+}
+
+.hwlio-diagnostics__inventory-byte-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 12px;
+}
+
+.hwlio-diagnostics__inventory-byte-format {
+	display: grid;
+	gap: 4px;
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f6f7f7;
+}
+
+.hwlio-diagnostics__inventory-card {
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f6f7f7;
+}
+
+.hwlio-diagnostics__inventory-card-label {
+	display: block;
+	margin-bottom: 6px;
+	color: #50575e;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.hwlio-diagnostics__inventory-card-value {
+	display: block;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.hwlio-diagnostics__inventory-content-meta {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 12px;
+}
+
+.hwlio-diagnostics__inventory-content-row {
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+}
+
+.hwlio-diagnostics__inventory-content-row strong {
+	display: block;
+	margin-bottom: 6px;
+}
+
+.hwlio-diagnostics__inventory-list {
+	display: grid;
+	gap: 12px;
+}
+
+.hwlio-diagnostics__inventory-item {
+	padding: 14px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+}
+
+.hwlio-diagnostics__inventory-item-header,
+.hwlio-diagnostics__inventory-item-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.hwlio-diagnostics__inventory-item-header {
+	justify-content: space-between;
+}
+
+.hwlio-diagnostics__inventory-item-title {
+	margin: 0;
+	font-size: 14px;
+}
+
+.hwlio-diagnostics__inventory-item-body,
+.hwlio-diagnostics__inventory-item-meta {
+	margin-top: 10px;
+}
+
+.hwlio-diagnostics__inventory-item-meta code {
+	word-break: break-word;
+}
+
 .hwlio-diagnostics__group {
 	display: grid;
 	gap: 12px;

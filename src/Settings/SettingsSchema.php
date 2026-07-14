@@ -62,6 +62,11 @@ final class SettingsSchema {
 				self::GROUP_GENERAL,
 				'Automatically queue new uploads for optimization.'
 			),
+			'pagespeed_insights_enabled'            => self::boolean_definition(
+				false,
+				self::GROUP_GENERAL,
+				'Allow optional manual PageSpeed Insights requests from the Diagnostics screen.'
+			),
 			'media_library_controls'                => self::boolean_definition(
 				true,
 				self::GROUP_GENERAL,

@@ -9,6 +9,7 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery;
 
 require_once __DIR__ . '/DeliveryTestWordPressShim.php';
 
+use HyperWeb\LighthouseImageOptimizer\Delivery\DeliveryHookPolicy;
 use HyperWeb\LighthouseImageOptimizer\Delivery\DerivativeUrlRequest;
 use HyperWeb\LighthouseImageOptimizer\Delivery\WordPressUploadsRuntime;
 use PHPUnit\Framework\TestCase;
@@ -70,27 +71,35 @@ final class WordPressUploadsRuntimeTest extends TestCase {
 			'basedir' => 'C:/site/wp-content/uploads',
 		);
 		$GLOBALS['hwlio_test_filters']       = array(
-			'hwlio_delivery_uploads_base_url' => static function (
+			DeliveryHookPolicy::FILTER_UPLOADS_BASE_URL => static function (
 				string $base_url,
 				string $relative_path,
 				?int $attachment_id,
 				?string $size_name,
-				?string $format
+				?string $format,
+				array $context
 			): string {
 				TestCase::assertSame( 'https://example.test/wp-content/uploads', $base_url );
 				TestCase::assertSame( '2026/07/hero.jpg.hwlio.avif', $relative_path );
 				TestCase::assertSame( 321, $attachment_id );
 				TestCase::assertSame( 'large', $size_name );
 				TestCase::assertSame( 'avif', $format );
+				TestCase::assertSame( $relative_path, $context['relative_path'] );
+				TestCase::assertSame( $attachment_id, $context['attachment_id'] );
+				TestCase::assertSame( $size_name, $context['size_name'] );
+				TestCase::assertSame( $format, $context['format'] );
+				TestCase::assertSame( $base_url, $context['base_url'] );
+				TestCase::assertInstanceOf( DerivativeUrlRequest::class, $context['request'] );
 
 				return 'https://cdn.example.test/uploads';
 			},
-			'hwlio_delivery_derivative_url'   => static function (
+			DeliveryHookPolicy::FILTER_DERIVATIVE_URL   => static function (
 				string $url,
 				string $relative_path,
 				?int $attachment_id,
 				?string $size_name,
-				?string $format
+				?string $format,
+				array $context
 			): string {
 				TestCase::assertSame(
 					'https://cdn.example.test/uploads/2026/07/hero.jpg.hwlio.avif',
@@ -100,6 +109,12 @@ final class WordPressUploadsRuntimeTest extends TestCase {
 				TestCase::assertSame( 321, $attachment_id );
 				TestCase::assertSame( 'large', $size_name );
 				TestCase::assertSame( 'avif', $format );
+				TestCase::assertSame( $relative_path, $context['relative_path'] );
+				TestCase::assertSame( $attachment_id, $context['attachment_id'] );
+				TestCase::assertSame( $size_name, $context['size_name'] );
+				TestCase::assertSame( $format, $context['format'] );
+				TestCase::assertSame( $url, $context['url'] );
+				TestCase::assertInstanceOf( DerivativeUrlRequest::class, $context['request'] );
 
 				return 'https://edge.example.test/hero.jpg.hwlio.avif';
 			},
@@ -126,7 +141,7 @@ final class WordPressUploadsRuntimeTest extends TestCase {
 		$request = new DerivativeUrlRequest( '2026/07/hero.jpg.hwlio.webp' );
 
 		$GLOBALS['hwlio_test_filters'] = array(
-			'hwlio_delivery_derivative_url' => static function (): array {
+			DeliveryHookPolicy::FILTER_DERIVATIVE_URL => static function (): array {
 				return array( 'invalid' );
 			},
 		);

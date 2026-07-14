@@ -17,6 +17,20 @@ if ( ! function_exists( 'wp_upload_dir' ) ) {
 	 * @return mixed
 	 */
 	function wp_upload_dir( $time = null, $create_dir = true ) {
+		$current_site_id = isset( $GLOBALS['hwlio_test_current_blog_id'] ) ? (int) $GLOBALS['hwlio_test_current_blog_id'] : 1;
+
+		if ( isset( $GLOBALS['hwlio_test_wp_upload_dir'] ) && is_callable( $GLOBALS['hwlio_test_wp_upload_dir'] ) ) {
+			return call_user_func( $GLOBALS['hwlio_test_wp_upload_dir'], $current_site_id, $time, $create_dir );
+		}
+
+		if (
+			isset( $GLOBALS['hwlio_test_wp_upload_dir_by_site'] )
+			&& is_array( $GLOBALS['hwlio_test_wp_upload_dir_by_site'] )
+			&& array_key_exists( $current_site_id, $GLOBALS['hwlio_test_wp_upload_dir_by_site'] )
+		) {
+			return $GLOBALS['hwlio_test_wp_upload_dir_by_site'][ $current_site_id ];
+		}
+
 		unset( $time, $create_dir );
 
 		return $GLOBALS['hwlio_test_wp_upload_dir'] ?? null;

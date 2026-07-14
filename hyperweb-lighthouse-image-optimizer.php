@@ -161,8 +161,14 @@ function hwlio_load_runtime_dependencies() {
 
 /**
  * The code that runs during plugin activation.
+ *
+ * WordPress may pass whether the plugin is being network-activated. The plugin
+ * intentionally installs only the current site context during activation and
+ * relies on runtime upgrades plus new-site initialization for the rest.
+ *
+ * @param bool $network_wide Whether WordPress is network-activating the plugin.
  */
-function activate_hyperweb_lighthouse_image_optimizer() {
+function activate_hyperweb_lighthouse_image_optimizer( $network_wide = false ) {
 	$failures = hwlio_get_bootstrap_failures();
 
 	if ( array() !== $failures ) {
@@ -180,7 +186,7 @@ function activate_hyperweb_lighthouse_image_optimizer() {
 	hwlio_load_runtime_dependencies();
 
 	require_once HYPERWEB_LIGHTHOUSE_IMAGE_OPTIMIZER_PATH . 'includes/class-hyperweb-lighthouse-image-optimizer-activator.php';
-	Hyperweb_Lighthouse_Image_Optimizer_Activator::activate();
+	Hyperweb_Lighthouse_Image_Optimizer_Activator::activate( (bool) $network_wide );
 }
 
 /**

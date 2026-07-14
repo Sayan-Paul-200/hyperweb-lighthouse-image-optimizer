@@ -115,6 +115,7 @@ final class StatusSummaryService {
 				'delivery_enabled'       => $this->settings->delivery_enabled(),
 			),
 			'environment'    => $environment['environment'],
+			'offload'        => isset( $environment['environment']['offload'] ) ? $environment['environment']['offload'] : null,
 			'recentFailures' => $this->recent_failures->read(),
 			'conflicts'      => $environment['conflicts'],
 			'refresh'        => $this->refresh->summary( $statistics ),

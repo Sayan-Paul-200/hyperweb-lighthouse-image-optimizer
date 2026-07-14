@@ -112,7 +112,7 @@ final class DestinationResolver {
 
 		$source_realpath = $this->normalize_path( $this->files->realpath( $source->absolute_path() ) );
 
-		if ( ! $this->is_within_base( $source_realpath, $base_realpath ) ) {
+		if ( ! $this->is_within_base( $source_realpath, $base_realpath ) && ! $this->is_temporary_source_path( $source_realpath ) ) {
 			return DestinationResolutionResult::invalid(
 				$source,
 				DestinationResolutionResult::CODE_SOURCE_OUTSIDE_UPLOADS,
@@ -313,6 +313,25 @@ final class DestinationResolver {
 	 */
 	private function same_path( string $left, string $right ): bool {
 		return $this->normalize_path( $left ) === $this->normalize_path( $right );
+	}
+
+	/**
+	 * Determine whether a source path is a safe temporary local file.
+	 *
+	 * @param string $path Source path.
+	 * @return bool
+	 */
+	private function is_temporary_source_path( string $path ): bool {
+		$path    = $this->normalize_path( $path );
+		$tempdir = function_exists( 'sys_get_temp_dir' ) ? $this->normalize_path( (string) sys_get_temp_dir() ) : '';
+		$tempdir = rtrim( $tempdir, '/' );
+
+		return '' !== $path
+			&& '' !== $tempdir
+			&& 0 === strpos( $path, $tempdir . '/' )
+			&& $this->files->exists( $path )
+			&& $this->files->is_file( $path )
+			&& $this->files->is_readable( $path );
 	}
 
 	/**

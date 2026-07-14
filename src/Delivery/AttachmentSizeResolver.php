@@ -118,17 +118,15 @@ final class AttachmentSizeResolver {
 	}
 
 	/**
-	 * Resolve one metadata candidate directly from fallback IMG analysis.
+	 * Resolve one metadata candidate directly from a concrete source URL.
 	 *
-	 * @param ImageMarkupAnalysis $analysis Markup analysis.
-	 * @param array<string,mixed> $image_meta Image metadata.
-	 * @param int|null            $known_width Known runtime width.
+	 * @param string                 $url Source URL.
+	 * @param array<string,mixed>    $image_meta Image metadata.
+	 * @param int|null               $known_width Known width.
 	 * @return array<string,mixed>|null
 	 */
-	public function resolve_from_analysis( ImageMarkupAnalysis $analysis, array $image_meta, ?int $known_width = null ): ?array {
-		$src = $analysis->src();
-
-		if ( null === $src || '' === $src ) {
+	public function resolve_from_url( string $url, array $image_meta, ?int $known_width = null ): ?array {
+		if ( '' === trim( $url ) ) {
 			return null;
 		}
 
@@ -141,7 +139,7 @@ final class AttachmentSizeResolver {
 		$matches = array();
 
 		foreach ( $metadata_candidates as $metadata_candidate ) {
-			if ( $this->url_matches_relative_path( $src, (string) $metadata_candidate['relative_path'] ) ) {
+			if ( $this->url_matches_relative_path( $url, (string) $metadata_candidate['relative_path'] ) ) {
 				$matches[] = $metadata_candidate;
 			}
 		}
@@ -165,6 +163,24 @@ final class AttachmentSizeResolver {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Resolve one metadata candidate directly from fallback IMG analysis.
+	 *
+	 * @param ImageMarkupAnalysis $analysis Markup analysis.
+	 * @param array<string,mixed> $image_meta Image metadata.
+	 * @param int|null            $known_width Known runtime width.
+	 * @return array<string,mixed>|null
+	 */
+	public function resolve_from_analysis( ImageMarkupAnalysis $analysis, array $image_meta, ?int $known_width = null ): ?array {
+		$src = $analysis->src();
+
+		if ( null === $src || '' === $src ) {
+			return null;
+		}
+
+		return $this->resolve_from_url( $src, $image_meta, $known_width );
 	}
 
 	/**

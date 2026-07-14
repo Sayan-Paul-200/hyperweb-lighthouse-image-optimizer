@@ -37,6 +37,7 @@ final class SettingsSchemaTest extends TestCase {
 		self::assertSame( 1, $defaults['schema_version'] );
 		self::assertFalse( $defaults['setup_completed'] );
 		self::assertFalse( $defaults['automatic_optimization'] );
+		self::assertFalse( $defaults['pagespeed_insights_enabled'] );
 		self::assertFalse( $defaults['delivery_enabled'] );
 		self::assertTrue( $defaults['loading_attribute_overrides_enabled'] );
 		self::assertFalse( $defaults['critical_logo_enabled'] );
@@ -78,6 +79,8 @@ final class SettingsSchemaTest extends TestCase {
 
 		self::assertTrue( $definitions['delivery_emergency_disabled']['internal'] );
 		self::assertSame( SettingsSchema::GROUP_INTERNAL, $definitions['delivery_emergency_disabled']['group'] );
+		self::assertFalse( $definitions['pagespeed_insights_enabled']['internal'] );
+		self::assertSame( SettingsSchema::GROUP_GENERAL, $definitions['pagespeed_insights_enabled']['group'] );
 	}
 
 	/**

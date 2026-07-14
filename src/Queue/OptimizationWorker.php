@@ -26,6 +26,12 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\SingleActionSchedulerInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\AttachmentSourceCollectorInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadAwareSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WordPressWpOffloadMediaRuntime;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WpOffloadMediaAdapter;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
 use HyperWeb\LighthouseImageOptimizer\Logging\Logger;
 use HyperWeb\LighthouseImageOptimizer\Logging\LoggerInterface;
@@ -56,7 +62,7 @@ final class OptimizationWorker implements HookProviderInterface {
 	/**
 	 * Source collector.
 	 *
-	 * @var SourceCollector
+	 * @var AttachmentSourceCollectorInterface
 	 */
 	private $collector;
 
@@ -124,15 +130,34 @@ final class OptimizationWorker implements HookProviderInterface {
 	private $single_actions;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
 	 * Build the WordPress-backed worker.
 	 *
 	 * @return self
 	 */
 	public static function for_wordpress(): self {
+		$runtime = new WordPressWpOffloadMediaRuntime();
+		$files   = new \HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe();
+		$adapter = new WpOffloadMediaAdapter( $runtime, $files, new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer() );
+		$offload = new OffloadSupportService( $adapter );
+
 		return new self(
 			ActionSchedulerQueue::for_wordpress(),
 			AttachmentLockManager::for_wordpress(),
-			SourceCollector::for_wordpress(),
+			new OffloadAwareSourceCollector(
+				new LocalAttachmentSourceCollector( SourceCollector::for_wordpress() ),
+				$runtime,
+				$adapter,
+				$offload,
+				$files,
+				new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer()
+			),
 			new AttachmentFingerprintBuilder(),
 			DerivativeRepository::for_wordpress(),
 			AttachmentProcessor::for_wordpress(),
@@ -141,7 +166,8 @@ final class OptimizationWorker implements HookProviderInterface {
 			new OptimizationRetryPolicy(),
 			new SystemAttachmentClock(),
 			QueueControlStateStore::for_wordpress(),
-			new ActionSchedulerSingleActionScheduler()
+			new ActionSchedulerSingleActionScheduler(),
+			$offload
 		);
 	}
 
@@ -150,7 +176,7 @@ final class OptimizationWorker implements HookProviderInterface {
 	 *
 	 * @param QueueInterface                       $queue Queue adapter.
 	 * @param AttachmentLockManager                $locks Lock manager.
-	 * @param SourceCollector                      $collector Source collector.
+	 * @param AttachmentSourceCollectorInterface   $collector Source collector.
 	 * @param AttachmentFingerprintBuilder         $fingerprinter Fingerprint builder.
 	 * @param DerivativeRepository                 $repository Derivative repository.
 	 * @param AttachmentProcessorInterface         $processor Attachment processor.
@@ -160,11 +186,12 @@ final class OptimizationWorker implements HookProviderInterface {
 	 * @param AttachmentClockInterface             $clock Clock.
 	 * @param QueueControlStateStoreInterface|null $controls Queue control state store.
 	 * @param SingleActionSchedulerInterface|null  $single_actions Single action scheduler.
+	 * @param OffloadSupportService|null           $offload Offload support service.
 	 */
 	public function __construct(
 		QueueInterface $queue,
 		AttachmentLockManager $locks,
-		SourceCollector $collector,
+		AttachmentSourceCollectorInterface $collector,
 		AttachmentFingerprintBuilder $fingerprinter,
 		DerivativeRepository $repository,
 		AttachmentProcessorInterface $processor,
@@ -173,7 +200,8 @@ final class OptimizationWorker implements HookProviderInterface {
 		OptimizationRetryPolicy $retry_policy,
 		AttachmentClockInterface $clock,
 		?QueueControlStateStoreInterface $controls = null,
-		?SingleActionSchedulerInterface $single_actions = null
+		?SingleActionSchedulerInterface $single_actions = null,
+		?OffloadSupportService $offload = null
 	) {
 		$this->queue          = $queue;
 		$this->locks          = $locks;
@@ -187,6 +215,7 @@ final class OptimizationWorker implements HookProviderInterface {
 		$this->clock          = $clock;
 		$this->controls       = $controls;
 		$this->single_actions = $single_actions;
+		$this->offload        = $offload;
 	}
 
 	/**
@@ -277,34 +306,63 @@ final class OptimizationWorker implements HookProviderInterface {
 		$lock = $acquired->lock();
 
 		try {
-			$collection = $this->collector->collect( $attachment_id );
-			$comparison = $this->fingerprinter->compare_signature( $job->fingerprint(), $collection );
+			if ( null !== $this->offload && ! $this->offload->attachment_support( $attachment_id )->is_supported() ) {
+				$this->save_status(
+					$attachment_id,
+					AttachmentStatus::STATE_FAILED,
+					'offload_unsupported',
+					$current_status
+				);
 
-			if ( $comparison->is_stale() ) {
-				$this->handle_stale_fingerprint( $job, $current_status, $comparison, $job_id );
+				$this->logger->warning(
+					LogCode::WORKER_RESULT_FAILED,
+					'Optimization worker skipped an attachment because the current offload state is unsupported.',
+					array(
+						'attachment_id' => $attachment_id,
+						'format'        => $job->format(),
+						'reason'        => $job->reason(),
+					),
+					$attachment_id,
+					$job_id
+				);
+
 				return;
 			}
 
-			$fingerprint = $comparison->is_match() ? $comparison->current_fingerprint() : null;
+			$collected = $this->collector->collect( $attachment_id );
 
-			$this->save_status(
-				$attachment_id,
-				AttachmentStatus::STATE_PROCESSING,
-				null,
-				$current_status
-			);
+			try {
+				$collection = $collected->collection();
+				$comparison = $this->fingerprinter->compare_signature( $job->fingerprint(), $collection );
 
-			$result = $this->processor->process_request(
-				new AttachmentProcessRequest(
+				if ( $comparison->is_stale() ) {
+					$this->handle_stale_fingerprint( $job, $current_status, $comparison, $job_id );
+					return;
+				}
+
+				$fingerprint = $comparison->is_match() ? $comparison->current_fingerprint() : null;
+
+				$this->save_status(
 					$attachment_id,
-					$job->format(),
-					$job->cursor(),
-					$worker_budget,
-					$job->force(),
-					$collection,
-					$fingerprint
-				)
-			);
+					AttachmentStatus::STATE_PROCESSING,
+					null,
+					$current_status
+				);
+
+				$result = $this->processor->process_request(
+					new AttachmentProcessRequest(
+						$attachment_id,
+						$job->format(),
+						$job->cursor(),
+						$worker_budget,
+						$job->force(),
+						$collection,
+						$fingerprint
+					)
+				);
+			} finally {
+				$collected->release();
+			}
 
 			if ( ! $result->is_complete() ) {
 				$continuation = new OptimizationJob(

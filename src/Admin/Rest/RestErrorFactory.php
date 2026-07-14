@@ -48,6 +48,110 @@ final class RestErrorFactory {
 	}
 
 	/**
+	 * Build an invalid content ID response.
+	 *
+	 * @return mixed
+	 */
+	public function invalid_content_id() {
+		return $this->runtime->error( 'invalid_content_id', 'A valid content ID is required.', 400 );
+	}
+
+	/**
+	 * Build a content-not-found response.
+	 *
+	 * @param int $content_id Content ID.
+	 * @return mixed
+	 */
+	public function content_not_found( int $content_id ) {
+		return $this->runtime->error(
+			'content_not_found',
+			'The requested content record could not be found.',
+			404,
+			array(
+				'content_id' => $content_id,
+			)
+		);
+	}
+
+	/**
+	 * Build a content-inventory unavailable response.
+	 *
+	 * @return mixed
+	 */
+	public function content_inventory_unavailable() {
+		return $this->runtime->error(
+			'content_inventory_unavailable',
+			'The requested content inventory could not be built right now.',
+			503
+		);
+	}
+
+	/**
+	 * Build an invalid PageSpeed strategy response.
+	 *
+	 * @return mixed
+	 */
+	public function invalid_pagespeed_strategy() {
+		return $this->runtime->error(
+			'invalid_pagespeed_strategy',
+			'The requested PageSpeed Insights strategy must be mobile or desktop.',
+			400
+		);
+	}
+
+	/**
+	 * Build a disabled PageSpeed response.
+	 *
+	 * @return mixed
+	 */
+	public function pagespeed_disabled() {
+		return $this->runtime->error(
+			'pagespeed_disabled',
+			'PageSpeed Insights integration is disabled for this site.',
+			409
+		);
+	}
+
+	/**
+	 * Build a missing-public-URL PageSpeed response.
+	 *
+	 * @return mixed
+	 */
+	public function pagespeed_public_url_unavailable() {
+		return $this->runtime->error(
+			'pagespeed_public_url_unavailable',
+			'This content record does not currently have a safe public URL for PageSpeed Insights.',
+			409
+		);
+	}
+
+	/**
+	 * Build a quota-exceeded PageSpeed response.
+	 *
+	 * @return mixed
+	 */
+	public function pagespeed_quota_exceeded() {
+		return $this->runtime->error(
+			'pagespeed_quota_exceeded',
+			'The PageSpeed Insights request could not complete because the current quota is exhausted.',
+			429
+		);
+	}
+
+	/**
+	 * Build a generic PageSpeed request failure response.
+	 *
+	 * @return mixed
+	 */
+	public function pagespeed_request_failed() {
+		return $this->runtime->error(
+			'pagespeed_request_failed',
+			'The PageSpeed Insights request could not be completed right now.',
+			503
+		);
+	}
+
+	/**
 	 * Build an attachment-not-found response.
 	 *
 	 * @param int $attachment_id Attachment ID.
@@ -297,6 +401,16 @@ final class RestErrorFactory {
 			'The bulk queue request could not be completed right now.',
 			503
 		);
+	}
+
+	/**
+	 * Build an unsupported-offload response.
+	 *
+	 * @param string $message Optional user-safe message.
+	 * @return mixed
+	 */
+	public function offload_unsupported( string $message = 'The current media offload environment is not supported safely for this operation.' ) {
+		return $this->runtime->error( 'offload_unsupported', $message, 409 );
 	}
 
 	/**

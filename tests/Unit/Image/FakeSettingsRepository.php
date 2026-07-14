@@ -92,6 +92,15 @@ final class FakeSettingsRepository implements SettingsRepositoryInterface {
 	}
 
 	/**
+	 * Whether optional PageSpeed Insights integration is enabled.
+	 *
+	 * @return bool
+	 */
+	public function pagespeed_insights_enabled(): bool {
+		return (bool) $this->get( 'pagespeed_insights_enabled', false );
+	}
+
+	/**
 	 * Whether Media Library controls are enabled.
 	 *
 	 * @return bool

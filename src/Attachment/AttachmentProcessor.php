@@ -18,12 +18,19 @@ use HyperWeb\LighthouseImageOptimizer\Image\ConversionSavings;
 use HyperWeb\LighthouseImageOptimizer\Image\DestinationResolver;
 use HyperWeb\LighthouseImageOptimizer\Image\ImageConverter;
 use HyperWeb\LighthouseImageOptimizer\Image\ResourceGuard;
-use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImage;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImageCollection;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceImageValidator;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentInspector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\MemoryLimit;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\AttachmentSourceCollectorInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\DerivativePushInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\DerivativePushRequest;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadAwareSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WordPressWpOffloadMediaRuntime;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WpOffloadMediaAdapter;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
@@ -35,7 +42,7 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 	/**
 	 * Source collector.
 	 *
-	 * @var SourceCollector
+	 * @var AttachmentSourceCollectorInterface
 	 */
 	private $collector;
 
@@ -89,15 +96,44 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 	private $resolver;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
+	 * Derivative push service.
+	 *
+	 * @var DerivativePushInterface|null
+	 */
+	private $push;
+
+	/**
 	 * Build the WordPress-backed processor.
 	 *
 	 * @return self
 	 */
 	public static function for_wordpress(): self {
 		$settings = SettingsRepository::for_wordpress();
+		$runtime  = new WordPressWpOffloadMediaRuntime();
+		$files    = new \HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe();
+		$adapter  = new WpOffloadMediaAdapter(
+			$runtime,
+			$files,
+			new DerivativeManifestSanitizer()
+		);
+		$offload  = new OffloadSupportService( $adapter );
 
 		return new self(
-			SourceCollector::for_wordpress(),
+			new OffloadAwareSourceCollector(
+				new LocalAttachmentSourceCollector( \HyperWeb\LighthouseImageOptimizer\Image\SourceCollector::for_wordpress() ),
+				$runtime,
+				$adapter,
+				$offload,
+				$files,
+				new DerivativeManifestSanitizer()
+			),
 			new AttachmentFingerprintBuilder(),
 			DerivativeRepository::for_wordpress(),
 			SourceImageValidator::for_wordpress(),
@@ -108,14 +144,16 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 				ResourceGuard::for_wordpress( MemoryLimit::from_raw( (string) ini_get( 'memory_limit' ) ) )
 			),
 			ImageConverter::for_wordpress(),
-			DestinationResolver::for_wordpress()
+			DestinationResolver::for_wordpress(),
+			$offload,
+			$adapter
 		);
 	}
 
 	/**
 	 * Create processor.
 	 *
-	 * @param SourceCollector              $collector Source collector.
+	 * @param AttachmentSourceCollectorInterface $collector Source collector.
 	 * @param AttachmentFingerprintBuilder $fingerprinter Fingerprint builder.
 	 * @param DerivativeRepository         $repository Derivative repository.
 	 * @param SourceImageValidator         $validator Source validator.
@@ -123,16 +161,20 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 	 * @param ConversionPolicy             $policy Conversion policy.
 	 * @param ImageConverter               $converter Image converter.
 	 * @param DestinationResolver          $resolver Destination resolver.
+	 * @param OffloadSupportService|null   $offload Offload support service.
+	 * @param DerivativePushInterface|null $push Derivative push service.
 	 */
 	public function __construct(
-		SourceCollector $collector,
+		AttachmentSourceCollectorInterface $collector,
 		AttachmentFingerprintBuilder $fingerprinter,
 		DerivativeRepository $repository,
 		SourceImageValidator $validator,
 		SettingsRepositoryInterface $settings,
 		ConversionPolicy $policy,
 		ImageConverter $converter,
-		DestinationResolver $resolver
+		DestinationResolver $resolver,
+		?OffloadSupportService $offload = null,
+		?DerivativePushInterface $push = null
 	) {
 		$this->collector     = $collector;
 		$this->fingerprinter = $fingerprinter;
@@ -142,6 +184,8 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 		$this->policy        = $policy;
 		$this->converter     = $converter;
 		$this->resolver      = $resolver;
+		$this->offload       = $offload;
+		$this->push          = $push;
 	}
 
 	/**
@@ -175,20 +219,26 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 		int $time_budget_seconds = 0,
 		bool $force = false
 	): AttachmentProcessResult {
-		$collection  = $this->collector->collect( $attachment_id );
-		$fingerprint = array() === $collection->sources() ? null : $this->fingerprinter->build( $collection );
+		$collected = $this->collector->collect( $attachment_id );
 
-		return $this->process_request(
-			new AttachmentProcessRequest(
-				$attachment_id,
-				$target_format,
-				$cursor,
-				$time_budget_seconds,
-				$force,
-				$collection,
-				$fingerprint
-			)
-		);
+		try {
+			$collection  = $collected->collection();
+			$fingerprint = array() === $collection->sources() ? null : $this->fingerprinter->build( $collection );
+
+			return $this->process_request(
+				new AttachmentProcessRequest(
+					$attachment_id,
+					$target_format,
+					$cursor,
+					$time_budget_seconds,
+					$force,
+					$collection,
+					$fingerprint
+				)
+			);
+		} finally {
+			$collected->release();
+		}
 	}
 
 	/**
@@ -243,6 +293,25 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 		$force               = $request->force();
 		$collection          = $request->collection();
 		$fingerprint         = $request->fingerprint();
+
+		if ( null !== $this->offload ) {
+			$support = $this->offload->attachment_support( $attachment_id );
+
+			if ( ! $support->is_supported() ) {
+				$this->repository->save_status(
+					$attachment_id,
+					new AttachmentStatus( AttachmentStatus::STATE_FAILED, array(), 0, 'offload_unsupported', false )
+				);
+
+				return AttachmentProcessResult::failure(
+					'offload_unsupported',
+					$support->message(),
+					$target_format,
+					$cursor,
+					$cursor
+				);
+			}
+		}
 
 		if ( '' === $target_format ) {
 			$this->repository->save_status(
@@ -391,12 +460,33 @@ final class AttachmentProcessor implements AttachmentProcessorInterface {
 			}
 		}
 
-		$complete    = $next_cursor >= $source_count;
+		$complete       = $next_cursor >= $source_count;
+		$offload_codes  = array();
+		$offload_messages = array();
+
+		if (
+			null !== $this->offload
+			&& null !== $this->push
+			&& $this->offload->attachment_support( $attachment_id )->is_offloaded()
+			&& $this->offload->attachment_support( $attachment_id )->is_supported()
+		) {
+			$published = $this->push->publish(
+				new DerivativePushRequest(
+					$attachment_id,
+					$this->offload->attachment_support( $attachment_id ),
+					$results
+				)
+			);
+			$results   = $published->results();
+			$offload_codes = $published->codes();
+			$offload_messages = $published->messages();
+		}
+
 		$final_state = $this->determine_final_state( $results, $complete );
 		$repo_result = $this->repository->save_results( $attachment_id, $fingerprint, $results, $final_state );
 
-		$codes    = array_merge( array( AttachmentProcessResult::CODE_PROCESSED ), $repo_result->codes() );
-		$messages = $repo_result->messages();
+		$codes    = array_merge( array( AttachmentProcessResult::CODE_PROCESSED ), $offload_codes, $repo_result->codes() );
+		$messages = array_merge( $offload_messages, $repo_result->messages() );
 
 		return AttachmentProcessResult::success( $results, $codes, $messages, $target_format, $cursor, $next_cursor, $complete );
 	}

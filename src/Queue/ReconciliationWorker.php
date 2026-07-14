@@ -32,6 +32,14 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\SingleActionSchedulerInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressCacheInvalidationDispatcher;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressFilesystem;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\AttachmentSourceCollectorInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\DerivativeDeleteInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\DerivativeDeleteRequest;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadAwareSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WordPressWpOffloadMediaRuntime;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WpOffloadMediaAdapter;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
 use HyperWeb\LighthouseImageOptimizer\Logging\Logger;
 use HyperWeb\LighthouseImageOptimizer\Logging\LoggerInterface;
@@ -62,7 +70,7 @@ final class ReconciliationWorker implements HookProviderInterface {
 	/**
 	 * Source collector.
 	 *
-	 * @var SourceCollector
+	 * @var AttachmentSourceCollectorInterface
 	 */
 	private $collector;
 
@@ -137,15 +145,41 @@ final class ReconciliationWorker implements HookProviderInterface {
 	private $cache_invalidation;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
+	 * Remote derivative delete service.
+	 *
+	 * @var DerivativeDeleteInterface|null
+	 */
+	private $remote_delete;
+
+	/**
 	 * Build the WordPress-backed worker.
 	 *
 	 * @return self
 	 */
 	public static function for_wordpress(): self {
+		$runtime = new WordPressWpOffloadMediaRuntime();
+		$files   = new \HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe();
+		$adapter = new WpOffloadMediaAdapter( $runtime, $files, new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer() );
+		$offload = new OffloadSupportService( $adapter );
+
 		return new self(
 			ActionSchedulerQueue::for_wordpress(),
 			AttachmentLockManager::for_wordpress(),
-			SourceCollector::for_wordpress(),
+			new OffloadAwareSourceCollector(
+				new LocalAttachmentSourceCollector( SourceCollector::for_wordpress() ),
+				$runtime,
+				$adapter,
+				$offload,
+				$files,
+				new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer()
+			),
 			new AttachmentFingerprintBuilder(),
 			DerivativeRepository::for_wordpress(),
 			AttachmentProcessor::for_wordpress(),
@@ -155,7 +189,9 @@ final class ReconciliationWorker implements HookProviderInterface {
 			new SystemAttachmentClock(),
 			QueueControlStateStore::for_wordpress(),
 			new ActionSchedulerSingleActionScheduler(),
-			new WordPressCacheInvalidationDispatcher()
+			new WordPressCacheInvalidationDispatcher(),
+			$offload,
+			$adapter
 		);
 	}
 
@@ -164,7 +200,7 @@ final class ReconciliationWorker implements HookProviderInterface {
 	 *
 	 * @param QueueInterface                            $queue Queue adapter.
 	 * @param AttachmentLockManager                     $locks Lock manager.
-	 * @param SourceCollector                           $collector Source collector.
+	 * @param AttachmentSourceCollectorInterface        $collector Source collector.
 	 * @param AttachmentFingerprintBuilder              $fingerprinter Fingerprint builder.
 	 * @param DerivativeRepository                      $repository Derivative repository.
 	 * @param AttachmentProcessorInterface              $processor Attachment processor.
@@ -175,11 +211,13 @@ final class ReconciliationWorker implements HookProviderInterface {
 	 * @param QueueControlStateStoreInterface|null      $controls Queue control state store.
 	 * @param SingleActionSchedulerInterface|null       $single_actions Single action scheduler.
 	 * @param CacheInvalidationDispatcherInterface|null $cache_invalidation Cache invalidation dispatcher.
+	 * @param OffloadSupportService|null                $offload Offload support service.
+	 * @param DerivativeDeleteInterface|null            $remote_delete Remote derivative delete service.
 	 */
 	public function __construct(
 		QueueInterface $queue,
 		AttachmentLockManager $locks,
-		SourceCollector $collector,
+		AttachmentSourceCollectorInterface $collector,
 		AttachmentFingerprintBuilder $fingerprinter,
 		DerivativeRepository $repository,
 		AttachmentProcessorInterface $processor,
@@ -189,7 +227,9 @@ final class ReconciliationWorker implements HookProviderInterface {
 		AttachmentClockInterface $clock,
 		?QueueControlStateStoreInterface $controls = null,
 		?SingleActionSchedulerInterface $single_actions = null,
-		?CacheInvalidationDispatcherInterface $cache_invalidation = null
+		?CacheInvalidationDispatcherInterface $cache_invalidation = null,
+		?OffloadSupportService $offload = null,
+		?DerivativeDeleteInterface $remote_delete = null
 	) {
 		$this->queue              = $queue;
 		$this->locks              = $locks;
@@ -204,6 +244,8 @@ final class ReconciliationWorker implements HookProviderInterface {
 		$this->controls           = $controls;
 		$this->single_actions     = $single_actions;
 		$this->cache_invalidation = $cache_invalidation;
+		$this->offload            = $offload;
+		$this->remote_delete      = $remote_delete;
 	}
 
 	/**
@@ -299,75 +341,15 @@ final class ReconciliationWorker implements HookProviderInterface {
 		$lock = $acquired->lock();
 
 		try {
-			$collection  = $this->collector->collect( $attachment_id );
-			$comparison  = $this->fingerprinter->compare_signature( $job->fingerprint(), $collection );
-			$fingerprint = $comparison->current_fingerprint();
-
-			if ( $comparison->is_stale() && $fingerprint instanceof AttachmentFingerprint ) {
-				$queue_status = $this->queue->enqueue_reconciliation(
-					new ReconciliationJob( $attachment_id, $fingerprint->signature(), 'source_changed' )
-				);
-
-				if ( $queue_status->is_successful() ) {
-					$this->save_status( $attachment_id, AttachmentStatus::STATE_STALE, null, $current_status );
-
-					$this->logger->info(
-						LogCode::RECONCILE_QUEUED,
-						'Reconciliation worker re-queued stale attachment reconciliation with a fresh fingerprint.',
-						array(
-							'attachment_id'   => $attachment_id,
-							'comparison_code' => $comparison->code(),
-							'queue_codes'     => $queue_status->codes(),
-						),
-						$attachment_id,
-						$job_id
-					);
-				} else {
-					$this->save_status( $attachment_id, AttachmentStatus::STATE_STALE, $this->primary_code( $queue_status ), $current_status );
-
-					$this->logger->warning(
-						LogCode::RECONCILE_QUEUE_FAILED,
-						'Reconciliation worker could not re-queue stale attachment reconciliation.',
-						array(
-							'attachment_id'   => $attachment_id,
-							'comparison_code' => $comparison->code(),
-							'queue_codes'     => $queue_status->codes(),
-						),
-						$attachment_id,
-						$job_id
-					);
-				}
-
-				return;
-			}
-
-			if ( ! $comparison->is_match() || ! $fingerprint instanceof AttachmentFingerprint ) {
-				$this->save_status( $attachment_id, AttachmentStatus::STATE_FAILED, $comparison->code(), $current_status );
+			if ( null !== $this->offload && ! $this->offload->attachment_support( $attachment_id )->is_supported() ) {
+				$this->save_status( $attachment_id, AttachmentStatus::STATE_FAILED, 'offload_unsupported', $current_status );
 
 				$this->logger->warning(
 					LogCode::RECONCILE_SKIPPED,
-					'Reconciliation worker could not build a trustworthy current fingerprint.',
-					array(
-						'attachment_id'   => $attachment_id,
-						'comparison_code' => $comparison->code(),
-						'status'          => $comparison->status(),
-					),
-					$attachment_id,
-					$job_id
-				);
-
-				return;
-			}
-
-			$read     = $this->repository->read( $attachment_id );
-			$manifest = $read->manifest();
-
-			if ( ! $manifest->has_derivatives() ) {
-				$this->logger->info(
-					LogCode::RECONCILE_SKIPPED,
-					'Reconciliation worker found no stored derivatives to reconcile.',
+					'Reconciliation worker skipped an attachment because the current offload state is unsupported.',
 					array(
 						'attachment_id' => $attachment_id,
+						'reason'        => $job->reason(),
 					),
 					$attachment_id,
 					$job_id
@@ -376,56 +358,139 @@ final class ReconciliationWorker implements HookProviderInterface {
 				return;
 			}
 
-			$stored = $manifest->fingerprint();
-			if ( $stored instanceof AttachmentFingerprint && $stored->signature() === $fingerprint->signature() ) {
-				$this->logger->info(
-					LogCode::RECONCILE_SKIPPED,
-					'Reconciliation worker found the manifest already current for this attachment.',
-					array(
-						'attachment_id' => $attachment_id,
-					),
-					$attachment_id,
-					$job_id
-				);
+			$collected = $this->collector->collect( $attachment_id );
 
-				return;
-			}
+			try {
+				$collection  = $collected->collection();
+				$comparison  = $this->fingerprinter->compare_signature( $job->fingerprint(), $collection );
+				$fingerprint = $comparison->current_fingerprint();
 
-			$old_derivative_files = DerivativeFileCleaner::derivative_files_from_manifest( $manifest );
-			$source_files         = DerivativeFileCleaner::source_files_from_manifest( $manifest );
-			$source_files         = array_merge( $source_files, $this->source_files_from_collection( $collection ) );
+				if ( $comparison->is_stale() && $fingerprint instanceof AttachmentFingerprint ) {
+					$queue_status = $this->queue->enqueue_reconciliation(
+						new ReconciliationJob( $attachment_id, $fingerprint->signature(), 'source_changed' )
+					);
 
-			$begin = $this->repository->begin_reconciliation( $attachment_id, $fingerprint );
-			if ( ! $begin->is_successful() ) {
-				$this->save_status( $attachment_id, AttachmentStatus::STATE_FAILED, 'metadata_write_failed', $current_status );
+					if ( $queue_status->is_successful() ) {
+						$this->save_status( $attachment_id, AttachmentStatus::STATE_STALE, null, $current_status );
 
-				$this->logger->error(
-					LogCode::RECONCILE_QUEUE_FAILED,
-					'Reconciliation worker could not reset the active derivative manifest safely.',
-					array(
-						'attachment_id' => $attachment_id,
-						'codes'         => $begin->codes(),
-					),
-					$attachment_id,
-					$job_id
-				);
+						$this->logger->info(
+							LogCode::RECONCILE_QUEUED,
+							'Reconciliation worker re-queued stale attachment reconciliation with a fresh fingerprint.',
+							array(
+								'attachment_id'   => $attachment_id,
+								'comparison_code' => $comparison->code(),
+								'queue_codes'     => $queue_status->codes(),
+							),
+							$attachment_id,
+							$job_id
+						);
+					} else {
+						$this->save_status( $attachment_id, AttachmentStatus::STATE_STALE, $this->primary_code( $queue_status ), $current_status );
 
-				return;
-			}
+						$this->logger->warning(
+							LogCode::RECONCILE_QUEUE_FAILED,
+							'Reconciliation worker could not re-queue stale attachment reconciliation.',
+							array(
+								'attachment_id'   => $attachment_id,
+								'comparison_code' => $comparison->code(),
+								'queue_codes'     => $queue_status->codes(),
+							),
+							$attachment_id,
+							$job_id
+						);
+					}
 
-			$results = array();
-			foreach ( $this->settings->enabled_formats() as $format ) {
-				$results[] = $this->processor->process_request(
-					new AttachmentProcessRequest(
+					return;
+				}
+
+				if ( ! $comparison->is_match() || ! $fingerprint instanceof AttachmentFingerprint ) {
+					$this->save_status( $attachment_id, AttachmentStatus::STATE_FAILED, $comparison->code(), $current_status );
+
+					$this->logger->warning(
+						LogCode::RECONCILE_SKIPPED,
+						'Reconciliation worker could not build a trustworthy current fingerprint.',
+						array(
+							'attachment_id'   => $attachment_id,
+							'comparison_code' => $comparison->code(),
+							'status'          => $comparison->status(),
+						),
 						$attachment_id,
-						$format,
-						0,
-						0,
-						true,
-						$collection,
-						$fingerprint
-					)
-				);
+						$job_id
+					);
+
+					return;
+				}
+
+				$read     = $this->repository->read( $attachment_id );
+				$manifest = $read->manifest();
+
+				if ( ! $manifest->has_derivatives() ) {
+					$this->logger->info(
+						LogCode::RECONCILE_SKIPPED,
+						'Reconciliation worker found no stored derivatives to reconcile.',
+						array(
+							'attachment_id' => $attachment_id,
+						),
+						$attachment_id,
+						$job_id
+					);
+
+					return;
+				}
+
+				$stored = $manifest->fingerprint();
+				if ( $stored instanceof AttachmentFingerprint && $stored->signature() === $fingerprint->signature() ) {
+					$this->logger->info(
+						LogCode::RECONCILE_SKIPPED,
+						'Reconciliation worker found the manifest already current for this attachment.',
+						array(
+							'attachment_id' => $attachment_id,
+						),
+						$attachment_id,
+						$job_id
+					);
+
+					return;
+				}
+
+				$old_derivative_files = DerivativeFileCleaner::derivative_files_from_manifest( $manifest );
+				$source_files         = DerivativeFileCleaner::source_files_from_manifest( $manifest );
+				$source_files         = array_merge( $source_files, $this->source_files_from_collection( $collection ) );
+
+				$begin = $this->repository->begin_reconciliation( $attachment_id, $fingerprint );
+				if ( ! $begin->is_successful() ) {
+					$this->save_status( $attachment_id, AttachmentStatus::STATE_FAILED, 'metadata_write_failed', $current_status );
+
+					$this->logger->error(
+						LogCode::RECONCILE_QUEUE_FAILED,
+						'Reconciliation worker could not reset the active derivative manifest safely.',
+						array(
+							'attachment_id' => $attachment_id,
+							'codes'         => $begin->codes(),
+						),
+						$attachment_id,
+						$job_id
+					);
+
+					return;
+				}
+
+				$results = array();
+				foreach ( $this->settings->enabled_formats() as $format ) {
+					$results[] = $this->processor->process_request(
+						new AttachmentProcessRequest(
+							$attachment_id,
+							$format,
+							0,
+							0,
+							true,
+							$collection,
+							$fingerprint
+						)
+					);
+				}
+			} finally {
+				$collected->release();
 			}
 
 			$final_read               = $this->repository->read( $attachment_id );
@@ -435,7 +500,10 @@ final class ReconciliationWorker implements HookProviderInterface {
 			$cleanup_warning          = false;
 
 			if ( array() !== $obsolete_derivatives ) {
-				$cleanup         = $this->files->cleanup_files( $source_files, $obsolete_derivatives );
+				$cleanup         = AttachmentCleanupResult::combine(
+					$this->files->cleanup_files( $source_files, $obsolete_derivatives ),
+					$this->remote_derivative_cleanup( $attachment_id, $obsolete_derivatives, 'reconciliation_obsolete_derivatives' )
+				);
 				$cleanup_warning = AttachmentCleanupResult::SEVERITY_FAILURE === $cleanup->severity()
 					|| AttachmentCleanupResult::SEVERITY_WARNING === $cleanup->severity();
 				$this->dispatch_derivatives_deleted( $attachment_id, $cleanup, 'reconciliation_obsolete_derivatives' );
@@ -766,6 +834,60 @@ final class ReconciliationWorker implements HookProviderInterface {
 	 */
 	private function paused(): bool {
 		return null !== $this->controls && $this->controls->read()->paused();
+	}
+
+	/**
+	 * Delete obsolete remote derivatives when the attachment is safely offloaded.
+	 *
+	 * @param int      $attachment_id Attachment ID.
+	 * @param string[] $relative_paths Relative paths.
+	 * @param string   $reason Reason.
+	 * @return AttachmentCleanupResult
+	 */
+	private function remote_derivative_cleanup( int $attachment_id, array $relative_paths, string $reason ): AttachmentCleanupResult {
+		if (
+			null === $this->offload
+			|| null === $this->remote_delete
+			|| array() === $relative_paths
+		) {
+			return AttachmentCleanupResult::success();
+		}
+
+		$support = $this->offload->attachment_support( $attachment_id );
+
+		if ( ! $support->is_supported() || ! $support->is_offloaded() ) {
+			return AttachmentCleanupResult::success();
+		}
+
+		$result = $this->remote_delete->delete(
+			new DerivativeDeleteRequest( $attachment_id, $support, $relative_paths, $reason )
+		);
+
+		if ( $result->is_successful() ) {
+			return AttachmentCleanupResult::success(
+				array( 'offload_remote_derivatives_deleted' ),
+				array(),
+				count( $result->deleted_relative_paths() ),
+				0,
+				0,
+				0,
+				$result->deleted_relative_paths(),
+				array(),
+				$result->deleted_relative_paths()
+			);
+		}
+
+		return AttachmentCleanupResult::warning(
+			$result->codes(),
+			$result->messages(),
+			count( $result->deleted_relative_paths() ),
+			0,
+			0,
+			0,
+			$result->deleted_relative_paths(),
+			array(),
+			$result->deleted_relative_paths()
+		);
 	}
 
 	/**

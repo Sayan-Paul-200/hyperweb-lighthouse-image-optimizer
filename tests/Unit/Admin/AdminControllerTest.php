@@ -137,6 +137,22 @@ final class AdminControllerTest extends TestCase {
 		self::assertStringContainsString( 'data-hwlio-diagnostics-action="refresh"', $output );
 		self::assertStringContainsString( 'data-hwlio-diagnostics-summary', $output );
 		self::assertStringContainsString( 'data-hwlio-diagnostics-groups', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory="root"', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-form', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-input', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-content', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-summary', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-issue-summary', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-byte-summary', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-issues', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-byte-occurrences', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-items', $output );
+		self::assertStringContainsString( 'data-hwlio-inventory-unsupported', $output );
+		self::assertStringContainsString( 'data-hwlio-pagespeed="root"', $output );
+		self::assertStringContainsString( 'data-hwlio-pagespeed-strategy', $output );
+		self::assertStringContainsString( 'data-hwlio-pagespeed-action="run"', $output );
+		self::assertStringContainsString( 'data-hwlio-pagespeed-summary', $output );
+		self::assertStringContainsString( 'data-hwlio-pagespeed-audits', $output );
 	}
 
 	/**

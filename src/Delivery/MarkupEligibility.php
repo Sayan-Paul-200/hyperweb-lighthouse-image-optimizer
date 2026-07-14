@@ -7,6 +7,7 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Delivery;
 
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
 /**
@@ -36,20 +37,30 @@ final class MarkupEligibility {
 	private $analyzer;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
 	 * Create service.
 	 *
 	 * @param SettingsRepositoryInterface     $settings Settings repository.
 	 * @param AttachmentImageRuntimeInterface $runtime Runtime seam.
 	 * @param ImageMarkupAnalyzerInterface    $analyzer Markup analyzer.
+	 * @param OffloadSupportService|null      $offload Offload support service.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $settings,
 		AttachmentImageRuntimeInterface $runtime,
-		ImageMarkupAnalyzerInterface $analyzer
+		ImageMarkupAnalyzerInterface $analyzer,
+		?OffloadSupportService $offload = null
 	) {
 		$this->settings = $settings;
 		$this->runtime  = $runtime;
 		$this->analyzer = $analyzer;
+		$this->offload  = $offload;
 	}
 
 	/**
@@ -99,6 +110,11 @@ final class MarkupEligibility {
 			&& empty( $request_context['is_rest'] )
 			&& ! $analysis->is_picture()
 			&& $analysis->is_renderable_img();
+
+		if ( $eligible && null !== $this->offload ) {
+			$support = $this->offload->attachment_support( $attachment_id );
+			$eligible = $support->is_supported();
+		}
 
 		if ( function_exists( 'apply_filters' ) ) {
 			$eligible = (bool) \apply_filters(

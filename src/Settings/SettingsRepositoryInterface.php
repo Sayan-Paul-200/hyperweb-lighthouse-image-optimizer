@@ -58,6 +58,13 @@ interface SettingsRepositoryInterface {
 	public function automatic_optimization_enabled(): bool;
 
 	/**
+	 * Whether optional PageSpeed Insights integration is enabled.
+	 *
+	 * @return bool
+	 */
+	public function pagespeed_insights_enabled(): bool;
+
+	/**
 	 * Whether Media Library controls are enabled.
 	 *
 	 * @return bool

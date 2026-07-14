@@ -19,6 +19,12 @@ use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadAwareSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\AttachmentSourceCollectorInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WordPressWpOffloadMediaRuntime;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WpOffloadMediaAdapter;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogCode;
 use HyperWeb\LighthouseImageOptimizer\Logging\Logger;
 use HyperWeb\LighthouseImageOptimizer\Logging\LoggerInterface;
@@ -54,7 +60,7 @@ final class NewUploadIntegration implements HookProviderInterface {
 	/**
 	 * Source collector.
 	 *
-	 * @var SourceCollector
+	 * @var AttachmentSourceCollectorInterface
 	 */
 	private $collector;
 
@@ -108,16 +114,35 @@ final class NewUploadIntegration implements HookProviderInterface {
 	private $controls;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
 	 * Build the WordPress-backed integration.
 	 *
 	 * @return self
 	 */
 	public static function for_wordpress(): self {
+		$runtime = new WordPressWpOffloadMediaRuntime();
+		$files   = new \HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe();
+		$adapter = new WpOffloadMediaAdapter( $runtime, $files, new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer() );
+		$offload = new OffloadSupportService( $adapter );
+
 		return new self(
 			ActionSchedulerQueue::for_wordpress(),
 			SettingsRepository::for_wordpress(),
 			AttachmentExclusionRepository::for_wordpress(),
-			SourceCollector::for_wordpress(),
+			new OffloadAwareSourceCollector(
+				new LocalAttachmentSourceCollector( SourceCollector::for_wordpress() ),
+				$runtime,
+				$adapter,
+				$offload,
+				$files,
+				new \HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer()
+			),
 			new AttachmentFingerprintBuilder(),
 			DerivativeRepository::for_wordpress(),
 			Logger::for_wordpress(),
@@ -136,7 +161,8 @@ final class NewUploadIntegration implements HookProviderInterface {
 					);
 				}
 			},
-			QueueControlStateStore::for_wordpress()
+			QueueControlStateStore::for_wordpress(),
+			$offload
 		);
 	}
 
@@ -146,7 +172,7 @@ final class NewUploadIntegration implements HookProviderInterface {
 	 * @param QueueInterface                         $queue Queue adapter.
 	 * @param SettingsRepositoryInterface            $settings Settings repository.
 	 * @param AttachmentExclusionRepositoryInterface $exclusions Exclusion repository.
-	 * @param SourceCollector                        $collector Source collector.
+	 * @param AttachmentSourceCollectorInterface     $collector Source collector.
 	 * @param AttachmentFingerprintBuilder           $fingerprinter Fingerprint builder.
 	 * @param DerivativeRepository                   $repository Derivative repository.
 	 * @param LoggerInterface                        $logger Logger.
@@ -154,19 +180,21 @@ final class NewUploadIntegration implements HookProviderInterface {
 	 * @param callable                               $is_image_attachment Attachment-image check.
 	 * @param callable                               $dispatch_refresh Internal refresh dispatcher.
 	 * @param QueueControlStateStoreInterface|null   $controls Queue control state store.
+	 * @param OffloadSupportService|null             $offload Offload support service.
 	 */
 	public function __construct(
 		QueueInterface $queue,
 		SettingsRepositoryInterface $settings,
 		AttachmentExclusionRepositoryInterface $exclusions,
-		SourceCollector $collector,
+		AttachmentSourceCollectorInterface $collector,
 		AttachmentFingerprintBuilder $fingerprinter,
 		DerivativeRepository $repository,
 		LoggerInterface $logger,
 		AttachmentClockInterface $clock,
 		callable $is_image_attachment,
 		callable $dispatch_refresh,
-		?QueueControlStateStoreInterface $controls = null
+		?QueueControlStateStoreInterface $controls = null,
+		?OffloadSupportService $offload = null
 	) {
 		$this->queue               = $queue;
 		$this->settings            = $settings;
@@ -179,6 +207,7 @@ final class NewUploadIntegration implements HookProviderInterface {
 		$this->is_image_attachment = $is_image_attachment;
 		$this->dispatch_refresh    = $dispatch_refresh;
 		$this->controls            = $controls;
+		$this->offload             = $offload;
 	}
 
 	/**
@@ -322,28 +351,21 @@ final class NewUploadIntegration implements HookProviderInterface {
 			return $metadata;
 		}
 
-		$enabled_formats = $this->settings->enabled_formats();
-		$collection      = $this->collector->collect( $attachment_id );
-		$fingerprint     = $this->fingerprinter->build( $collection );
-
-		if ( array() === $enabled_formats || array() === $collection->sources() || ! $fingerprint instanceof AttachmentFingerprint ) {
+		if ( $this->offload_blocked( $attachment_id ) ) {
 			$status = $this->save_status(
 				$attachment_id,
 				AttachmentStatus::STATE_UNPROCESSED,
-				null,
+				'offload_unsupported',
 				false,
 				$current_status
 			);
 
 			$this->logger->warning(
 				LogCode::NEW_UPLOAD_IGNORED,
-				'New-upload automation could not queue the attachment because no valid source fingerprint was available.',
+				'New-upload automation skipped an attachment because the current offload state is unsupported.',
 				array(
-					'attachment_id'   => $attachment_id,
-					'context'         => $context,
-					'has_sources'     => array() !== $collection->sources(),
-					'has_fingerprint' => $fingerprint instanceof AttachmentFingerprint,
-					'enabled_formats' => $enabled_formats,
+					'attachment_id' => $attachment_id,
+					'context'       => $context,
 				),
 				$attachment_id
 			);
@@ -353,56 +375,122 @@ final class NewUploadIntegration implements HookProviderInterface {
 			return $metadata;
 		}
 
-		$queued_formats = array();
-		$failed_formats = array();
-		$result_codes   = array();
-		$first_failure  = null;
+		$enabled_formats = $this->settings->enabled_formats();
+		$collected       = $this->collector->collect( $attachment_id );
 
-		foreach ( $enabled_formats as $format ) {
-			$status = $this->queue->enqueue_optimization(
-				new OptimizationJob(
+		try {
+			$collection  = $collected->collection();
+			$fingerprint = $this->fingerprinter->build( $collection );
+
+			if ( array() === $enabled_formats || array() === $collection->sources() || ! $fingerprint instanceof AttachmentFingerprint ) {
+				$status = $this->save_status(
 					$attachment_id,
-					$format,
-					0,
+					AttachmentStatus::STATE_UNPROCESSED,
+					null,
 					false,
-					'new_upload',
-					$fingerprint->signature()
-				)
-			);
+					$current_status
+				);
 
-			$result_codes[ $format ] = $this->primary_code( $status );
+				$this->logger->warning(
+					LogCode::NEW_UPLOAD_IGNORED,
+					'New-upload automation could not queue the attachment because no valid source fingerprint was available.',
+					array(
+						'attachment_id'   => $attachment_id,
+						'context'         => $context,
+						'has_sources'     => array() !== $collection->sources(),
+						'has_fingerprint' => $fingerprint instanceof AttachmentFingerprint,
+						'enabled_formats' => $enabled_formats,
+					),
+					$attachment_id
+				);
 
-			if ( $status->has_code( QueueStatus::CODE_QUEUED ) || $status->has_code( QueueStatus::CODE_ALREADY_QUEUED ) ) {
-				$queued_formats[] = $format;
-				continue;
+				$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
+
+				return $metadata;
 			}
 
-			$failed_formats[] = $format;
+			$queued_formats = array();
+			$failed_formats = array();
+			$result_codes   = array();
+			$first_failure  = null;
 
-			if ( null === $first_failure ) {
-				$first_failure = $this->primary_code( $status );
+			foreach ( $enabled_formats as $format ) {
+				$status = $this->queue->enqueue_optimization(
+					new OptimizationJob(
+						$attachment_id,
+						$format,
+						0,
+						false,
+						'new_upload',
+						$fingerprint->signature()
+					)
+				);
+
+				$result_codes[ $format ] = $this->primary_code( $status );
+
+				if ( $status->has_code( QueueStatus::CODE_QUEUED ) || $status->has_code( QueueStatus::CODE_ALREADY_QUEUED ) ) {
+					$queued_formats[] = $format;
+					continue;
+				}
+
+				$failed_formats[] = $format;
+
+				if ( null === $first_failure ) {
+					$first_failure = $this->primary_code( $status );
+				}
 			}
-		}
 
-		if ( array() !== $queued_formats ) {
+			if ( array() !== $queued_formats ) {
+				$status = $this->save_status(
+					$attachment_id,
+					AttachmentStatus::STATE_QUEUED,
+					null,
+					false,
+					$current_status
+				);
+
+				$this->logger->info(
+					LogCode::NEW_UPLOAD_QUEUED,
+					'New-upload automation queued optimization jobs for the attachment.',
+					array(
+						'attachment_id'  => $attachment_id,
+						'context'        => $context,
+						'queued_formats' => $queued_formats,
+						'failed_formats' => $failed_formats,
+						'result_codes'   => $result_codes,
+					),
+					$attachment_id
+				);
+
+				$this->dispatch_refresh(
+					$attachment_id,
+					$context,
+					$status,
+					$this->refresh_payload( $queued_formats, $failed_formats, $result_codes )
+				);
+
+				return $metadata;
+			}
+
 			$status = $this->save_status(
 				$attachment_id,
-				AttachmentStatus::STATE_QUEUED,
-				null,
+				AttachmentStatus::STATE_UNPROCESSED,
+				$first_failure,
 				false,
 				$current_status
 			);
 
-			$this->logger->info(
-				LogCode::NEW_UPLOAD_QUEUED,
-				'New-upload automation queued optimization jobs for the attachment.',
+			$this->logger->warning(
+				LogCode::NEW_UPLOAD_QUEUE_FAILED,
+				'New-upload automation could not queue any optimization jobs for the attachment.',
 				array(
 					'attachment_id'  => $attachment_id,
 					'context'        => $context,
 					'queued_formats' => $queued_formats,
 					'failed_formats' => $failed_formats,
 					'result_codes'   => $result_codes,
-				),
+				)
+				,
 				$attachment_id
 			);
 
@@ -414,37 +502,9 @@ final class NewUploadIntegration implements HookProviderInterface {
 			);
 
 			return $metadata;
+		} finally {
+			$collected->release();
 		}
-
-		$status = $this->save_status(
-			$attachment_id,
-			AttachmentStatus::STATE_UNPROCESSED,
-			$first_failure,
-			false,
-			$current_status
-		);
-
-		$this->logger->warning(
-			LogCode::NEW_UPLOAD_QUEUE_FAILED,
-			'New-upload automation could not queue any optimization jobs for the attachment.',
-			array(
-				'attachment_id'  => $attachment_id,
-				'context'        => $context,
-				'queued_formats' => $queued_formats,
-				'failed_formats' => $failed_formats,
-				'result_codes'   => $result_codes,
-			),
-			$attachment_id
-		);
-
-		$this->dispatch_refresh(
-			$attachment_id,
-			$context,
-			$status,
-			$this->refresh_payload( $queued_formats, $failed_formats, $result_codes )
-		);
-
-		return $metadata;
 	}
 
 	/**
@@ -530,14 +590,43 @@ final class NewUploadIntegration implements HookProviderInterface {
 			return $metadata;
 		}
 
-		$collection  = $this->collector->collect( $attachment_id );
-		$comparison  = $this->fingerprinter->compare_stored( $manifest->fingerprint()->to_array(), $collection );
-		$fingerprint = $comparison->current_fingerprint();
+		$collected = $this->collector->collect( $attachment_id );
 
-		if ( ! $comparison->is_stale() || ! $fingerprint instanceof AttachmentFingerprint ) {
+		try {
+			$collection  = $collected->collection();
+			$comparison  = $this->fingerprinter->compare_stored( $manifest->fingerprint()->to_array(), $collection );
+			$fingerprint = $comparison->current_fingerprint();
+
+			if ( ! $comparison->is_stale() || ! $fingerprint instanceof AttachmentFingerprint ) {
+				$this->logger->info(
+					LogCode::NEW_UPLOAD_IGNORED,
+					'New-upload automation found no stale derivative state for this metadata update.',
+					array(
+						'attachment_id'   => $attachment_id,
+						'context'         => $context,
+						'comparison_code' => $comparison->code(),
+						'status'          => $comparison->status(),
+					),
+					$attachment_id
+				);
+
+				$this->dispatch_refresh( $attachment_id, $context, $current_status, $this->refresh_payload() );
+
+				return $metadata;
+			}
+
+			$excluded = $this->exclusions->is_excluded( $attachment_id );
+			$status   = $this->save_status(
+				$attachment_id,
+				AttachmentStatus::STATE_STALE,
+				null,
+				$excluded,
+				$current_status
+			);
+
 			$this->logger->info(
-				LogCode::NEW_UPLOAD_IGNORED,
-				'New-upload automation found no stale derivative state for this metadata update.',
+				LogCode::RECONCILE_STALE_DETECTED,
+				'New-upload automation detected stale derivative state after attachment metadata changed.',
 				array(
 					'attachment_id'   => $attachment_id,
 					'context'         => $context,
@@ -547,105 +636,126 @@ final class NewUploadIntegration implements HookProviderInterface {
 				$attachment_id
 			);
 
-			$this->dispatch_refresh( $attachment_id, $context, $current_status, $this->refresh_payload() );
+			if ( ! $this->settings->automatic_optimization_enabled() ) {
+				$this->logger->info(
+					LogCode::NEW_UPLOAD_AUTOMATION_DISABLED,
+					'Automatic optimization is disabled; stale derivatives were not reconciled automatically.',
+					array(
+						'attachment_id'   => $attachment_id,
+						'context'         => $context,
+						'comparison_code' => $comparison->code(),
+					),
+					$attachment_id
+				);
 
-			return $metadata;
-		}
+				$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
 
-		$excluded = $this->exclusions->is_excluded( $attachment_id );
-		$status   = $this->save_status(
-			$attachment_id,
-			AttachmentStatus::STATE_STALE,
-			null,
-			$excluded,
-			$current_status
-		);
+				return $metadata;
+			}
 
-		$this->logger->info(
-			LogCode::RECONCILE_STALE_DETECTED,
-			'New-upload automation detected stale derivative state after attachment metadata changed.',
-			array(
-				'attachment_id'   => $attachment_id,
-				'context'         => $context,
-				'comparison_code' => $comparison->code(),
-				'status'          => $comparison->status(),
-			),
-			$attachment_id
-		);
+			if ( $excluded ) {
+				$this->logger->info(
+					LogCode::NEW_UPLOAD_EXCLUDED,
+					'Excluded attachment remained stale after metadata changed and was not reconciled automatically.',
+					array(
+						'attachment_id'   => $attachment_id,
+						'context'         => $context,
+						'comparison_code' => $comparison->code(),
+					),
+					$attachment_id
+				);
 
-		if ( ! $this->settings->automatic_optimization_enabled() ) {
+				$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
+
+				return $metadata;
+			}
+
+			if ( $this->offload_blocked( $attachment_id ) ) {
+				$status = $this->save_status(
+					$attachment_id,
+					AttachmentStatus::STATE_STALE,
+					'offload_unsupported',
+					false,
+					$current_status
+				);
+
+				$this->logger->warning(
+					LogCode::RECONCILE_SKIPPED,
+					'Stale attachment derivatives were not reconciled automatically because the current offload state is unsupported.',
+					array(
+						'attachment_id'   => $attachment_id,
+						'context'         => $context,
+						'comparison_code' => $comparison->code(),
+					),
+					$attachment_id
+				);
+
+				$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
+
+				return $metadata;
+			}
+
+			if ( $this->paused() ) {
+				$this->logger->info(
+					LogCode::RECONCILE_SKIPPED,
+					'Stale attachment derivatives were detected but reconciliation queueing is paused.',
+					array(
+						'attachment_id'   => $attachment_id,
+						'context'         => $context,
+						'comparison_code' => $comparison->code(),
+					),
+					$attachment_id
+				);
+
+				$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
+
+				return $metadata;
+			}
+
+			$queue_status = $this->queue->enqueue_reconciliation(
+				new ReconciliationJob(
+					$attachment_id,
+					$fingerprint->signature(),
+					'metadata_update'
+				)
+			);
+
+			$result_code = $this->primary_code( $queue_status );
+
+			if ( ! $queue_status->is_successful() ) {
+				$status = $this->save_status(
+					$attachment_id,
+					AttachmentStatus::STATE_STALE,
+					$result_code,
+					false,
+					$current_status
+				);
+
+				$this->logger->warning(
+					LogCode::RECONCILE_QUEUE_FAILED,
+					'Stale attachment derivatives could not be queued for reconciliation.',
+					array(
+						'attachment_id'   => $attachment_id,
+						'context'         => $context,
+						'comparison_code' => $comparison->code(),
+						'queue_codes'     => $queue_status->codes(),
+					),
+					$attachment_id
+				);
+
+				$this->dispatch_refresh(
+					$attachment_id,
+					$context,
+					$status,
+					$this->refresh_payload( array(), array(), array( 'reconcile' => $result_code ) )
+				);
+
+				return $metadata;
+			}
+
 			$this->logger->info(
-				LogCode::NEW_UPLOAD_AUTOMATION_DISABLED,
-				'Automatic optimization is disabled; stale derivatives were not reconciled automatically.',
-				array(
-					'attachment_id'   => $attachment_id,
-					'context'         => $context,
-					'comparison_code' => $comparison->code(),
-				),
-				$attachment_id
-			);
-
-			$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
-
-			return $metadata;
-		}
-
-		if ( $excluded ) {
-			$this->logger->info(
-				LogCode::NEW_UPLOAD_EXCLUDED,
-				'Excluded attachment remained stale after metadata changed and was not reconciled automatically.',
-				array(
-					'attachment_id'   => $attachment_id,
-					'context'         => $context,
-					'comparison_code' => $comparison->code(),
-				),
-				$attachment_id
-			);
-
-			$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
-
-			return $metadata;
-		}
-
-		if ( $this->paused() ) {
-			$this->logger->info(
-				LogCode::RECONCILE_SKIPPED,
-				'Stale attachment derivatives were detected but reconciliation queueing is paused.',
-				array(
-					'attachment_id'   => $attachment_id,
-					'context'         => $context,
-					'comparison_code' => $comparison->code(),
-				),
-				$attachment_id
-			);
-
-			$this->dispatch_refresh( $attachment_id, $context, $status, $this->refresh_payload() );
-
-			return $metadata;
-		}
-
-		$queue_status = $this->queue->enqueue_reconciliation(
-			new ReconciliationJob(
-				$attachment_id,
-				$fingerprint->signature(),
-				'metadata_update'
-			)
-		);
-
-		$result_code = $this->primary_code( $queue_status );
-
-		if ( ! $queue_status->is_successful() ) {
-			$status = $this->save_status(
-				$attachment_id,
-				AttachmentStatus::STATE_STALE,
-				$result_code,
-				false,
-				$current_status
-			);
-
-			$this->logger->warning(
-				LogCode::RECONCILE_QUEUE_FAILED,
-				'Stale attachment derivatives could not be queued for reconciliation.',
+				LogCode::RECONCILE_QUEUED,
+				'Stale attachment derivatives were queued for reconciliation.',
 				array(
 					'attachment_id'   => $attachment_id,
 					'context'         => $context,
@@ -663,28 +773,19 @@ final class NewUploadIntegration implements HookProviderInterface {
 			);
 
 			return $metadata;
+		} finally {
+			$collected->release();
 		}
+	}
 
-		$this->logger->info(
-			LogCode::RECONCILE_QUEUED,
-			'Stale attachment derivatives were queued for reconciliation.',
-			array(
-				'attachment_id'   => $attachment_id,
-				'context'         => $context,
-				'comparison_code' => $comparison->code(),
-				'queue_codes'     => $queue_status->codes(),
-			),
-			$attachment_id
-		);
-
-		$this->dispatch_refresh(
-			$attachment_id,
-			$context,
-			$status,
-			$this->refresh_payload( array(), array(), array( 'reconcile' => $result_code ) )
-		);
-
-		return $metadata;
+	/**
+	 * Whether the current attachment is blocked by unsupported offload state.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool
+	 */
+	private function offload_blocked( int $attachment_id ): bool {
+		return null !== $this->offload && ! $this->offload->attachment_support( $attachment_id )->is_supported();
 	}
 
 	/**

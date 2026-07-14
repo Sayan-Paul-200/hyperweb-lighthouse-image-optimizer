@@ -13,6 +13,7 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\EnvironmentReport;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\FormatSupportResult;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\UploadsStatus;
 use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictDetector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
 /**
@@ -42,20 +43,30 @@ final class DashboardEnvironmentSummaryService {
 	private $detector;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
 	 * Create the service.
 	 *
 	 * @param EnvironmentInspector        $inspector Environment inspector.
 	 * @param SettingsRepositoryInterface $settings Settings repository.
 	 * @param ConflictDetector            $detector Conflict detector.
+	 * @param OffloadSupportService|null  $offload Offload support service.
 	 */
 	public function __construct(
 		EnvironmentInspector $inspector,
 		SettingsRepositoryInterface $settings,
-		ConflictDetector $detector
+		ConflictDetector $detector,
+		?OffloadSupportService $offload = null
 	) {
 		$this->inspector = $inspector;
 		$this->settings  = $settings;
 		$this->detector  = $detector;
+		$this->offload   = $offload;
 	}
 
 	/**
@@ -104,6 +115,7 @@ final class DashboardEnvironmentSummaryService {
 					'loaded'      => $report->action_scheduler()->is_loaded(),
 					'initialized' => $report->action_scheduler()->is_initialized(),
 				),
+				'offload'               => null !== $this->offload ? $this->offload->site_support()->to_array() : null,
 				'automatic_optimization' => $this->settings->automatic_optimization_enabled(),
 				'delivery_enabled'       => $this->settings->delivery_enabled(),
 			),

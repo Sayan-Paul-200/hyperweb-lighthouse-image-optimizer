@@ -8,19 +8,20 @@
 namespace HyperWeb\LighthouseImageOptimizer\Admin\Rest;
 
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentClockInterface;
-use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentFingerprint;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentFingerprintBuilder;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentMetaStoreInterface;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentStatus;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
-use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\AttachmentSourceCollectorInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueResult;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueService;
+use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentReconciliationResult;
+use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentReconciliationService;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStoreInterface;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueInterface;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueStatus;
-use HyperWeb\LighthouseImageOptimizer\Queue\ReconciliationJob;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
 /**
@@ -59,7 +60,7 @@ final class AttachmentActionService {
 	/**
 	 * Source collector.
 	 *
-	 * @var SourceCollector
+	 * @var AttachmentSourceCollectorInterface
 	 */
 	private $collector;
 
@@ -92,11 +93,25 @@ final class AttachmentActionService {
 	private $queueing;
 
 	/**
+	 * Shared attachment reconciliation queue service.
+	 *
+	 * @var AttachmentReconciliationService
+	 */
+	private $reconciliation;
+
+	/**
 	 * Queue control state store.
 	 *
 	 * @var QueueControlStateStoreInterface|null
 	 */
 	private $controls;
+
+	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
 
 	/**
 	 * Create the service.
@@ -105,24 +120,27 @@ final class AttachmentActionService {
 	 * @param SettingsRepositoryInterface          $settings Settings repository.
 	 * @param AttachmentMetaStoreInterface         $meta Attachment meta store.
 	 * @param DerivativeRepository                 $repository Derivative repository.
-	 * @param SourceCollector                      $collector Source collector.
+	 * @param AttachmentSourceCollectorInterface   $collector Source collector.
 	 * @param AttachmentFingerprintBuilder         $fingerprinter Fingerprint builder.
 	 * @param AttachmentClockInterface             $clock Clock.
 	 * @param AttachmentDetailsService             $details Details service.
 	 * @param AttachmentQueueService|null          $queueing Shared attachment queue service.
 	 * @param QueueControlStateStoreInterface|null $controls Queue control state store.
+	 * @param OffloadSupportService|null           $offload Offload support service.
 	 */
 	public function __construct(
 		QueueInterface $queue,
 		SettingsRepositoryInterface $settings,
 		AttachmentMetaStoreInterface $meta,
 		DerivativeRepository $repository,
-		SourceCollector $collector,
+		AttachmentSourceCollectorInterface $collector,
 		AttachmentFingerprintBuilder $fingerprinter,
 		AttachmentClockInterface $clock,
 		AttachmentDetailsService $details,
 		?AttachmentQueueService $queueing = null,
-		?QueueControlStateStoreInterface $controls = null
+		?QueueControlStateStoreInterface $controls = null,
+		?OffloadSupportService $offload = null,
+		?AttachmentReconciliationService $reconciliation = null
 	) {
 		$this->queue         = $queue;
 		$this->settings      = $settings;
@@ -133,6 +151,7 @@ final class AttachmentActionService {
 		$this->clock         = $clock;
 		$this->details       = $details;
 		$this->controls      = $controls;
+		$this->offload       = $offload;
 		$this->queueing      = $queueing ?? new AttachmentQueueService(
 			$queue,
 			$meta,
@@ -140,7 +159,18 @@ final class AttachmentActionService {
 			$collector,
 			$fingerprinter,
 			$clock,
-			$controls
+			$controls,
+			$offload
+		);
+		$this->reconciliation = $reconciliation ?? new AttachmentReconciliationService(
+			$queue,
+			$meta,
+			$repository,
+			$collector,
+			$fingerprinter,
+			$clock,
+			$controls,
+			$offload
 		);
 	}
 
@@ -161,6 +191,10 @@ final class AttachmentActionService {
 				'This attachment is excluded from optimization. Include it before queueing manual work.',
 				409
 			);
+		}
+
+		if ( $response = $this->offload_unsupported_response( 'optimize', $attachment_id ) ) {
+			return $response;
 		}
 
 		$formats = AttachmentStatus::normalize_formats( $this->settings->enabled_formats() );
@@ -193,6 +227,10 @@ final class AttachmentActionService {
 				'This attachment is excluded from optimization. Include it before queueing manual work.',
 				409
 			);
+		}
+
+		if ( $response = $this->offload_unsupported_response( 'retry', $attachment_id ) ) {
+			return $response;
 		}
 
 		$current = $this->repository->read( $attachment_id )->status();
@@ -240,73 +278,15 @@ final class AttachmentActionService {
 			);
 		}
 
-		if ( ! $this->queue->available() ) {
-			return AttachmentActionResult::failure(
-				'reconcile',
-				$attachment_id,
-				$this->details->details( $attachment_id ),
-				'queue_unavailable',
-				'The background queue is unavailable right now.',
-				503
-			);
+		if ( $response = $this->offload_unsupported_response( 'reconcile', $attachment_id ) ) {
+			return $response;
 		}
 
-		if ( null !== $this->controls && $this->controls->read()->paused() ) {
-			return AttachmentActionResult::failure(
-				'reconcile',
-				$attachment_id,
-				$this->details->details( $attachment_id ),
-				'queue_paused',
-				'Attachment processing is currently paused.',
-				409
-			);
-		}
-
-		$fingerprint = $this->fingerprint_for_attachment( $attachment_id );
-
-		if ( ! $fingerprint instanceof AttachmentFingerprint ) {
-			return AttachmentActionResult::failure(
-				'reconcile',
-				$attachment_id,
-				$this->details->details( $attachment_id ),
-				'attachment_source_unavailable',
-				'This attachment does not currently have a valid source fingerprint for queueing.',
-				409
-			);
-		}
-
-		$status = $this->queue->enqueue_reconciliation(
-			new ReconciliationJob( $attachment_id, $fingerprint->signature(), 'manual_reconcile' )
+		return $this->reconciliation_result_response(
+			'reconcile',
+			$attachment_id,
+			$this->reconciliation->reconcile( $attachment_id, 'manual_reconcile' )
 		);
-		$queue  = array(
-			$this->queue_payload( 'reconcile', $status ),
-		);
-
-		if ( ! $status->is_successful() ) {
-			return AttachmentActionResult::failure(
-				'reconcile',
-				$attachment_id,
-				$this->details->details( $attachment_id ),
-				'queue_enqueue_failed',
-				$this->queue_message( $status, 'The requested job could not be queued.' ),
-				500,
-				$queue
-			);
-		}
-
-		if ( ! $this->write_status( $attachment_id, AttachmentStatus::STATE_QUEUED, false, array() ) ) {
-			return AttachmentActionResult::failure(
-				'reconcile',
-				$attachment_id,
-				$this->details->details( $attachment_id ),
-				'attachment_state_update_failed',
-				'The attachment state could not be updated safely.',
-				500,
-				$queue
-			);
-		}
-
-		return AttachmentActionResult::success( 'reconcile', $attachment_id, $this->details->details( $attachment_id ), $queue );
 	}
 
 	/**
@@ -414,6 +394,42 @@ final class AttachmentActionService {
 	}
 
 	/**
+	 * Convert a shared reconciliation result into an attachment action response.
+	 *
+	 * @param string                        $action Action name.
+	 * @param int                           $attachment_id Attachment ID.
+	 * @param AttachmentReconciliationResult $result Shared result.
+	 * @return AttachmentActionResult
+	 */
+	private function reconciliation_result_response( string $action, int $attachment_id, AttachmentReconciliationResult $result ): AttachmentActionResult {
+		$queue = array();
+
+		if ( $result->queue_status() instanceof QueueStatus ) {
+			$queue[] = $this->queue_payload( 'reconcile', $result->queue_status() );
+		}
+
+		if ( $result->is_successful() ) {
+			return AttachmentActionResult::success( $action, $attachment_id, $this->details->details( $attachment_id ), $queue );
+		}
+
+		$status_code = AttachmentReconciliationResult::CODE_QUEUE_UNAVAILABLE === $result->code() ? 503 : 409;
+
+		if ( in_array( $result->code(), array( AttachmentReconciliationResult::CODE_ENQUEUE_FAILED, AttachmentReconciliationResult::CODE_ATTACHMENT_STATE_UPDATE_FAILED ), true ) ) {
+			$status_code = 500;
+		}
+
+		return AttachmentActionResult::failure(
+			$action,
+			$attachment_id,
+			$this->details->details( $attachment_id ),
+			$result->code(),
+			$result->message(),
+			$status_code,
+			$queue
+		);
+	}
+
+	/**
 	 * Determine whether the attachment is excluded.
 	 *
 	 * @param int $attachment_id Attachment ID.
@@ -430,19 +446,31 @@ final class AttachmentActionService {
 	}
 
 	/**
-	 * Build the current fingerprint for one attachment.
+	 * Build a conservative unsupported-offload response when needed.
 	 *
-	 * @param int $attachment_id Attachment ID.
-	 * @return AttachmentFingerprint|null
+	 * @param string $action Action name.
+	 * @param int    $attachment_id Attachment ID.
+	 * @return AttachmentActionResult|null
 	 */
-	private function fingerprint_for_attachment( int $attachment_id ): ?AttachmentFingerprint {
-		$collection = $this->collector->collect( $attachment_id );
-
-		if ( array() === $collection->sources() ) {
+	private function offload_unsupported_response( string $action, int $attachment_id ): ?AttachmentActionResult {
+		if ( null === $this->offload ) {
 			return null;
 		}
 
-		return $this->fingerprinter->build( $collection );
+		$support = $this->offload->attachment_support( $attachment_id );
+
+		if ( $support->is_supported() ) {
+			return null;
+		}
+
+		return AttachmentActionResult::failure(
+			$action,
+			$attachment_id,
+			$this->details->details( $attachment_id ),
+			AttachmentQueueResult::CODE_OFFLOAD_UNSUPPORTED,
+			$support->message(),
+			409
+		);
 	}
 
 	/**
@@ -547,19 +575,6 @@ final class AttachmentActionService {
 			'codes'               => $status->codes(),
 			'messages'            => $this->sanitize_messages( $status->messages() ),
 		);
-	}
-
-	/**
-	 * Read the first safe queue message.
-	 *
-	 * @param QueueStatus $status Queue status.
-	 * @param string      $fallback Fallback message.
-	 * @return string
-	 */
-	private function queue_message( QueueStatus $status, string $fallback ): string {
-		$messages = $this->sanitize_messages( $status->messages() );
-
-		return isset( $messages[0] ) ? $messages[0] : $fallback;
 	}
 
 	/**

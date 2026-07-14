@@ -70,6 +70,19 @@ final class ElementorBackgroundDiscovery {
 
 		$data = $this->store->read_document( $document_id );
 
+		return $this->discover_from_document( $document_id, $data );
+	}
+
+	/**
+	 * Discover supported structured background-image mappings from a pre-read document payload.
+	 *
+	 * @param int                  $document_id Document/post ID.
+	 * @param ElementorDocumentData $data Pre-read document data.
+	 * @return ElementorBackgroundDiscoveryResult
+	 */
+	public function discover_from_document( int $document_id, ElementorDocumentData $data ): ElementorBackgroundDiscoveryResult {
+		$document_id = max( 0, $document_id );
+
 		if ( $data->is_missing() ) {
 			return new ElementorBackgroundDiscoveryResult( $document_id );
 		}

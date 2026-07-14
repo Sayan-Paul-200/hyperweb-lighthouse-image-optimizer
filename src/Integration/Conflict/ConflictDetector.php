@@ -7,6 +7,10 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Integration\Conflict;
 
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSiteSupport;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WpOffloadMediaAdapter;
+
 /**
  * Detects overlapping optimization capabilities from current-site active plugins.
  */
@@ -26,12 +30,21 @@ final class ConflictDetector {
 	private $runtime;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
 	 * Create detector.
 	 *
-	 * @param ConflictRuntimeInterface $runtime Runtime seam.
+	 * @param ConflictRuntimeInterface   $runtime Runtime seam.
+	 * @param OffloadSupportService|null $offload Offload support service.
 	 */
-	public function __construct( ConflictRuntimeInterface $runtime ) {
-		$this->runtime = $runtime;
+	public function __construct( ConflictRuntimeInterface $runtime, ?OffloadSupportService $offload = null ) {
+		$this->runtime  = $runtime;
+		$this->offload  = $offload;
 	}
 
 	/**
@@ -73,6 +86,17 @@ final class ConflictDetector {
 				continue;
 			}
 
+			if ( self::CAPABILITY_MEDIA_OFFLOAD === $capability ) {
+				$offload_result = $this->media_offload_result( $matched, $active_lookup );
+
+				if ( null === $offload_result ) {
+					continue;
+				}
+
+				$results[] = $offload_result;
+				continue;
+			}
+
 			$results[] = new ConflictResult(
 				'overlap_' . $capability,
 				ConflictResult::SEVERITY_WARNING,
@@ -85,6 +109,71 @@ final class ConflictDetector {
 		}
 
 		return new ConflictReport( $results );
+	}
+
+	/**
+	 * Build the media-offload conflict result with supported WP Offload Media refinement.
+	 *
+	 * @param string[]          $matched Matched plugin names.
+	 * @param array<string,bool> $active_lookup Active plugin lookup.
+	 * @return ConflictResult|null
+	 */
+	private function media_offload_result( array $matched, array $active_lookup ): ?ConflictResult {
+		$wp_offload_active = isset( $active_lookup[ WpOffloadMediaAdapter::PLUGIN_BASENAME ] );
+
+		if ( ! $wp_offload_active || null === $this->offload ) {
+			return new ConflictResult(
+				'overlap_' . self::CAPABILITY_MEDIA_OFFLOAD,
+				ConflictResult::SEVERITY_WARNING,
+				self::CAPABILITY_MEDIA_OFFLOAD,
+				$this->capability_label( self::CAPABILITY_MEDIA_OFFLOAD ),
+				$this->capability_message( self::CAPABILITY_MEDIA_OFFLOAD ),
+				$matched,
+				$this->recommended_setting_keys( self::CAPABILITY_MEDIA_OFFLOAD )
+			);
+		}
+
+		$site = $this->offload->site_support();
+
+		if ( $site->supported() ) {
+			$others = array_values( array_diff( $matched, array( WpOffloadMediaAdapter::PLUGIN_NAME ) ) );
+
+			if ( array() === $others ) {
+				return null;
+			}
+
+			return new ConflictResult(
+				'overlap_' . self::CAPABILITY_MEDIA_OFFLOAD,
+				ConflictResult::SEVERITY_WARNING,
+				self::CAPABILITY_MEDIA_OFFLOAD,
+				$this->capability_label( self::CAPABILITY_MEDIA_OFFLOAD ),
+				$this->capability_message( self::CAPABILITY_MEDIA_OFFLOAD ),
+				$others,
+				$this->recommended_setting_keys( self::CAPABILITY_MEDIA_OFFLOAD )
+			);
+		}
+
+		if ( OffloadSiteSupport::CODE_UNSUPPORTED === $site->code() ) {
+			return new ConflictResult(
+				'overlap_media_offload_unsupported',
+				ConflictResult::SEVERITY_WARNING,
+				self::CAPABILITY_MEDIA_OFFLOAD,
+				'Unsupported media offload state',
+				$site->message(),
+				$matched,
+				$this->recommended_setting_keys( self::CAPABILITY_MEDIA_OFFLOAD )
+			);
+		}
+
+		return new ConflictResult(
+			'overlap_' . self::CAPABILITY_MEDIA_OFFLOAD,
+			ConflictResult::SEVERITY_WARNING,
+			self::CAPABILITY_MEDIA_OFFLOAD,
+			$this->capability_label( self::CAPABILITY_MEDIA_OFFLOAD ),
+			$this->capability_message( self::CAPABILITY_MEDIA_OFFLOAD ),
+			$matched,
+			$this->recommended_setting_keys( self::CAPABILITY_MEDIA_OFFLOAD )
+		);
 	}
 
 	/**

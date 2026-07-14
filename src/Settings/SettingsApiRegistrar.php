@@ -57,6 +57,13 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 	private $capability;
 
 	/**
+	 * PageSpeed credentials store.
+	 *
+	 * @var PageSpeedCredentialsStoreInterface|null
+	 */
+	private $pagespeed_credentials;
+
+	/**
 	 * Create a WordPress-backed registrar.
 	 *
 	 * @return self
@@ -66,7 +73,9 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 			SettingsRepository::for_wordpress(),
 			SettingsSanitizer::for_schema(),
 			new WordPressSettingsApi(),
-			EnvironmentInspector::for_wordpress()
+			EnvironmentInspector::for_wordpress(),
+			SettingsSchema::CAPABILITY_MANAGE_OPTIONS,
+			WordPressPageSpeedCredentialsStore::for_wordpress()
 		);
 	}
 
@@ -78,19 +87,22 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 	 * @param SettingsApiInterface           $settings_api Settings API adapter.
 	 * @param FormatSupportProviderInterface $format_support Format support checker.
 	 * @param string                         $capability Required capability.
+	 * @param PageSpeedCredentialsStoreInterface|null $pagespeed_credentials PageSpeed credentials store.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $repository,
 		SettingsSanitizer $sanitizer,
 		SettingsApiInterface $settings_api,
 		FormatSupportProviderInterface $format_support,
-		string $capability = SettingsSchema::CAPABILITY_MANAGE_OPTIONS
+		string $capability = SettingsSchema::CAPABILITY_MANAGE_OPTIONS,
+		?PageSpeedCredentialsStoreInterface $pagespeed_credentials = null
 	) {
 		$this->repository     = $repository;
 		$this->sanitizer      = $sanitizer;
 		$this->settings_api   = $settings_api;
 		$this->format_support = $format_support;
 		$this->capability     = $capability;
+		$this->pagespeed_credentials = $pagespeed_credentials;
 	}
 
 	/**
@@ -120,6 +132,20 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 				'show_in_rest'      => false,
 			)
 		);
+
+		if ( $this->pagespeed_credentials instanceof PageSpeedCredentialsStoreInterface ) {
+			$this->settings_api->register_setting(
+				self::OPTION_GROUP,
+				$this->pagespeed_credentials->option_name(),
+				array(
+					'type'              => 'array',
+					'description'       => 'HyperWeb Lighthouse Image Optimizer PageSpeed Insights credentials.',
+					'sanitize_callback' => array( $this, 'sanitize_pagespeed_credentials' ),
+					'default'           => $this->pagespeed_credentials->all(),
+					'show_in_rest'      => false,
+				)
+			);
+		}
 
 		foreach ( $this->sections() as $id => $title ) {
 			$this->settings_api->add_settings_section(
@@ -167,6 +193,43 @@ final class SettingsApiRegistrar implements HookProviderInterface {
 		$this->record_sanitization_feedback( $result );
 
 		return $settings;
+	}
+
+	/**
+	 * Sanitize and persist the optional PageSpeed Insights credentials payload.
+	 *
+	 * @param mixed $input Raw payload.
+	 * @return array<string,string>
+	 */
+	public function sanitize_pagespeed_credentials( $input ): array {
+		if ( ! $this->pagespeed_credentials instanceof PageSpeedCredentialsStoreInterface ) {
+			return array(
+				'api_key' => '',
+			);
+		}
+
+		if ( ! $this->settings_api->current_user_can( $this->capability ) ) {
+			$this->add_error(
+				'unauthorized_pagespeed_credentials_save',
+				'You do not have permission to change HyperWeb Lighthouse Image Optimizer PageSpeed credentials.',
+				'error'
+			);
+
+			return $this->pagespeed_credentials->all();
+		}
+
+		$payload_is_array = is_array( $input );
+		$payload          = $payload_is_array ? $input : array();
+
+		if ( ! $payload_is_array ) {
+			$this->add_error(
+				'invalid_pagespeed_credentials_payload',
+				'The submitted PageSpeed Insights credentials payload was invalid, so the existing value was preserved.',
+				'error'
+			);
+		}
+
+		return $this->pagespeed_credentials->save_submission( $payload );
 	}
 
 	/**

@@ -9,10 +9,12 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Settings;
 
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\FormatSupportResult;
+use HyperWeb\LighthouseImageOptimizer\Settings\PageSpeedCredentialsStoreInterface;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsApiRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsSchema;
+use HyperWeb\LighthouseImageOptimizer\Settings\WordPressPageSpeedCredentialsStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeOptionStore;
 use PHPUnit\Framework\TestCase;
 
@@ -49,13 +51,17 @@ final class SettingsApiRegistrarTest extends TestCase {
 
 		$registrar->register_settings();
 
-		self::assertCount( 1, $settings_api->settings );
+		self::assertCount( 2, $settings_api->settings );
 		self::assertSame( SettingsApiRegistrar::OPTION_GROUP, $settings_api->settings[0]['group'] );
 		self::assertSame( SettingsRepository::OPTION_NAME, $settings_api->settings[0]['name'] );
 		self::assertSame( 'array', $settings_api->settings[0]['args']['type'] );
 		self::assertSame( SettingsSchema::defaults(), $settings_api->settings[0]['args']['default'] );
 		self::assertFalse( $settings_api->settings[0]['args']['show_in_rest'] );
 		self::assertIsCallable( $settings_api->settings[0]['args']['sanitize_callback'] );
+		self::assertSame( SettingsApiRegistrar::OPTION_GROUP, $settings_api->settings[1]['group'] );
+		self::assertSame( WordPressPageSpeedCredentialsStore::OPTION_NAME, $settings_api->settings[1]['name'] );
+		self::assertSame( array( 'api_key' => '' ), $settings_api->settings[1]['args']['default'] );
+		self::assertIsCallable( $settings_api->settings[1]['args']['sanitize_callback'] );
 
 		self::assertCount( 6, $settings_api->sections );
 		self::assertSame(
@@ -130,6 +136,91 @@ final class SettingsApiRegistrarTest extends TestCase {
 
 		self::assertFalse( $settings['delivery_enabled'] );
 		self::assertSame( array( 'unauthorized_settings_save' ), array_column( $settings_api->errors, 'code' ) );
+	}
+
+	/**
+	 * Test PageSpeed credentials preserve an existing key when the field is left blank.
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_pagespeed_credentials_preserves_existing_key_when_blank(): void {
+		$settings_api = new FakeSettingsApi();
+		$options      = new FakeOptionStore(
+			array(
+				SettingsRepository::OPTION_NAME                  => SettingsSchema::defaults(),
+				WordPressPageSpeedCredentialsStore::OPTION_NAME => array(
+					'api_key' => 'saved-key',
+				),
+			)
+		);
+		$registrar    = $this->registrar( $settings_api, null, $options );
+
+		$result = $registrar->sanitize_pagespeed_credentials(
+			array(
+				'api_key' => '',
+			)
+		);
+
+		self::assertSame( array( 'api_key' => 'saved-key' ), $result );
+		self::assertSame( 'saved-key', $options->options[ WordPressPageSpeedCredentialsStore::OPTION_NAME ]['api_key'] );
+		self::assertSame( 'no', $options->autoload[ WordPressPageSpeedCredentialsStore::OPTION_NAME ] );
+	}
+
+	/**
+	 * Test PageSpeed credentials can be cleared explicitly.
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_pagespeed_credentials_clears_saved_key_when_requested(): void {
+		$settings_api = new FakeSettingsApi();
+		$options      = new FakeOptionStore(
+			array(
+				SettingsRepository::OPTION_NAME                  => SettingsSchema::defaults(),
+				WordPressPageSpeedCredentialsStore::OPTION_NAME => array(
+					'api_key' => 'saved-key',
+				),
+			)
+		);
+		$registrar    = $this->registrar( $settings_api, null, $options );
+
+		$result = $registrar->sanitize_pagespeed_credentials(
+			array(
+				'api_key'        => '',
+				'clear_api_key'  => '1',
+			)
+		);
+
+		self::assertSame( array( 'api_key' => '' ), $result );
+		self::assertSame( '', $options->options[ WordPressPageSpeedCredentialsStore::OPTION_NAME ]['api_key'] );
+		self::assertSame( 'no', $options->autoload[ WordPressPageSpeedCredentialsStore::OPTION_NAME ] );
+	}
+
+	/**
+	 * Test unauthorized PageSpeed credential saves preserve the existing value.
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_pagespeed_credentials_rejects_unauthorized_save(): void {
+		$settings_api      = new FakeSettingsApi();
+		$settings_api->can = false;
+		$options           = new FakeOptionStore(
+			array(
+				SettingsRepository::OPTION_NAME                  => SettingsSchema::defaults(),
+				WordPressPageSpeedCredentialsStore::OPTION_NAME => array(
+					'api_key' => 'saved-key',
+				),
+			)
+		);
+		$registrar         = $this->registrar( $settings_api, null, $options );
+
+		$result = $registrar->sanitize_pagespeed_credentials(
+			array(
+				'api_key' => 'new-key',
+			)
+		);
+
+		self::assertSame( array( 'api_key' => 'saved-key' ), $result );
+		self::assertSame( array( 'unauthorized_pagespeed_credentials_save' ), array_column( $settings_api->errors, 'code' ) );
 	}
 
 	/**
@@ -304,17 +395,21 @@ final class SettingsApiRegistrarTest extends TestCase {
 	private function registrar(
 		?FakeSettingsApi $settings_api = null,
 		?FakeFormatSupportProvider $format_support = null,
-		?FakeOptionStore $options = null
+		?FakeOptionStore $options = null,
+		?PageSpeedCredentialsStoreInterface $pagespeed_credentials = null
 	): SettingsApiRegistrar {
 		$options        = $options ?? new FakeOptionStore( array( SettingsRepository::OPTION_NAME => SettingsSchema::defaults() ) );
 		$settings_api   = $settings_api ?? new FakeSettingsApi();
 		$format_support = $format_support ?? new FakeFormatSupportProvider();
+		$pagespeed_credentials = $pagespeed_credentials ?? WordPressPageSpeedCredentialsStore::for_options( $options );
 
 		return new SettingsApiRegistrar(
 			SettingsRepository::for_options( $options ),
 			new SettingsSanitizer( SettingsSchema::definitions(), SettingsSchema::base_defaults() ),
 			$settings_api,
-			$format_support
+			$format_support,
+			SettingsSchema::CAPABILITY_MANAGE_OPTIONS,
+			$pagespeed_credentials
 		);
 	}
 }

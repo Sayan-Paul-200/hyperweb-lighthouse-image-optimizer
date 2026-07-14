@@ -16,6 +16,7 @@ use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\BulkScanService;
 use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\BulkScanSession;
 use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\BulkScanSessionAccessDeniedException;
 use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\BulkScanSessionNotFoundException;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadUnsupportedException;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlService;
 
 /**
@@ -499,6 +500,8 @@ final class JobsController implements RestControllerInterface {
 			unset( $exception );
 
 			return $this->errors->bulk_scan_not_complete();
+		} catch ( OffloadUnsupportedException $exception ) {
+			return $this->errors->offload_unsupported( $exception->getMessage() );
 		} catch ( \Throwable $throwable ) {
 			unset( $throwable );
 

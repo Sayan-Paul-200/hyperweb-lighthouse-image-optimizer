@@ -11,6 +11,7 @@ use HyperWeb\LighthouseImageOptimizer\Diagnostics\ConflictDiagnostics;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\DerivativeHealthDiagnostics;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\DiagnosticReport;
 use HyperWeb\LighthouseImageOptimizer\Diagnostics\EnvironmentDiagnostics;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportDiagnostics;
 
 /**
  * Combines environment and derivative-health diagnostics for REST responses.
@@ -39,20 +40,30 @@ final class CompositeDiagnosticsService implements DiagnosticsServiceInterface {
 	private $conflicts;
 
 	/**
+	 * Offload support diagnostics.
+	 *
+	 * @var OffloadSupportDiagnostics|null
+	 */
+	private $offload;
+
+	/**
 	 * Create service.
 	 *
 	 * @param EnvironmentDiagnostics      $environment Environment diagnostics.
 	 * @param DerivativeHealthDiagnostics $derivatives Derivative health diagnostics.
-	 * @param ConflictDiagnostics         $conflicts Conflict diagnostics.
+	 * @param ConflictDiagnostics              $conflicts Conflict diagnostics.
+	 * @param OffloadSupportDiagnostics|null   $offload Offload support diagnostics.
 	 */
 	public function __construct(
 		EnvironmentDiagnostics $environment,
 		DerivativeHealthDiagnostics $derivatives,
-		ConflictDiagnostics $conflicts
+		ConflictDiagnostics $conflicts,
+		?OffloadSupportDiagnostics $offload = null
 	) {
 		$this->environment = $environment;
 		$this->derivatives = $derivatives;
 		$this->conflicts   = $conflicts;
+		$this->offload     = $offload;
 	}
 
 	/**
@@ -65,6 +76,7 @@ final class CompositeDiagnosticsService implements DiagnosticsServiceInterface {
 			array_merge(
 				$this->environment->run()->results(),
 				$this->conflicts->run(),
+				null !== $this->offload ? array( $this->offload->run() ) : array(),
 				array( $this->derivatives->run() )
 			)
 		) )->to_array();

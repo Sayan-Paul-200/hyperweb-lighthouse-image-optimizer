@@ -120,6 +120,7 @@ final class SettingsRepositoryTest extends TestCase {
 					SettingsSchema::defaults(),
 					array(
 						'automatic_optimization'          => '1',
+						'pagespeed_insights_enabled'      => true,
 						'media_library_controls'          => true,
 						'allow_attachment_exclusion'      => false,
 						'delivery_enabled'                => true,
@@ -147,6 +148,7 @@ final class SettingsRepositoryTest extends TestCase {
 		$repository = SettingsRepository::for_options( $options );
 
 		self::assertTrue( $repository->automatic_optimization_enabled() );
+		self::assertTrue( $repository->pagespeed_insights_enabled() );
 		self::assertTrue( $repository->media_library_controls_enabled() );
 		self::assertFalse( $repository->attachment_exclusion_allowed() );
 		self::assertTrue( $repository->delivery_enabled() );

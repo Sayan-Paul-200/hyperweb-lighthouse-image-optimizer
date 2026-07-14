@@ -34,13 +34,15 @@ final class WordPressUploadsRuntime implements UploadsRuntimeInterface {
 		}
 
 		if ( function_exists( 'apply_filters' ) ) {
+			$context  = DeliveryHookPolicy::uploads_base_url_context( $request, $base_url );
 			$filtered = \apply_filters(
-				'hwlio_delivery_uploads_base_url',
+				DeliveryHookPolicy::FILTER_UPLOADS_BASE_URL,
 				$base_url,
 				$request->relative_path(),
 				$request->attachment_id(),
 				$request->size_name(),
-				$request->format()
+				$request->format(),
+				$context
 			);
 
 			if ( is_scalar( $filtered ) ) {
@@ -82,13 +84,15 @@ final class WordPressUploadsRuntime implements UploadsRuntimeInterface {
 			return $url;
 		}
 
+		$context  = DeliveryHookPolicy::derivative_url_context( $request, $url );
 		$filtered = \apply_filters(
-			'hwlio_delivery_derivative_url',
+			DeliveryHookPolicy::FILTER_DERIVATIVE_URL,
 			$url,
 			$request->relative_path(),
 			$request->attachment_id(),
 			$request->size_name(),
-			$request->format()
+			$request->format(),
+			$context
 		);
 
 		if ( ! is_scalar( $filtered ) ) {

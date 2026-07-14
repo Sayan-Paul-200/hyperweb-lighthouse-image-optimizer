@@ -9,6 +9,7 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Admin;
 
 use HyperWeb\LighthouseImageOptimizer\Admin\SettingsPage;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Settings\FakePageSpeedCredentialsStore;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -17,7 +18,7 @@ use PHPUnit\Framework\TestCase;
 final class SettingsPageTest extends TestCase {
 
 	/**
-	 * Test the settings page renders the visible critical-image and compatibility checkboxes with the registered option name.
+	 * Test the settings page renders the visible critical-image, PageSpeed, and compatibility controls with the registered option names.
 	 *
 	 * @return void
 	 */
@@ -26,6 +27,7 @@ final class SettingsPageTest extends TestCase {
 			new FakeSettingsRepository(
 				array(
 					'automatic_optimization'              => true,
+					'pagespeed_insights_enabled'          => true,
 					'delivery_enabled'                    => true,
 					'loading_attribute_overrides_enabled' => true,
 					'critical_logo_enabled'               => true,
@@ -33,7 +35,8 @@ final class SettingsPageTest extends TestCase {
 					'critical_background_preload_enabled' => true,
 					'elementor_background_delivery_enabled' => true,
 				)
-			)
+			),
+			new FakePageSpeedCredentialsStore( 'saved-key' )
 		);
 
 		ob_start();
@@ -43,12 +46,18 @@ final class SettingsPageTest extends TestCase {
 		self::assertStringContainsString( '<form method="post" action="options.php"', $output );
 		self::assertStringContainsString( 'name="hwlio_settings[critical_logo_enabled]"', $output );
 		self::assertStringContainsString( 'name="hwlio_settings[automatic_optimization]"', $output );
+		self::assertStringContainsString( 'name="hwlio_settings[pagespeed_insights_enabled]"', $output );
+		self::assertStringContainsString( 'name="hwlio_pagespeed_credentials[api_key]"', $output );
+		self::assertStringContainsString( 'name="hwlio_pagespeed_credentials[clear_api_key]"', $output );
 		self::assertStringContainsString( 'name="hwlio_settings[delivery_enabled]"', $output );
 		self::assertStringContainsString( 'name="hwlio_settings[loading_attribute_overrides_enabled]"', $output );
 		self::assertStringContainsString( 'name="hwlio_settings[responsive_preload_enabled]"', $output );
 		self::assertStringContainsString( 'name="hwlio_settings[critical_background_preload_enabled]"', $output );
 		self::assertStringContainsString( 'name="hwlio_settings[elementor_background_delivery_enabled]"', $output );
 		self::assertStringContainsString( 'Treat the site custom logo as a critical image', $output );
+		self::assertStringContainsString( 'PageSpeed Insights', $output );
+		self::assertStringContainsString( 'Enable PageSpeed Insights integration', $output );
+		self::assertStringContainsString( 'A PageSpeed Insights API key is currently saved for this site.', $output );
 		self::assertStringContainsString( 'Compatibility', $output );
 		self::assertStringContainsString( 'Enable automatic optimization', $output );
 		self::assertStringContainsString( 'Enable frontend modern-format delivery', $output );

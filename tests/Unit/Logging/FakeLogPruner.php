@@ -29,6 +29,13 @@ final class FakeLogPruner implements LogPrunerInterface {
 	public $result = 0;
 
 	/**
+	 * Optional per-call results.
+	 *
+	 * @var int[]
+	 */
+	public $results = array();
+
+	/**
 	 * Whether pruning should throw.
 	 *
 	 * @var bool
@@ -46,6 +53,10 @@ final class FakeLogPruner implements LogPrunerInterface {
 
 		if ( $this->throw ) {
 			throw new \RuntimeException( 'Prune failed.' );
+		}
+
+		if ( array() !== $this->results ) {
+			return max( 0, (int) array_shift( $this->results ) );
 		}
 
 		return $this->result;

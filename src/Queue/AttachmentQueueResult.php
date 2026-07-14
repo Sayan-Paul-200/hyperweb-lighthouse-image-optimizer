@@ -19,6 +19,7 @@ final class AttachmentQueueResult {
 	public const CODE_QUEUE_UNAVAILABLE              = 'queue_unavailable';
 	public const CODE_NO_ENABLED_FORMATS             = 'no_enabled_formats';
 	public const CODE_ATTACHMENT_SOURCE_UNAVAILABLE  = 'attachment_source_unavailable';
+	public const CODE_OFFLOAD_UNSUPPORTED            = 'offload_unsupported';
 	public const CODE_ATTACHMENT_STATE_UPDATE_FAILED = 'attachment_state_update_failed';
 	public const CODE_ENQUEUE_FAILED                 = 'queue_enqueue_failed';
 

@@ -9,6 +9,8 @@ namespace HyperWeb\LighthouseImageOptimizer\Admin\Bulk;
 
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentStatus;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadUnsupportedException;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueResult;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueService;
 use HyperWeb\LighthouseImageOptimizer\Queue\QueueControlStateStoreInterface;
@@ -64,6 +66,13 @@ final class BulkQueueService {
 	private $controls;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
 	 * GMT clock callback.
 	 *
 	 * @var callable
@@ -80,6 +89,7 @@ final class BulkQueueService {
 	 * @param SettingsRepositoryInterface     $settings Settings repository.
 	 * @param QueueControlStateStoreInterface $controls Queue control state store.
 	 * @param callable|null                   $now_gmt Optional GMT clock callback.
+	 * @param OffloadSupportService|null      $offload Optional offload support service.
 	 */
 	public function __construct(
 		BulkScanSessionStoreInterface $sessions,
@@ -88,7 +98,8 @@ final class BulkQueueService {
 		AttachmentQueueService $queue,
 		SettingsRepositoryInterface $settings,
 		QueueControlStateStoreInterface $controls,
-		?callable $now_gmt = null
+		?callable $now_gmt = null,
+		?OffloadSupportService $offload = null
 	) {
 		$this->sessions = $sessions;
 		$this->scans    = $scans;
@@ -99,6 +110,7 @@ final class BulkQueueService {
 		$this->now_gmt  = $now_gmt ?? static function (): string {
 			return gmdate( 'Y-m-d H:i:s' );
 		};
+		$this->offload  = $offload;
 	}
 
 	/**
@@ -133,6 +145,10 @@ final class BulkQueueService {
 	 * @return BulkScanSession
 	 */
 	private function process( string $token, int $owner_user_id, string $mode ): BulkScanSession {
+		if ( null !== $this->offload && $this->offload->blocks_site_operations() ) {
+			throw new OffloadUnsupportedException( $this->offload->site_support()->message() );
+		}
+
 		$session = $this->scans->load_owned_session( $token, $owner_user_id );
 
 		if ( ! $session->progress()->complete() ) {

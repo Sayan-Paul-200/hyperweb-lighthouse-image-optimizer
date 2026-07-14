@@ -7,7 +7,6 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Attachment;
 
-use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\CacheInvalidationDispatcherInterface;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\CacheInvalidationRequest;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookProviderInterface;
@@ -15,6 +14,14 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressCacheInvalidationDispatcher;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\WordPressFilesystem;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\AttachmentSourceCollectorInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\DerivativeDeleteInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\DerivativeDeleteRequest;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadAwareSourceCollector;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WordPressWpOffloadMediaRuntime;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\WpOffloadMediaAdapter;
 
 /**
  * Cleans up plugin-owned state when an attachment is permanently deleted.
@@ -52,7 +59,7 @@ final class AttachmentCleanup implements HookProviderInterface {
 	/**
 	 * Source collector.
 	 *
-	 * @var SourceCollector
+	 * @var AttachmentSourceCollectorInterface
 	 */
 	private $collector;
 
@@ -64,12 +71,34 @@ final class AttachmentCleanup implements HookProviderInterface {
 	private $cache_invalidation;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
+	 * Remote derivative delete service.
+	 *
+	 * @var DerivativeDeleteInterface|null
+	 */
+	private $remote_delete;
+
+	/**
 	 * Build the WordPress-backed cleanup provider.
 	 *
 	 * @return self
 	 */
 	public static function for_wordpress(): self {
 		$meta = new WordPressAttachmentMetaStore();
+		$runtime = new WordPressWpOffloadMediaRuntime();
+		$files = new \HyperWeb\LighthouseImageOptimizer\Image\WordPressImageFileProbe();
+		$adapter = new WpOffloadMediaAdapter(
+			$runtime,
+			$files,
+			new DerivativeManifestSanitizer()
+		);
+		$offload = new OffloadSupportService( $adapter );
 
 		return new self(
 			new DerivativeRepository(
@@ -80,8 +109,17 @@ final class AttachmentCleanup implements HookProviderInterface {
 			$meta,
 			new DerivativeFileCleaner( self::uploads_base_dir(), new WordPressFilesystem() ),
 			ActionSchedulerAttachmentJobCleaner::for_wordpress(),
-			SourceCollector::for_wordpress(),
-			new WordPressCacheInvalidationDispatcher()
+			new OffloadAwareSourceCollector(
+				new LocalAttachmentSourceCollector( \HyperWeb\LighthouseImageOptimizer\Image\SourceCollector::for_wordpress() ),
+				$runtime,
+				$adapter,
+				$offload,
+				$files,
+				new DerivativeManifestSanitizer()
+			),
+			new WordPressCacheInvalidationDispatcher(),
+			$offload,
+			$adapter
 		);
 	}
 
@@ -92,16 +130,20 @@ final class AttachmentCleanup implements HookProviderInterface {
 	 * @param AttachmentMetaStoreInterface              $meta Attachment meta store.
 	 * @param DerivativeFileCleaner                     $files Shared derivative file cleaner.
 	 * @param AttachmentJobCleanerInterface             $jobs Pending job cleaner.
-	 * @param SourceCollector                           $collector Source collector.
+	 * @param AttachmentSourceCollectorInterface        $collector Source collector.
 	 * @param CacheInvalidationDispatcherInterface|null $cache_invalidation Cache invalidation dispatcher.
+	 * @param OffloadSupportService|null                $offload Offload support service.
+	 * @param DerivativeDeleteInterface|null            $remote_delete Remote derivative delete service.
 	 */
 	public function __construct(
 		DerivativeRepository $repository,
 		AttachmentMetaStoreInterface $meta,
 		DerivativeFileCleaner $files,
 		AttachmentJobCleanerInterface $jobs,
-		SourceCollector $collector,
-		?CacheInvalidationDispatcherInterface $cache_invalidation = null
+		AttachmentSourceCollectorInterface $collector,
+		?CacheInvalidationDispatcherInterface $cache_invalidation = null,
+		?OffloadSupportService $offload = null,
+		?DerivativeDeleteInterface $remote_delete = null
 	) {
 		$this->repository         = $repository;
 		$this->meta               = $meta;
@@ -109,6 +151,8 @@ final class AttachmentCleanup implements HookProviderInterface {
 		$this->jobs               = $jobs;
 		$this->collector          = $collector;
 		$this->cache_invalidation = $cache_invalidation;
+		$this->offload            = $offload;
+		$this->remote_delete      = $remote_delete;
 	}
 
 	/**
@@ -155,6 +199,7 @@ final class AttachmentCleanup implements HookProviderInterface {
 		$result = AttachmentCleanupResult::combine(
 			$this->repository_warnings( $read ),
 			$this->files->cleanup_files( $source_files, $derivative_files ),
+			$this->remote_derivative_cleanup( $attachment_id, $derivative_files ),
 			$this->jobs->cancel_pending_actions( $attachment_id ),
 			$this->delete_owned_meta( $attachment_id ),
 			AttachmentCleanupResult::success(
@@ -188,15 +233,72 @@ final class AttachmentCleanup implements HookProviderInterface {
 		$manifest            = $read->manifest();
 		$authoritative_files = DerivativeFileCleaner::derivative_files_from_manifest( $manifest );
 		$candidate_sources   = array_keys( DerivativeFileCleaner::source_files_from_manifest( $manifest ) );
-		$collection          = $this->collector->collect( $attachment_id );
+		$collected = $this->collector->collect( $attachment_id );
 
-		foreach ( $collection->sources() as $source ) {
-			$candidate_sources[] = $source->relative_path();
+		try {
+			foreach ( $collected->collection()->sources() as $source ) {
+				$candidate_sources[] = $source->relative_path();
+			}
+
+			return AttachmentCleanupResult::combine(
+				$this->repository_warnings( $read ),
+				$this->files->find_existing_orphans( $candidate_sources, $authoritative_files )
+			);
+		} finally {
+			$collected->release();
+		}
+	}
+
+	/**
+	 * Delete remote derivatives when the attachment is safely offloaded.
+	 *
+	 * @param int      $attachment_id Attachment ID.
+	 * @param string[] $relative_paths Relative derivative paths.
+	 * @return AttachmentCleanupResult
+	 */
+	private function remote_derivative_cleanup( int $attachment_id, array $relative_paths ): AttachmentCleanupResult {
+		if (
+			null === $this->offload
+			|| null === $this->remote_delete
+			|| array() === $relative_paths
+		) {
+			return AttachmentCleanupResult::success();
 		}
 
-		return AttachmentCleanupResult::combine(
-			$this->repository_warnings( $read ),
-			$this->files->find_existing_orphans( $candidate_sources, $authoritative_files )
+		$support = $this->offload->attachment_support( $attachment_id );
+
+		if ( ! $support->is_supported() || ! $support->is_offloaded() ) {
+			return AttachmentCleanupResult::success();
+		}
+
+		$result = $this->remote_delete->delete(
+			new DerivativeDeleteRequest( $attachment_id, $support, $relative_paths, 'attachment_deleted' )
+		);
+
+		if ( $result->is_successful() ) {
+			return AttachmentCleanupResult::success(
+				array( 'offload_remote_derivatives_deleted' ),
+				array(),
+				count( $result->deleted_relative_paths() ),
+				0,
+				0,
+				0,
+				$result->deleted_relative_paths(),
+				array(),
+				$result->deleted_relative_paths()
+			);
+		}
+
+		return AttachmentCleanupResult::warning(
+			$result->codes(),
+			$result->messages(),
+			count( $result->deleted_relative_paths() ),
+			0,
+			0,
+			0,
+			$result->deleted_relative_paths(),
+			array(),
+			$result->deleted_relative_paths()
 		);
 	}
 

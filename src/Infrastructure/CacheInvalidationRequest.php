@@ -105,12 +105,48 @@ final class CacheInvalidationRequest {
 	}
 
 	/**
+	 * Get event name.
+	 *
+	 * @return string
+	 */
+	public function event(): string {
+		return $this->event;
+	}
+
+	/**
+	 * Get reason.
+	 *
+	 * @return string
+	 */
+	public function reason(): string {
+		return $this->reason;
+	}
+
+	/**
 	 * Get relative paths.
 	 *
 	 * @return string[]
 	 */
 	public function relative_paths(): array {
 		return $this->relative_paths;
+	}
+
+	/**
+	 * Get formats.
+	 *
+	 * @return string[]
+	 */
+	public function formats(): array {
+		return $this->formats;
+	}
+
+	/**
+	 * Get timestamp.
+	 *
+	 * @return string
+	 */
+	public function timestamp_gmt(): string {
+		return $this->timestamp_gmt;
 	}
 
 	/**

@@ -10,6 +10,7 @@ namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Delivery;
 require_once __DIR__ . '/DeliveryTestWordPressShim.php';
 
 use HyperWeb\LighthouseImageOptimizer\Delivery\CriticalImageRegistry;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Integration\Multisite\FakeSiteContextRuntime;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
 use PHPUnit\Framework\TestCase;
 
@@ -138,22 +139,46 @@ final class CriticalImageRegistryTest extends TestCase {
 	}
 
 	/**
+	 * Test cached selection is recomputed after the current site changes.
+	 *
+	 * @return void
+	 */
+	public function test_cached_selection_is_recomputed_after_site_switch(): void {
+		$runtime                   = new FakeAttachmentImageRuntime();
+		$runtime->post_id          = 55;
+		$runtime->post_type        = 'post';
+		$store                     = new FakeCriticalImagePostMetaStore();
+		$store->values[55]         = 123;
+		$site_context              = new FakeSiteContextRuntime();
+		$registry                  = $this->registry( $runtime, new FakeSettingsRepository(), $store, $site_context );
+
+		self::assertSame( 123, $registry->resolve()->primary_attachment_id() );
+
+		$site_context->current_site_id = 2;
+		$store->values[55]             = 456;
+
+		self::assertSame( 456, $registry->resolve()->primary_attachment_id() );
+	}
+
+	/**
 	 * Build registry fixture.
 	 *
 	 * @param FakeAttachmentImageRuntime|null     $runtime Runtime seam.
 	 * @param FakeSettingsRepository|null         $settings Settings repository.
-	 * @param FakeCriticalImagePostMetaStore|null $store Meta store.
+	 * @param FakeCriticalImagePostMetaStore|null                  $store Meta store.
+	 * @param FakeSiteContextRuntime|null                          $site_context Site context.
 	 * @return CriticalImageRegistry
 	 */
 	private function registry(
 		?FakeAttachmentImageRuntime $runtime = null,
 		?FakeSettingsRepository $settings = null,
-		?FakeCriticalImagePostMetaStore $store = null
+		?FakeCriticalImagePostMetaStore $store = null,
+		?FakeSiteContextRuntime $site_context = null
 	): CriticalImageRegistry {
 		$runtime  = $runtime ?? new FakeAttachmentImageRuntime();
 		$settings = $settings ?? new FakeSettingsRepository();
 		$store    = $store ?? new FakeCriticalImagePostMetaStore();
 
-		return new CriticalImageRegistry( $runtime, $settings, $store );
+		return new CriticalImageRegistry( $runtime, $settings, $store, $site_context );
 	}
 }

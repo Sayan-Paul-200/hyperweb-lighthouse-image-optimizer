@@ -7,6 +7,8 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Delivery;
 
+use HyperWeb\LighthouseImageOptimizer\Integration\Multisite\WordPressSiteContextRuntime;
+use HyperWeb\LighthouseImageOptimizer\Integration\Multisite\SiteContextRuntimeInterface;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 
@@ -37,11 +39,25 @@ final class CriticalImageRegistry {
 	private $post_meta;
 
 	/**
+	 * Optional site-context runtime.
+	 *
+	 * @var SiteContextRuntimeInterface|null
+	 */
+	private $site_context;
+
+	/**
 	 * Cached request selection.
 	 *
 	 * @var CriticalImageSelection|null
 	 */
 	private $resolved;
+
+	/**
+	 * Site ID that owns the current cached selection.
+	 *
+	 * @var int|null
+	 */
+	private $resolved_site_id;
 
 	/**
 	 * Build a WordPress-backed registry.
@@ -52,26 +68,31 @@ final class CriticalImageRegistry {
 		return new self(
 			new WordPressAttachmentImageRuntime(),
 			SettingsRepository::for_wordpress(),
-			new WordPressCriticalImagePostMetaStore()
+			new WordPressCriticalImagePostMetaStore(),
+			new WordPressSiteContextRuntime()
 		);
 	}
 
 	/**
 	 * Create registry.
 	 *
-	 * @param AttachmentImageRuntimeInterface     $runtime Runtime seam.
-	 * @param SettingsRepositoryInterface         $settings Settings repository.
-	 * @param CriticalImagePostMetaStoreInterface $post_meta Post meta store.
+	 * @param AttachmentImageRuntimeInterface        $runtime Runtime seam.
+	 * @param SettingsRepositoryInterface            $settings Settings repository.
+	 * @param CriticalImagePostMetaStoreInterface    $post_meta Post meta store.
+	 * @param SiteContextRuntimeInterface|null       $site_context Optional site-context runtime.
 	 */
 	public function __construct(
 		AttachmentImageRuntimeInterface $runtime,
 		SettingsRepositoryInterface $settings,
-		CriticalImagePostMetaStoreInterface $post_meta
+		CriticalImagePostMetaStoreInterface $post_meta,
+		?SiteContextRuntimeInterface $site_context = null
 	) {
-		$this->runtime   = $runtime;
-		$this->settings  = $settings;
-		$this->post_meta = $post_meta;
-		$this->resolved  = null;
+		$this->runtime           = $runtime;
+		$this->settings          = $settings;
+		$this->post_meta         = $post_meta;
+		$this->site_context      = $site_context;
+		$this->resolved          = null;
+		$this->resolved_site_id  = null;
 	}
 
 	/**
@@ -80,6 +101,8 @@ final class CriticalImageRegistry {
 	 * @return CriticalImageSelection
 	 */
 	public function resolve(): CriticalImageSelection {
+		$this->sync_site_scope();
+
 		if ( $this->resolved instanceof CriticalImageSelection ) {
 			return $this->resolved;
 		}
@@ -101,6 +124,26 @@ final class CriticalImageRegistry {
 		);
 
 		return $this->resolved;
+	}
+
+	/**
+	 * Reset cached selection after a site switch.
+	 *
+	 * @return void
+	 */
+	private function sync_site_scope(): void {
+		if ( ! $this->site_context instanceof SiteContextRuntimeInterface ) {
+			return;
+		}
+
+		$current_site_id = $this->site_context->current_site_id();
+
+		if ( $this->resolved_site_id === $current_site_id ) {
+			return;
+		}
+
+		$this->resolved_site_id = $current_site_id;
+		$this->resolved         = null;
 	}
 
 	/**

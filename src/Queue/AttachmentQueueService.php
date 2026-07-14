@@ -13,8 +13,10 @@ use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentFingerprintBuilder;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentMetaStoreInterface;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentStatus;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
-use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\AttachmentSourceCollectorInterface;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\CollectedSourceSet;
+use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadSupportService;
 
 /**
  * Queues selected output formats for one attachment.
@@ -45,7 +47,7 @@ final class AttachmentQueueService {
 	/**
 	 * Source collector.
 	 *
-	 * @var SourceCollector
+	 * @var AttachmentSourceCollectorInterface
 	 */
 	private $collector;
 
@@ -64,6 +66,13 @@ final class AttachmentQueueService {
 	private $clock;
 
 	/**
+	 * Offload support service.
+	 *
+	 * @var OffloadSupportService|null
+	 */
+	private $offload;
+
+	/**
 	 * Queue control state store.
 	 *
 	 * @var QueueControlStateStoreInterface|null
@@ -76,19 +85,21 @@ final class AttachmentQueueService {
 	 * @param QueueInterface                       $queue Queue adapter.
 	 * @param AttachmentMetaStoreInterface         $meta Meta store.
 	 * @param DerivativeRepository                 $repository Repository.
-	 * @param SourceCollector                      $collector Source collector.
+	 * @param AttachmentSourceCollectorInterface   $collector Source collector.
 	 * @param AttachmentFingerprintBuilder         $fingerprinter Fingerprint builder.
 	 * @param AttachmentClockInterface             $clock Clock.
 	 * @param QueueControlStateStoreInterface|null $controls Optional queue control state store.
+	 * @param OffloadSupportService|null           $offload Optional offload support service.
 	 */
 	public function __construct(
 		QueueInterface $queue,
 		AttachmentMetaStoreInterface $meta,
 		DerivativeRepository $repository,
-		SourceCollector $collector,
+		AttachmentSourceCollectorInterface $collector,
 		AttachmentFingerprintBuilder $fingerprinter,
 		AttachmentClockInterface $clock,
-		?QueueControlStateStoreInterface $controls = null
+		?QueueControlStateStoreInterface $controls = null,
+		?OffloadSupportService $offload = null
 	) {
 		$this->queue         = $queue;
 		$this->meta          = $meta;
@@ -97,6 +108,7 @@ final class AttachmentQueueService {
 		$this->fingerprinter = $fingerprinter;
 		$this->clock         = $clock;
 		$this->controls      = $controls;
+		$this->offload       = $offload;
 	}
 
 	/**
@@ -137,6 +149,17 @@ final class AttachmentQueueService {
 				AttachmentQueueResult::CODE_NO_ENABLED_FORMATS,
 				'No enabled output formats are available for this action.'
 			);
+		}
+
+		if ( null !== $this->offload ) {
+			$support = $this->offload->attachment_support( $attachment_id );
+
+			if ( ! $support->is_supported() ) {
+				return AttachmentQueueResult::failure(
+					AttachmentQueueResult::CODE_OFFLOAD_UNSUPPORTED,
+					$support->message()
+				);
+			}
 		}
 
 		$fingerprint = $this->fingerprint_for_attachment( $attachment_id );
@@ -230,13 +253,19 @@ final class AttachmentQueueService {
 	 * @return AttachmentFingerprint|null
 	 */
 	private function fingerprint_for_attachment( int $attachment_id ): ?AttachmentFingerprint {
-		$collection = $this->collector->collect( $attachment_id );
+		$collected = $this->collector->collect( $attachment_id );
 
-		if ( array() === $collection->sources() ) {
-			return null;
+		try {
+			$collection = $collected->collection();
+
+			if ( array() === $collection->sources() ) {
+				return null;
+			}
+
+			return $this->fingerprinter->build( $collection );
+		} finally {
+			$collected->release();
 		}
-
-		return $this->fingerprinter->build( $collection );
 	}
 
 	/**
