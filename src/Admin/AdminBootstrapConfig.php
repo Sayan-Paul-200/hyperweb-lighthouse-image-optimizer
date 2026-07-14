@@ -156,7 +156,7 @@ final class AdminBootstrapConfig {
 				'bulkPreviewEmpty'                  => $this->translate( 'No preview items are available for this page.' ),
 				'bulkPreviewError'                  => $this->translate( 'The bulk candidate preview could not be loaded.' ),
 				'bulkScanError'                     => $this->translate( 'The dry-run scan could not be completed.' ),
-				'bulkExcludedSkipped'               => $this->translate( 'Excluded attachments are skipped during bulk dry-run scans in this subphase.' ),
+				'bulkExcludedSkipped'               => $this->translate( 'Excluded attachments are skipped during bulk dry-run scans.' ),
 				'bulkDeferredQueue'                 => $this->translate( 'Bulk queue controls operate only on completed dry-run scan sessions.' ),
 				'bulkPageLabel'                     => $this->translate( 'Preview page' ),
 				'bulkPrevious'                      => $this->translate( 'Previous' ),

@@ -18,7 +18,7 @@ final class BulkPage extends AbstractAdminPage {
 	public function __construct() {
 		parent::__construct(
 			'Bulk Optimize',
-			'Run bounded dry-run scans across the Media Library, review eligible candidates, and prepare for queue controls that arrive in the next subphase.'
+			'Run bounded dry-run scans across the Media Library, review eligible candidates, and queue optimization jobs for completed scan results.'
 		);
 	}
 
@@ -45,7 +45,7 @@ final class BulkPage extends AbstractAdminPage {
 		echo '<p>' . $this->escape_html( $this->description() ) . '</p>';
 		echo '</div>';
 		echo '<div class="hwlio-bulk__actions">';
-		echo '<p class="description">' . $this->escape_html( $this->translate( 'Dry-run scans never generate sidecars or queue conversions in Subphase 6.6.' ) ) . '</p>';
+		echo '<p class="description">' . $this->escape_html( $this->translate( 'Dry-run scans only review candidates; conversions start after you queue completed scan results.' ) ) . '</p>';
 		echo '<p class="description">' . $this->escape_html( $this->translate( 'Queue controls operate only on completed dry-run scan sessions and respect the global pause state.' ) ) . '</p>';
 		echo '</div>';
 		echo '</div>';
@@ -82,7 +82,7 @@ final class BulkPage extends AbstractAdminPage {
 		echo '</div>';
 		echo '<div class="hwlio-bulk__form-actions">';
 		echo '<button type="submit" class="button button-primary" data-hwlio-bulk-action="scan">' . $this->escape_html( $this->translate( 'Run Dry-Run Scan' ) ) . '</button>';
-		echo '<p class="description">' . $this->escape_html( $this->translate( 'Excluded attachments are skipped in this subphase and can be included manually from the Media Library first.' ) ) . '</p>';
+		echo '<p class="description">' . $this->escape_html( $this->translate( 'Excluded attachments are skipped and can be included manually from the Media Library first.' ) ) . '</p>';
 		echo '</div>';
 		echo '</form>';
 		echo '</section>';
@@ -123,7 +123,7 @@ final class BulkPage extends AbstractAdminPage {
 		echo '</section>';
 		echo '<section class="card hwlio-bulk__panel">';
 		echo '<h3>' . $this->escape_html( $this->translate( 'Eligible Candidate Preview' ) ) . '</h3>';
-		echo '<p class="description">' . $this->escape_html( $this->translate( 'Candidate previews stay lightweight and use `_hwlio_status` only in this subphase.' ) ) . '</p>';
+		echo '<p class="description">' . $this->escape_html( $this->translate( 'Candidate previews stay lightweight and use current plugin status data.' ) ) . '</p>';
 		echo '<div class="hwlio-bulk__preview" data-hwlio-bulk-preview>';
 		echo '<table class="widefat striped hwlio-bulk__table">';
 		echo '<thead><tr>';

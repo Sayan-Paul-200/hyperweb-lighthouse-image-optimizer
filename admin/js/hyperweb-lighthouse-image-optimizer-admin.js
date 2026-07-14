@@ -68,7 +68,7 @@
 			bulkPreviewEmpty: 'No preview items are available for this page.',
 			bulkPreviewError: 'The bulk candidate preview could not be loaded.',
 			bulkScanError: 'The dry-run scan could not be completed.',
-			bulkExcludedSkipped: 'Excluded attachments are skipped during bulk dry-run scans in this subphase.',
+			bulkExcludedSkipped: 'Excluded attachments are skipped during bulk dry-run scans.',
 			bulkDeferredQueue: 'Bulk queue controls operate only on completed dry-run scan sessions.',
 			bulkPageLabel: 'Preview page',
 			bulkPrevious: 'Previous',
@@ -1758,6 +1758,8 @@
 		var storageKey = (config.bulk && config.bulk.storageKey) || defaults.bulk.storageKey;
 		var queueModeKey = (config.bulk && config.bulk.queueModeKey) || defaults.bulk.queueModeKey;
 		var activeQueueMode = '';
+		var activeScanComplete = false;
+		var activeScanHasCandidates = false;
 
 		if (!elements.root || !elements.form || !elements.previewBody) {
 			return null;
@@ -1778,13 +1780,15 @@
 		}
 
 		function setQueueBusy(mode, isBusy) {
+			var queueUnavailable = !activeToken || !activeScanComplete || !activeScanHasCandidates;
+
 			if (elements.queueButton) {
-				elements.queueButton.disabled = !!isBusy || !activeToken;
+				elements.queueButton.disabled = !!isBusy || queueUnavailable;
 				elements.queueButton.textContent = config.strings.bulkQueueAction;
 			}
 
 			if (elements.retryButton) {
-				elements.retryButton.disabled = !!isBusy || !activeToken;
+				elements.retryButton.disabled = !!isBusy || queueUnavailable;
 				elements.retryButton.textContent = config.strings.bulkRetryAction;
 			}
 
@@ -1878,6 +1882,9 @@
 			if (progress.complete) {
 				stopPolling();
 				setBusy(false);
+				activeScanComplete = true;
+				activeScanHasCandidates = (summary.eligible || 0) > 0;
+				setQueueBusy('', false);
 				activePage = 1;
 
 				if (resumed) {
@@ -1903,7 +1910,10 @@
 				return loadQueueControl();
 			}
 
+			activeScanComplete = false;
+			activeScanHasCandidates = false;
 			setBusy(true);
+			setQueueBusy('', false);
 			scheduleContinue();
 
 			return window.Promise.resolve();
@@ -1929,6 +1939,8 @@
 			stopPolling();
 			activeToken = '';
 			activeQueueMode = '';
+			activeScanComplete = false;
+			activeScanHasCandidates = false;
 			activePage = 1;
 			totalPages = 0;
 			storageDelete(storageKey);
@@ -2033,7 +2045,7 @@
 		}
 
 		function startQueue(mode) {
-			if (!activeToken) {
+			if (!activeToken || !activeScanComplete || !activeScanHasCandidates) {
 				client.showNotice('info', config.strings.bulkDeferredQueue);
 				client.announce(config.strings.bulkDeferredQueue, 'polite');
 				return;
@@ -2156,6 +2168,8 @@
 				cancelPending();
 			});
 		}
+
+		setQueueBusy('', false);
 
 		return {
 			start: startScan,
