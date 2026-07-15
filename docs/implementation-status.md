@@ -100,7 +100,7 @@ public/partials/hyperweb-lighthouse-image-optimizer-public-display.php
 - Screen-scoped admin CSS, footer JavaScript, REST bootstrap config, and accessible notice/live-region scaffolding exist as of Subphase 6.2.
 - Attachment-first REST controllers for status, diagnostics, attachment detail, and attachment actions exist as of Subphase 6.3.
 - Media Library list/grid/edit-screen controls, lightweight attachment payloads, and client-observed new-upload refresh now exist as of Subphase 6.4.
-- A cached dashboard, dry-run bulk scanner, and session-backed bulk queue controls with global pause/resume now exist as of Subphases 6.5 through 6.7.
+- A cached dashboard, dry-run bulk scanner, and session-backed bulk queue controls with global pause/resume and paced bulk scheduling now exist as of Subphases 6.5 through 6.7.
 - A derivative URL resolver, responsive modern source-set builder, safe picture renderer, and active attachment-image plus post-content delivery integrations now exist as of Subphases 7.1 through 7.5.
 - Delivery now includes an internal emergency rollback switch, cache-invalidation request action, and missing-derivative diagnostics as of Subphase 7.6.
 - A critical-image registry, explicit loading-attribute override provider, minimal critical-logo settings UI, post/page critical-image editor controls, conservative intrinsic-dimension repair, and opt-in responsive preload now exist as of Subphase 8.4.
@@ -5138,6 +5138,7 @@ tests/Unit/Settings/SettingsScopePolicyTest.php
 - Completed dry-run scan sessions now persist queue continuation progress and queue summaries so queueing survives reloads without re-scanning attachments.
 - `POST /jobs/queue` and `POST /jobs/retry` process one persisted candidate chunk per request, revalidate current lightweight attachment state at queue time, and respect the stored scan token’s `target_format`.
 - Bulk queueing uses the shared `AttachmentQueueService`, which now powers both bulk queueing and attachment-scoped optimize/retry actions so dedupe, fingerprinting, and lightweight `_hwlio_status` writes stay aligned.
+- Bulk queueing now passes per-candidate and per-format relative delays to Action Scheduler so large scan results are paced by `queue_concurrency` instead of making every conversion job runnable at once.
 - `GET /status` now includes a cheap `queueControl` payload with paused state plus pending and in-progress attachment-job counts for the dashboard and Bulk tab.
 - The Bulk tab now exposes real queue, retry, pause, resume, and cancel-pending controls, keeps queue mode in `sessionStorage`, and stays scoped to the existing plugin submenu asset pipeline without jQuery.
 
@@ -5181,6 +5182,7 @@ Manual verification still pending in a WordPress runtime:
 - [x] Pending-job cancellation is limited to plugin-owned attachment hooks and excludes recurring maintenance hooks.
 - [x] The Bulk tab now exposes real queue controls and queue-control status through the existing screen-scoped admin client.
 - [x] Queue-control state is stored in a plugin-owned option with autoload disabled.
+- [x] Large bulk queue batches are now scheduled with staggered delays to avoid shared-hosting CPU bursts.
 
 ### Deferred Work
 

@@ -59,6 +59,64 @@ final class BulkQueueServiceTest extends TestCase {
 	}
 
 	/**
+	 * Test bulk queueing paces scheduled jobs instead of creating an immediate burst.
+	 *
+	 * @return void
+	 */
+	public function test_queue_paces_jobs_by_configured_concurrency(): void {
+		$runtime                   = $this->build_runtime(
+			array(
+				'queue_concurrency' => 2,
+			)
+		);
+		$runtime['bulk']->pages[0] = range( 1, 5 );
+
+		$session = $runtime['scans']->start_scan( new BulkScanFilters(), 7 );
+		$queued  = $runtime['queues']->queue( $session->token(), 7 );
+
+		self::assertSame( BulkQueueProgress::STATUS_COMPLETE, $queued->queue_progress()->status() );
+		self::assertSame(
+			array( 0, 0, 60, 60, 120 ),
+			array_map(
+				static function ( array $job ): int {
+					return (int) $job['delay_seconds'];
+				},
+				$runtime['queue']->jobs
+			)
+		);
+	}
+
+	/**
+	 * Test bulk queueing staggers multiple target formats for the same attachment.
+	 *
+	 * @return void
+	 */
+	public function test_queue_staggers_multiple_formats_per_candidate(): void {
+		$runtime                   = $this->build_runtime(
+			array(
+				'enabled_formats'   => array( 'webp', 'avif' ),
+				'queue_concurrency' => 1,
+			)
+		);
+		$runtime['bulk']->pages[0] = array( 10, 11 );
+
+		$session = $runtime['scans']->start_scan( new BulkScanFilters(), 7 );
+		$runtime['queues']->queue( $session->token(), 7 );
+
+		self::assertSame(
+			array( 0, 60, 120, 180 ),
+			array_map(
+				static function ( array $job ): int {
+					return (int) $job['delay_seconds'];
+				},
+				$runtime['queue']->jobs
+			)
+		);
+		self::assertSame( 'webp', $runtime['queue']->jobs[0]['job']->format() );
+		self::assertSame( 'avif', $runtime['queue']->jobs[1]['job']->format() );
+	}
+
+	/**
 	 * Test retry mode revalidates current state and respects stored target formats.
 	 *
 	 * @return void

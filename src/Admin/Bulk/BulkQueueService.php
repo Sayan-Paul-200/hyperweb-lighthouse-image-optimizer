@@ -23,6 +23,8 @@ final class BulkQueueService {
 
 	public const PAGE_SIZE = 50;
 
+	private const BULK_QUEUE_DELAY_STEP_SECONDS = 60;
+
 	/**
 	 * Session store.
 	 *
@@ -200,7 +202,7 @@ final class BulkQueueService {
 			'failed_to_queue'   => 0,
 		);
 
-		foreach ( $ids as $attachment_id ) {
+		foreach ( $ids as $index => $attachment_id ) {
 			$status = $this->statuses->read( $attachment_id );
 
 			if ( $status->excluded() ) {
@@ -225,11 +227,17 @@ final class BulkQueueService {
 				continue;
 			}
 
+			$delay_seconds = $this->bulk_delay_seconds(
+				( $progress->processed_candidates() + (int) $index ) * max( 1, count( $formats ) )
+			);
+
 			$result = $this->queue->queue_selected_formats(
 				$attachment_id,
 				$formats,
 				BulkQueueProgress::MODE_RETRY === $mode ? 'bulk_retry' : 'bulk_queue',
-				false
+				false,
+				$delay_seconds,
+				self::BULK_QUEUE_DELAY_STEP_SECONDS
 			);
 
 			if ( AttachmentQueueResult::CODE_QUEUE_PAUSED === $result->code() ) {
@@ -367,5 +375,20 @@ final class BulkQueueService {
 			),
 			true
 		);
+	}
+
+	/**
+	 * Resolve the scheduled delay for a bulk candidate offset.
+	 *
+	 * Bulk optimization is CPU-expensive on shared hosting, so candidates are paced
+	 * instead of being made runnable by Action Scheduler all at once.
+	 *
+	 * @param int $candidate_offset Zero-based candidate offset in the scan.
+	 * @return int
+	 */
+	private function bulk_delay_seconds( int $candidate_offset ): int {
+		$concurrency = max( 1, min( 5, $this->settings->queue_concurrency() ) );
+
+		return (int) ( floor( max( 0, $candidate_offset ) / $concurrency ) * self::BULK_QUEUE_DELAY_STEP_SECONDS );
 	}
 }

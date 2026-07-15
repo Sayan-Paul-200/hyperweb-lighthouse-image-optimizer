@@ -118,9 +118,14 @@ final class AttachmentQueueService {
 	 * @param string[] $formats Selected target formats.
 	 * @param string   $reason Queue reason.
 	 * @param bool     $force Force flag.
+	 * @param int      $delay_seconds Relative delay before execution.
+	 * @param int      $format_delay_step_seconds Additional delay between formats.
 	 * @return AttachmentQueueResult
 	 */
-	public function queue_selected_formats( int $attachment_id, array $formats, string $reason, bool $force = false ): AttachmentQueueResult {
+	public function queue_selected_formats( int $attachment_id, array $formats, string $reason, bool $force = false, int $delay_seconds = 0, int $format_delay_step_seconds = 0 ): AttachmentQueueResult {
+		$delay_seconds             = max( 0, $delay_seconds );
+		$format_delay_step_seconds = max( 0, $format_delay_step_seconds );
+
 		if ( null !== $this->controls && $this->controls->read()->paused() ) {
 			return AttachmentQueueResult::failure(
 				AttachmentQueueResult::CODE_QUEUE_PAUSED,
@@ -174,9 +179,10 @@ final class AttachmentQueueService {
 		$queue_statuses = array();
 		$has_success    = false;
 
-		foreach ( $formats as $format ) {
+		foreach ( $formats as $format_index => $format ) {
 			$status = $this->queue->enqueue_optimization(
-				new OptimizationJob( $attachment_id, $format, 0, $force, $reason, $fingerprint->signature() )
+				new OptimizationJob( $attachment_id, $format, 0, $force, $reason, $fingerprint->signature() ),
+				$delay_seconds + ( (int) $format_index * $format_delay_step_seconds )
 			);
 
 			$queue_statuses[ $format ] = $status;
