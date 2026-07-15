@@ -332,7 +332,7 @@ final class ActionSchedulerQueue implements QueueInterface {
 					$hook,
 					$payload,
 					$this->group,
-					true,
+					false,
 					self::PRIORITY
 				);
 
@@ -346,7 +346,7 @@ final class ActionSchedulerQueue implements QueueInterface {
 				$hook,
 				$payload,
 				$this->group,
-				true,
+				false,
 				self::PRIORITY
 			);
 

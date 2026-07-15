@@ -65,7 +65,7 @@ final class ActionSchedulerQueueTest extends TestCase {
 		self::assertCount( 1, $async_calls );
 		self::assertSame( LifecyclePolicy::ACTION_OPTIMIZE_ATTACHMENT_FORMAT, $async_calls[0]['hook'] );
 		self::assertSame( LifecyclePolicy::ACTION_GROUP, $async_calls[0]['group'] );
-		self::assertTrue( $async_calls[0]['unique'] );
+		self::assertFalse( $async_calls[0]['unique'] );
 	}
 
 	/**
@@ -111,6 +111,7 @@ final class ActionSchedulerQueueTest extends TestCase {
 		self::assertSame( 1015, $status->scheduled_timestamp() );
 		self::assertCount( 1, $single_calls );
 		self::assertSame( 1015, $single_calls[0]['timestamp'] );
+		self::assertFalse( $single_calls[0]['unique'] );
 	}
 
 	/**
@@ -417,6 +418,7 @@ final class ActionSchedulerQueueTest extends TestCase {
 
 		self::assertTrue( $status->is_successful() );
 		self::assertSame( LifecyclePolicy::ACTION_RECONCILE_ATTACHMENT, $async_calls[0]['hook'] );
+		self::assertFalse( $async_calls[0]['unique'] );
 	}
 
 	/**
