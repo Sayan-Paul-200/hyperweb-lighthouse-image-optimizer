@@ -1661,6 +1661,20 @@
 		elements.queueStatus.textContent = parts.join(' ');
 	}
 
+	function hasBulkQueueSummary(payload) {
+		var progress = (payload && payload.queueProgress) || {};
+		var summary = (payload && payload.queueSummary) || {};
+		var keys = ['queued', 'already_queued', 'already_optimized', 'skipped', 'failed_to_queue'];
+
+		if (progress.status && 'idle' !== progress.status) {
+			return true;
+		}
+
+		return keys.some(function (key) {
+			return Number(summary[key] || 0) > 0;
+		});
+	}
+
 	function renderQueueControl(elements, queueControl, strings) {
 		var paused = !!(queueControl && queueControl.paused);
 		var pending = Number((queueControl && queueControl.pending) || 0);
@@ -1878,6 +1892,10 @@
 			}
 
 			renderBulkStatus(elements, payload || {}, config.strings);
+
+			if (hasBulkQueueSummary(payload || {})) {
+				renderQueueStatus(elements, payload || {}, config.strings);
+			}
 
 			if (progress.complete) {
 				stopPolling();

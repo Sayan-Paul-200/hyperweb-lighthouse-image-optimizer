@@ -60,26 +60,36 @@ final class JobsController implements RestControllerInterface {
 	private $queue_control;
 
 	/**
+	 * Dashboard statistics refresh service.
+	 *
+	 * @var StatusRefreshService|null
+	 */
+	private $refresh;
+
+	/**
 	 * Create the controller.
 	 *
-	 * @param RestRuntimeInterface $runtime REST runtime.
-	 * @param RestErrorFactory     $errors Error factory.
-	 * @param BulkScanService      $scans Bulk scan service.
-	 * @param BulkQueueService     $queues Bulk queue service.
-	 * @param QueueControlService  $queue_control Queue control service.
+	 * @param RestRuntimeInterface      $runtime REST runtime.
+	 * @param RestErrorFactory          $errors Error factory.
+	 * @param BulkScanService           $scans Bulk scan service.
+	 * @param BulkQueueService          $queues Bulk queue service.
+	 * @param QueueControlService       $queue_control Queue control service.
+	 * @param StatusRefreshService|null $refresh Optional dashboard statistics refresh service.
 	 */
 	public function __construct(
 		RestRuntimeInterface $runtime,
 		RestErrorFactory $errors,
 		BulkScanService $scans,
 		BulkQueueService $queues,
-		QueueControlService $queue_control
+		QueueControlService $queue_control,
+		?StatusRefreshService $refresh = null
 	) {
 		$this->runtime       = $runtime;
 		$this->errors        = $errors;
 		$this->scans         = $scans;
 		$this->queues        = $queues;
 		$this->queue_control = $queue_control;
+		$this->refresh       = $refresh;
 	}
 
 	/**
@@ -508,6 +518,10 @@ final class JobsController implements RestControllerInterface {
 			return $this->errors->bulk_queue_unavailable();
 		}
 
+		if ( $session->queue_progress()->complete() && null !== $this->refresh ) {
+			$this->refresh->request_recalculation();
+		}
+
 		return $this->runtime->response( $this->payload( $session, BulkQueueProgress::MODE_RETRY === $mode ? 'retry' : 'queue' ), 200 );
 	}
 
@@ -529,11 +543,12 @@ final class JobsController implements RestControllerInterface {
 			'summary'      => $session->summary()->to_array(),
 		);
 
+		$payload['queueProgress'] = $session->queue_progress()->to_array();
+		$payload['queueSummary']  = $session->queue_summary()->to_array();
+
 		if ( 'scan' !== $action ) {
-			$payload['action']        = $action;
-			$payload['queueProgress'] = $session->queue_progress()->to_array();
-			$payload['queueSummary']  = $session->queue_summary()->to_array();
-			$payload['queueControl']  = $this->queue_control->summary();
+			$payload['action']       = $action;
+			$payload['queueControl'] = $this->queue_control->summary();
 		}
 
 		return $payload;

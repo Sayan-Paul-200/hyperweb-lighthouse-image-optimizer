@@ -73,6 +73,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Fixed bulk dry-run scans counting image attachments without queueable source fingerprints as eligible, which caused large failed-to-queue totals for libraries with missing local source files.
 - Fixed bulk queueing only scheduling the first optimization job because Action Scheduler's coarse unique flag applies to the hook/group pair instead of the full job payload.
 - Fixed bulk queueing creating an immediate Action Scheduler burst by pacing bulk optimization jobs with scheduled delays based on the configured queue concurrency.
+- Fixed completed bulk queue summaries disappearing after a page refresh and requested a dashboard statistics refresh when bulk queueing completes.
 
 ### Notes
 

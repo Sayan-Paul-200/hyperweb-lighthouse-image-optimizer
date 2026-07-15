@@ -13,9 +13,11 @@ use HyperWeb\LighthouseImageOptimizer\Admin\Bulk\WordPressTransientBulkScanSessi
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\JobsController;
 use HyperWeb\LighthouseImageOptimizer\Admin\Rest\RestErrorFactory;
+use HyperWeb\LighthouseImageOptimizer\Admin\Rest\StatusRefreshService;
 use HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentFingerprintBuilder;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeRepository;
+use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Image\SourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Integration\Offload\LocalAttachmentSourceCollector;
 use HyperWeb\LighthouseImageOptimizer\Queue\AttachmentQueueService;
@@ -28,6 +30,7 @@ use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeAttachmentSourceProvi
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeImageFileProbe;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Image\FakeSettingsRepository;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeOptionStore;
+use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeSingleActionScheduler;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Infrastructure\FakeTransientStore;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Queue\FakeAttachmentJobControl;
 use HyperWeb\LighthouseImageOptimizer\Tests\Unit\Queue\FakeQueue;
@@ -240,6 +243,62 @@ final class JobsControllerTest extends TestCase {
 	}
 
 	/**
+	 * Test completed queue summaries survive scan-token reloads.
+	 *
+	 * @return void
+	 */
+	public function test_scan_jobs_returns_persisted_queue_summary_after_queue_completion(): void {
+		$runtime                   = new FakeRestRuntime();
+		$fixture                   = $this->fixture( $runtime );
+		$fixture['bulk']->pages[0] = array( 10, 11 );
+
+		$scan = $fixture['controller']->scan_jobs( new FakeRestRequest() );
+		$fixture['controller']->queue_jobs(
+			new FakeRestRequest(
+				array(
+					'scan_token' => $scan['data']['scanToken'],
+				)
+			)
+		);
+
+		$reload = $fixture['controller']->scan_jobs(
+			new FakeRestRequest(
+				array(
+					'scan_token' => $scan['data']['scanToken'],
+				)
+			)
+		);
+
+		self::assertSame( 'response', $reload['type'] );
+		self::assertSame( 'scan', $reload['data']['action'] );
+		self::assertTrue( $reload['data']['queueProgress']['complete'] );
+		self::assertSame( 2, $reload['data']['queueSummary']['queued'] );
+	}
+
+	/**
+	 * Test completed bulk queueing requests a dashboard statistics refresh.
+	 *
+	 * @return void
+	 */
+	public function test_queue_completion_requests_statistics_refresh(): void {
+		$runtime                   = new FakeRestRuntime();
+		$fixture                   = $this->fixture( $runtime );
+		$fixture['bulk']->pages[0] = array( 10 );
+
+		$scan = $fixture['controller']->scan_jobs( new FakeRestRequest() );
+		$fixture['controller']->queue_jobs(
+			new FakeRestRequest(
+				array(
+					'scan_token' => $scan['data']['scanToken'],
+				)
+			)
+		);
+
+		self::assertCount( 1, $fixture['refresh_scheduler']->enqueue_calls );
+		self::assertSame( LifecyclePolicy::ACTION_RECALCULATE_STATISTICS, $fixture['refresh_scheduler']->enqueue_calls[0]['hook'] );
+	}
+
+	/**
 	 * Test queue jobs reject foreign owned scan tokens safely.
 	 *
 	 * @return void
@@ -329,6 +388,7 @@ final class JobsControllerTest extends TestCase {
 			)
 		);
 		$job_control   = new FakeAttachmentJobControl();
+		$refresh       = new FakeSingleActionScheduler();
 		$controls      = new QueueControlStateStore(
 			new FakeOptionStore(),
 			'hwlio_queue_control_state',
@@ -357,14 +417,16 @@ final class JobsControllerTest extends TestCase {
 		);
 
 		return array(
-			'controller' => new JobsController(
+			'controller'        => new JobsController(
 				$runtime,
 				new RestErrorFactory( $runtime ),
 				$service,
 				$queue_service,
-				new QueueControlService( $controls, $job_control )
+				new QueueControlService( $controls, $job_control ),
+				new StatusRefreshService( $refresh )
 			),
-			'bulk'       => $bulk,
+			'bulk'              => $bulk,
+			'refresh_scheduler' => $refresh,
 		);
 	}
 }

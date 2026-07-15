@@ -551,7 +551,8 @@ final class Plugin {
 							$rest_errors,
 							$bulk_scans,
 							$bulk_queue,
-							$queue_control
+							$queue_control,
+							$status_refresh
 						),
 						new AttachmentsController(
 							$rest_runtime,
