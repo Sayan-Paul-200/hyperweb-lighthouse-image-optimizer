@@ -15,6 +15,38 @@ use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 final class WordPressAttachmentStatisticsScanner implements AttachmentStatisticsScannerInterface {
 
 	/**
+	 * Attachment statuses that should be included in dashboard statistics.
+	 *
+	 * WordPress stores normal Media Library attachments as `inherit`; `any` can
+	 * exclude that status, which would make a fresh statistics cache look empty.
+	 *
+	 * @var string[]
+	 */
+	private const ATTACHMENT_STATUSES = array( 'inherit', 'private', 'publish' );
+
+	/**
+	 * WordPress get_posts callback.
+	 *
+	 * @var callable
+	 */
+	private $get_posts;
+
+	/**
+	 * Create the scanner.
+	 *
+	 * @param callable|null $get_posts Optional get_posts-compatible callback.
+	 */
+	public function __construct( ?callable $get_posts = null ) {
+		$this->get_posts = $get_posts ?? static function ( array $args ): array {
+			if ( ! function_exists( 'get_posts' ) ) {
+				return array();
+			}
+
+			return \get_posts( $args );
+		};
+	}
+
+	/**
 	 * Get one bounded page of attachment IDs that own plugin metadata.
 	 *
 	 * @param int $page Page number, starting at 1.
@@ -22,16 +54,13 @@ final class WordPressAttachmentStatisticsScanner implements AttachmentStatistics
 	 * @return int[]
 	 */
 	public function scan_page( int $page, int $page_size ): array {
-		if ( ! function_exists( 'get_posts' ) ) {
-			return array();
-		}
-
 		$page      = max( 1, $page );
 		$page_size = max( 1, min( 100, $page_size ) );
-		$ids       = \get_posts(
+		$ids       = call_user_func(
+			$this->get_posts,
 			array(
 				'post_type'              => 'attachment',
-				'post_status'            => 'any',
+				'post_status'            => self::ATTACHMENT_STATUSES,
 				'fields'                 => 'ids',
 				'posts_per_page'         => $page_size,
 				'paged'                  => $page,

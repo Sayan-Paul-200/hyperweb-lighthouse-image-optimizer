@@ -5141,6 +5141,7 @@ tests/Unit/Settings/SettingsScopePolicyTest.php
 - Bulk queueing now passes per-candidate and per-format relative delays to Action Scheduler so large scan results are paced by `queue_concurrency` instead of making every conversion job runnable at once.
 - Completed bulk queue summaries are included on scan-token reload responses so the Bulk tab can continue showing the persisted queued/already-queued/skipped counts after refresh.
 - Bulk queue completion now requests an asynchronous dashboard statistics recalculation so cached dashboard counters catch up with newly queued attachment statuses.
+- Dashboard statistics reconciliation now explicitly scans normal `inherit` Media Library attachments, preventing a fresh cache from showing all-zero attachment counts while bulk scan/queue views see optimized or queued images.
 - `GET /status` now includes a cheap `queueControl` payload with paused state plus pending and in-progress attachment-job counts for the dashboard and Bulk tab.
 - The Bulk tab now exposes real queue, retry, pause, resume, and cancel-pending controls, keeps queue mode in `sessionStorage`, and stays scoped to the existing plugin submenu asset pipeline without jQuery.
 
@@ -5186,6 +5187,7 @@ Manual verification still pending in a WordPress runtime:
 - [x] Queue-control state is stored in a plugin-owned option with autoload disabled.
 - [x] Large bulk queue batches are now scheduled with staggered delays to avoid shared-hosting CPU bursts.
 - [x] Completed bulk queue summaries and dashboard-statistics refresh requests survive page reloads.
+- [x] Dashboard statistics scans include normal `inherit` attachments so cached dashboard counters align with Media Library and bulk-scan state.
 
 ### Deferred Work
 
