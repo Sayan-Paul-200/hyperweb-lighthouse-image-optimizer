@@ -7,6 +7,8 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Reporting;
 
+require_once dirname( __DIR__ ) . '/Delivery/DeliveryTestWordPressShim.php';
+
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
 use HyperWeb\LighthouseImageOptimizer\Attachment\DerivativeManifestSanitizer;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentImageSourceExtractor;
@@ -241,6 +243,51 @@ final class ContentIssueReportServiceTest extends TestCase {
 
 		self::assertContains( 'local_unregistered_url', $codes );
 		self::assertNotContains( 'broken_image_url', $codes );
+	}
+
+	/**
+	 * Test Elementor-style inline widget attachments report missing derivatives clearly.
+	 *
+	 * @return void
+	 */
+	public function test_report_detects_missing_derivatives_for_elementor_style_inline_widgets(): void {
+		$runtime              = new FakeContentInventoryRuntime();
+		$runtime->content[79] = array(
+			'type'   => 'page',
+			'status' => 'publish',
+			'title'  => 'Elementor static widgets',
+			'body'   => '<img width="198" height="202" src="https://example.test/wp-content/uploads/2026/04/Group-3.png" class="attachment-large size-large wp-image-6545" alt="">',
+		);
+
+		$meta = new FakeAttachmentMetaStore();
+		$meta->meta[6545][ LifecyclePolicy::META_STATUS ] = array(
+			'state'    => 'unprocessed',
+			'formats'  => array(),
+			'excluded' => false,
+		);
+
+		$attachment_runtime               = new FakeAttachmentImageRuntime();
+		$attachment_runtime->metadata_map = array(
+			6545 => array(
+				'file'   => '2026/04/Group-3.png',
+				'width'  => 198,
+				'height' => 202,
+				'sizes'  => array(),
+			),
+		);
+
+		$report = $this->issue_service(
+			new FakeSettingsRepository( array( 'enabled_formats' => array( 'webp' ) ) ),
+			$attachment_runtime,
+			new FakeUploadsUrlRuntime(),
+			new FakeImageFileProbe( array( 'C:/site/wp-content/uploads' ) ),
+			new FakeAnimationDetector(),
+			new FakeCriticalImagePostMetaStore()
+		)->report( $this->inventory_service( $runtime, $meta )->inspect( 79 ) )->to_array();
+
+		$codes = array_column( $report, 'code' );
+
+		self::assertContains( 'missing_modern_derivative', $codes );
 	}
 
 	/**

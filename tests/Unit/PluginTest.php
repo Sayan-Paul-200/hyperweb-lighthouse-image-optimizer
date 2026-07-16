@@ -29,6 +29,7 @@ use HyperWeb\LighthouseImageOptimizer\Integration\ElementorCriticalBackgroundPre
 use HyperWeb\LighthouseImageOptimizer\Integration\Multisite\MultisiteIntegration;
 use HyperWeb\LighthouseImageOptimizer\Integration\Offload\OffloadDeliveryAdapter;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorIntegration;
+use HyperWeb\LighthouseImageOptimizer\Integration\ElementorWidgetDeliveryBridge;
 use HyperWeb\LighthouseImageOptimizer\Integration\WooCommerceIntegration;
 use HyperWeb\LighthouseImageOptimizer\Logging\LogMaintenance;
 use HyperWeb\LighthouseImageOptimizer\Plugin;
@@ -55,7 +56,7 @@ final class PluginTest extends TestCase {
 		self::assertSame( 'hyperweb-lighthouse-image-optimizer', $plugin->slug() );
 		self::assertSame( '0.1.0-alpha.4', $plugin->version() );
 		self::assertInstanceOf( HookRegistrar::class, $plugin->hooks() );
-		self::assertCount( 27, $plugin->providers() );
+		self::assertCount( 28, $plugin->providers() );
 		self::assertInstanceOf( UpgradeRunner::class, $plugin->providers()[0] );
 		self::assertInstanceOf( MultisiteIntegration::class, $plugin->providers()[1] );
 		self::assertInstanceOf( SettingsApiRegistrar::class, $plugin->providers()[2] );
@@ -74,15 +75,16 @@ final class PluginTest extends TestCase {
 		self::assertInstanceOf( ElementorHeroBackgroundMetaBox::class, $plugin->providers()[15] );
 		self::assertInstanceOf( WooCommerceIntegration::class, $plugin->providers()[16] );
 		self::assertInstanceOf( ElementorIntegration::class, $plugin->providers()[17] );
-		self::assertInstanceOf( ReconciliationWorker::class, $plugin->providers()[18] );
-		self::assertInstanceOf( OptimizationWorker::class, $plugin->providers()[19] );
-		self::assertInstanceOf( LoadingAttributeManager::class, $plugin->providers()[20] );
-		self::assertInstanceOf( ResponsivePreloadManager::class, $plugin->providers()[21] );
-		self::assertInstanceOf( ElementorCriticalBackgroundPreloadManager::class, $plugin->providers()[22] );
-		self::assertInstanceOf( ElementorBackgroundStylesheetManager::class, $plugin->providers()[23] );
-		self::assertInstanceOf( OffloadDeliveryAdapter::class, $plugin->providers()[24] );
-		self::assertInstanceOf( DeliveryManager::class, $plugin->providers()[25] );
-		self::assertInstanceOf( I18n::class, $plugin->providers()[26] );
+		self::assertInstanceOf( ElementorWidgetDeliveryBridge::class, $plugin->providers()[18] );
+		self::assertInstanceOf( ReconciliationWorker::class, $plugin->providers()[19] );
+		self::assertInstanceOf( OptimizationWorker::class, $plugin->providers()[20] );
+		self::assertInstanceOf( LoadingAttributeManager::class, $plugin->providers()[21] );
+		self::assertInstanceOf( ResponsivePreloadManager::class, $plugin->providers()[22] );
+		self::assertInstanceOf( ElementorCriticalBackgroundPreloadManager::class, $plugin->providers()[23] );
+		self::assertInstanceOf( ElementorBackgroundStylesheetManager::class, $plugin->providers()[24] );
+		self::assertInstanceOf( OffloadDeliveryAdapter::class, $plugin->providers()[25] );
+		self::assertInstanceOf( DeliveryManager::class, $plugin->providers()[26] );
+		self::assertInstanceOf( I18n::class, $plugin->providers()[27] );
 	}
 
 	/**
@@ -112,7 +114,7 @@ final class PluginTest extends TestCase {
 	}
 
 	/**
-	 * Test admin composition is active and only one delivery provider is composed.
+	 * Test admin composition is active and frontend delivery providers are composed.
 	 *
 	 * @return void
 	 */
@@ -137,6 +139,7 @@ final class PluginTest extends TestCase {
 						ResponsivePreloadManager::class,
 						ElementorCriticalBackgroundPreloadManager::class,
 						ElementorBackgroundStylesheetManager::class,
+						ElementorWidgetDeliveryBridge::class,
 					),
 					true
 				)
@@ -146,11 +149,12 @@ final class PluginTest extends TestCase {
 		}
 
 		self::assertTrue( $found_admin );
-		self::assertCount( 5, $frontend_provider_map );
+		self::assertCount( 6, $frontend_provider_map );
 		self::assertArrayHasKey( DeliveryManager::class, $frontend_provider_map );
 		self::assertArrayHasKey( LoadingAttributeManager::class, $frontend_provider_map );
 		self::assertArrayHasKey( ResponsivePreloadManager::class, $frontend_provider_map );
 		self::assertArrayHasKey( ElementorCriticalBackgroundPreloadManager::class, $frontend_provider_map );
 		self::assertArrayHasKey( ElementorBackgroundStylesheetManager::class, $frontend_provider_map );
+		self::assertArrayHasKey( ElementorWidgetDeliveryBridge::class, $frontend_provider_map );
 	}
 }

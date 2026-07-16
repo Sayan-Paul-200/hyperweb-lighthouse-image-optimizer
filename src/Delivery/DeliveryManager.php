@@ -17,13 +17,6 @@ use HyperWeb\LighthouseImageOptimizer\Settings\SettingsRepositoryInterface;
 final class DeliveryManager implements HookProviderInterface {
 
 	/**
-	 * Settings repository.
-	 *
-	 * @var SettingsRepositoryInterface
-	 */
-	private $settings;
-
-	/**
 	 * Attachment image runtime.
 	 *
 	 * @var AttachmentImageRuntimeInterface
@@ -31,53 +24,11 @@ final class DeliveryManager implements HookProviderInterface {
 	private $runtime;
 
 	/**
-	 * Eligibility service.
+	 * Shared image transformer.
 	 *
-	 * @var MarkupEligibility
+	 * @var DeliveryImageTransformer
 	 */
-	private $eligibility;
-
-	/**
-	 * Source extractor.
-	 *
-	 * @var AttachmentImageSourceExtractor
-	 */
-	private $extractor;
-
-	/**
-	 * Source-set builder.
-	 *
-	 * @var SourceSetBuilder
-	 */
-	private $builder;
-
-	/**
-	 * Picture renderer.
-	 *
-	 * @var PictureRenderer
-	 */
-	private $renderer;
-
-	/**
-	 * Request-local transformed markup registry.
-	 *
-	 * @var TransformedMarkupRegistry
-	 */
-	private $registry;
-
-	/**
-	 * Intrinsic dimension repair service.
-	 *
-	 * @var IntrinsicDimensionRepair
-	 */
-	private $dimension_repair;
-
-	/**
-	 * Loading attribute manager.
-	 *
-	 * @var LoadingAttributeManager
-	 */
-	private $loading_attributes;
+	private $transformer;
 
 	/**
 	 * Local uploads attachment resolver.
@@ -99,6 +50,7 @@ final class DeliveryManager implements HookProviderInterface {
 	 * @param IntrinsicDimensionRepair           $dimension_repair Intrinsic dimension repair.
 	 * @param LoadingAttributeManager            $loading_attributes Loading attribute manager.
 	 * @param LocalUploadAttachmentResolver|null $local_uploads Local uploads attachment resolver.
+	 * @param DeliveryImageTransformer|null      $transformer Shared transformer.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $settings,
@@ -110,18 +62,21 @@ final class DeliveryManager implements HookProviderInterface {
 		TransformedMarkupRegistry $registry,
 		IntrinsicDimensionRepair $dimension_repair,
 		LoadingAttributeManager $loading_attributes,
-		?LocalUploadAttachmentResolver $local_uploads = null
+		?LocalUploadAttachmentResolver $local_uploads = null,
+		?DeliveryImageTransformer $transformer = null
 	) {
-		$this->settings           = $settings;
-		$this->runtime            = $runtime;
-		$this->eligibility        = $eligibility;
-		$this->extractor          = $extractor;
-		$this->builder            = $builder;
-		$this->renderer           = $renderer;
-		$this->registry           = $registry;
-		$this->dimension_repair   = $dimension_repair;
-		$this->loading_attributes = $loading_attributes;
-		$this->local_uploads      = $local_uploads;
+		$this->runtime       = $runtime;
+		$this->local_uploads = $local_uploads;
+		$this->transformer   = $transformer ?? new DeliveryImageTransformer(
+			$settings,
+			$eligibility,
+			$extractor,
+			$builder,
+			$renderer,
+			$registry,
+			$dimension_repair,
+			$loading_attributes
+		);
 	}
 
 	/**
@@ -156,6 +111,7 @@ final class DeliveryManager implements HookProviderInterface {
 				'attr'            => $attr,
 				'content_context' => null,
 				'request_context' => $this->runtime->request_context(),
+				'image_meta'      => $this->runtime->attachment_metadata( $attachment_id ),
 			),
 			$this->runtime->requested_image_width( $attachment_id, $size, $attr, $this->runtime->attachment_metadata( $attachment_id ) )
 		);
@@ -191,6 +147,7 @@ final class DeliveryManager implements HookProviderInterface {
 				'content_context' => $context,
 				'request_context' => $this->runtime->request_context(),
 				'url_resolution'  => null !== $resolution ? $resolution->to_array() : null,
+				'image_meta'      => $this->runtime->attachment_metadata( $attachment_id ),
 			),
 			null
 		);
@@ -206,59 +163,6 @@ final class DeliveryManager implements HookProviderInterface {
 	 * @return string
 	 */
 	private function transform_markup( string $html, int $attachment_id, array $context, ?int $known_width ): string {
-		try {
-			if ( ! $this->eligibility->delivery_enabled( $attachment_id, $html, $context ) ) {
-				return $html;
-			}
-
-			if ( ! $this->eligibility->is_eligible( $attachment_id, $html, $context ) ) {
-				return $html;
-			}
-
-			if ( $this->registry->has( $attachment_id, $html ) ) {
-				return $html;
-			}
-
-			$image_meta       = $this->runtime->attachment_metadata( $attachment_id );
-			$dimension_repair = $this->dimension_repair->repair( $attachment_id, $html, $image_meta, $known_width );
-			$html             = $dimension_repair->html();
-			$html             = $this->loading_attributes->apply_to_fallback_markup( $html, $attachment_id );
-			$extraction       = $this->extractor->extract( $html, $known_width );
-
-			if ( ! $extraction->has_sources() || array() === $image_meta ) {
-				return $html;
-			}
-
-			$source_sets = $this->builder->build(
-				new SourceSetBuildRequest( $attachment_id, $extraction->sources(), $image_meta )
-			);
-
-			if ( array() === $source_sets->formats() ) {
-				return $html;
-			}
-
-			$rendered = $this->renderer->render(
-				new PictureRenderRequest(
-					$attachment_id,
-					$html,
-					$source_sets,
-					$this->settings->format_preference(),
-					$dimension_repair->codes()
-				)
-			);
-
-			if ( ! $rendered->is_rendered() ) {
-				return $html;
-			}
-
-			$this->registry->record( $attachment_id, $html );
-			$this->registry->record( $attachment_id, $rendered->html() );
-
-			return $rendered->html();
-		} catch ( \Throwable $exception ) {
-			unset( $exception );
-
-			return $html;
-		}
+		return $this->transformer->transform( $html, $attachment_id, $context, $known_width );
 	}
 }

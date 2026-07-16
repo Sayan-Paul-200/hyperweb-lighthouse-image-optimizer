@@ -72,6 +72,7 @@ use HyperWeb\LighthouseImageOptimizer\Diagnostics\ConflictDiagnostics;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentImageSourceExtractor;
 use HyperWeb\LighthouseImageOptimizer\Delivery\AttachmentSizeResolver;
 use HyperWeb\LighthouseImageOptimizer\Delivery\CriticalImageRegistry;
+use HyperWeb\LighthouseImageOptimizer\Delivery\DeliveryImageTransformer;
 use HyperWeb\LighthouseImageOptimizer\Delivery\DeliveryManager;
 use HyperWeb\LighthouseImageOptimizer\Delivery\IntrinsicDimensionRepair;
 use HyperWeb\LighthouseImageOptimizer\Delivery\LateDiscoveredCriticalImageLocator;
@@ -113,6 +114,7 @@ use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundDeliveryPla
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorCriticalBackgroundPreloadManager;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundStylesheetGenerator;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundStylesheetManager;
+use HyperWeb\LighthouseImageOptimizer\Integration\ElementorWidgetDeliveryBridge;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorWidgetMatcher;
 use HyperWeb\LighthouseImageOptimizer\Integration\Conflict\ConflictDetector;
 use HyperWeb\LighthouseImageOptimizer\Integration\Multisite\MultisiteIntegration;
@@ -400,6 +402,24 @@ final class Plugin {
 			$size_resolver
 		);
 		$dimension_repair             = new IntrinsicDimensionRepair( $size_resolver, $delivery_analyzer );
+		$delivery_eligibility         = new MarkupEligibility(
+			$settings,
+			$delivery_runtime,
+			$delivery_analyzer,
+			$offload_support
+		);
+		$picture_renderer             = new PictureRenderer( $delivery_analyzer );
+		$transformed_markup_registry  = new TransformedMarkupRegistry();
+		$delivery_transformer         = new DeliveryImageTransformer(
+			$settings,
+			$delivery_eligibility,
+			$source_extractor,
+			$source_set_builder,
+			$picture_renderer,
+			$transformed_markup_registry,
+			$dimension_repair,
+			$loading_manager
+		);
 		$content_issue_reports        = new ContentIssueReportService(
 			$settings,
 			$delivery_runtime,
@@ -650,6 +670,14 @@ final class Plugin {
 					$woocommerce_matcher
 				),
 				new ElementorIntegration( $elementor_matcher ),
+				new ElementorWidgetDeliveryBridge(
+					$elementor_runtime,
+					$delivery_runtime,
+					$elementor_matcher,
+					$delivery_transformer,
+					$trusted_markers,
+					$local_upload_resolver
+				),
 				new ReconciliationWorker(
 					$queue,
 					\HyperWeb\LighthouseImageOptimizer\Attachment\AttachmentLockManager::for_wordpress(),
@@ -702,19 +730,15 @@ final class Plugin {
 				new DeliveryManager(
 					$settings,
 					$delivery_runtime,
-					new MarkupEligibility(
-						$settings,
-						$delivery_runtime,
-						$delivery_analyzer,
-						$offload_support
-					),
+					$delivery_eligibility,
 					$source_extractor,
 					$source_set_builder,
-					new PictureRenderer( $delivery_analyzer ),
-					new TransformedMarkupRegistry(),
+					$picture_renderer,
+					$transformed_markup_registry,
 					$dimension_repair,
 					$loading_manager,
-					$local_upload_resolver
+					$local_upload_resolver,
+					$delivery_transformer
 				),
 				new I18n( self::SLUG, dirname( $basename ) . '/languages/' ),
 			)

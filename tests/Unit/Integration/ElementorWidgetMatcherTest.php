@@ -7,6 +7,8 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Integration;
 
+require_once dirname( __DIR__ ) . '/Delivery/DeliveryTestWordPressShim.php';
+
 use HyperWeb\LighthouseImageOptimizer\Delivery\WordPressImageMarkupAnalyzer;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorWidgetMatcher;
 use PHPUnit\Framework\TestCase;
@@ -84,6 +86,26 @@ final class ElementorWidgetMatcherTest extends TestCase {
 		self::assertSame(
 			ElementorWidgetMatcher::MATCH_UNRECOGNIZED,
 			$matcher->match( '<img class="wp-image-777 alignnone size-full" src="https://example.test/wp-content/uploads/2026/07/plain-content.jpg" alt="Plain content image">' )
+		);
+	}
+
+	/**
+	 * Test trusted widget context supports simple static attachment markup.
+	 *
+	 * @return void
+	 */
+	public function test_widget_context_supports_simple_static_attachment_markup(): void {
+		$html    = '<img width="198" height="202" src="https://example.test/wp-content/uploads/2026/04/Group-3.png" class="attachment-large size-large wp-image-6545" alt="">';
+		$matcher = $this->matcher();
+
+		self::assertSame( ElementorWidgetMatcher::MATCH_UNRECOGNIZED, $matcher->match( $html ) );
+		self::assertSame(
+			ElementorWidgetMatcher::MATCH_SUPPORTED_ATTACHMENT_WIDGET,
+			$matcher->match_widget_fragment( $html, 'image', true )
+		);
+		self::assertSame(
+			ElementorWidgetMatcher::MATCH_UNRECOGNIZED,
+			$matcher->match_widget_fragment( $html, 'gallery', true )
 		);
 	}
 

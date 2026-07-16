@@ -64,6 +64,7 @@ final class ElementorScopePolicyTest extends TestCase {
 			'src/Integration/ElementorIntegration.php',
 			'src/Integration/ElementorRuntimeInterface.php',
 			'src/Integration/ElementorUnsupportedBackgroundCase.php',
+			'src/Integration/ElementorWidgetDeliveryBridge.php',
 			'src/Integration/ElementorWidgetMatcher.php',
 			'src/Integration/WordPressElementorBackgroundStylesheetRuntime.php',
 			'src/Integration/WordPressElementorBackgroundStylesheetStore.php',
@@ -99,17 +100,19 @@ final class ElementorScopePolicyTest extends TestCase {
 	 */
 	public function test_elementor_runtime_hooks_and_css_mutation_stay_narrowly_scoped(): void {
 		$forbidden_patterns = array(
-			'frontend enqueue hook' => '/\bwp_enqueue_scripts\b/',
-			'preload head hook'     => '/\bwp_head\b/',
-			'stylesheet enqueue'    => '/\bwp_enqueue_style\s*\(/',
-			'content hook'          => '/\bthe_content\b/',
-			'output buffering'      => '/\bob_start\s*\(/',
-			'REST route'            => '/\bregister_rest_route\s*\(/',
-			'Elementor meta write'  => '/\b(?:update_post_meta|add_post_meta|delete_post_meta)\s*\([^)]*_elementor_/i',
+			'frontend enqueue hook'        => '/\bwp_enqueue_scripts\b/',
+			'preload head hook'            => '/\bwp_head\b/',
+			'Elementor widget render hook' => '/\belementor\/widget\/render_content\b/',
+			'stylesheet enqueue'           => '/\bwp_enqueue_style\s*\(/',
+			'content hook'                 => '/\bthe_content\b/',
+			'output buffering'             => '/\bob_start\s*\(/',
+			'REST route'                   => '/\bregister_rest_route\s*\(/',
+			'Elementor meta write'         => '/\b(?:update_post_meta|add_post_meta|delete_post_meta)\s*\([^)]*_elementor_/i',
 		);
 		$allowed_patterns   = array(
-			'src/Integration/ElementorBackgroundStylesheetManager.php'      => array( 'frontend enqueue hook' ),
-			'src/Integration/ElementorCriticalBackgroundPreloadManager.php' => array( 'preload head hook' ),
+			'src/Integration/ElementorBackgroundStylesheetManager.php'          => array( 'frontend enqueue hook' ),
+			'src/Integration/ElementorCriticalBackgroundPreloadManager.php'     => array( 'preload head hook' ),
+			'src/Integration/ElementorWidgetDeliveryBridge.php'                 => array( 'Elementor widget render hook' ),
 			'src/Integration/WordPressElementorBackgroundStylesheetRuntime.php' => array( 'stylesheet enqueue' ),
 		);
 

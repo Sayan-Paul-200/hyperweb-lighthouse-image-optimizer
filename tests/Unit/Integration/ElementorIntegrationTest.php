@@ -7,6 +7,8 @@
 
 namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Integration;
 
+require_once dirname( __DIR__ ) . '/Delivery/DeliveryTestWordPressShim.php';
+
 use HyperWeb\LighthouseImageOptimizer\Delivery\WordPressImageMarkupAnalyzer;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\HookRegistrar;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorIntegration;

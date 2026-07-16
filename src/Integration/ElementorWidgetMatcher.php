@@ -74,6 +74,30 @@ final class ElementorWidgetMatcher {
 	 * @return string
 	 */
 	public function match( string $html ): string {
+		return $this->match_fragment( $html, '' );
+	}
+
+	/**
+	 * Match one standalone Elementor image fragment with trusted widget context.
+	 *
+	 * @param string $html HTML fragment.
+	 * @param string $widget_name Elementor widget name.
+	 * @param bool   $attachment_backed Whether a trusted resolver has already confirmed attachment backing.
+	 * @return string
+	 */
+	public function match_widget_fragment( string $html, string $widget_name, bool $attachment_backed = false ): string {
+		return $this->match_fragment( $html, $widget_name, $attachment_backed );
+	}
+
+	/**
+	 * Match one standalone Elementor image fragment.
+	 *
+	 * @param string $html HTML fragment.
+	 * @param string $widget_name Elementor widget name, or empty for fragment-only matching.
+	 * @param bool   $attachment_backed Whether a trusted resolver has already confirmed attachment backing.
+	 * @return string
+	 */
+	private function match_fragment( string $html, string $widget_name, bool $attachment_backed = false ): string {
 		if ( ! $this->runtime->is_available() ) {
 			return self::MATCH_UNRECOGNIZED;
 		}
@@ -90,7 +114,7 @@ final class ElementorWidgetMatcher {
 			return self::MATCH_EXCLUDED_GALLERY_OR_CAROUSEL;
 		}
 
-		if ( ! $this->is_supported_attachment_widget_markup( $class_name, $html ) ) {
+		if ( ! $this->is_supported_attachment_widget_markup( $class_name, $html, $widget_name, $attachment_backed ) ) {
 			return self::MATCH_UNRECOGNIZED;
 		}
 
@@ -125,11 +149,17 @@ final class ElementorWidgetMatcher {
 	 *
 	 * @param string $class_name Normalized class string.
 	 * @param string $html Original markup.
+	 * @param string $widget_name Elementor widget name, or empty for fragment-only matching.
+	 * @param bool   $attachment_backed Whether a trusted resolver has already confirmed attachment backing.
 	 * @return bool
 	 */
-	private function is_supported_attachment_widget_markup( string $class_name, string $html ): bool {
-		if ( ! $this->has_attachment_marker( $class_name, $html ) ) {
+	private function is_supported_attachment_widget_markup( string $class_name, string $html, string $widget_name = '', bool $attachment_backed = false ): bool {
+		if ( ! $attachment_backed && ! $this->has_attachment_marker( $class_name, $html ) ) {
 			return false;
+		}
+
+		if ( $this->is_supported_static_widget_name( $widget_name ) ) {
+			return true;
 		}
 
 		if (
@@ -142,6 +172,20 @@ final class ElementorWidgetMatcher {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Determine whether one Elementor widget name is in the static-image allowlist.
+	 *
+	 * @param string $widget_name Widget name.
+	 * @return bool
+	 */
+	private function is_supported_static_widget_name( string $widget_name ): bool {
+		return in_array(
+			strtolower( trim( $widget_name ) ),
+			array( 'image', 'image-box', 'call-to-action' ),
+			true
+		);
 	}
 
 	/**
