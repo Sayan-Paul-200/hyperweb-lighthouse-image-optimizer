@@ -215,6 +215,7 @@ final class ContentIssueReportService {
 				$this->below_the_fold_eager_loading_finding( $occurrence, $critical_ids ),
 				$this->external_image_finding( $occurrence ),
 				$this->animated_gif_finding( $occurrence ),
+				$this->local_unregistered_url_finding( $occurrence ),
 				$this->broken_image_url_finding( $occurrence ),
 				$this->css_background_image_finding( $occurrence ),
 			) as $finding
@@ -602,6 +603,44 @@ final class ContentIssueReportService {
 				'relative_path' => $local['relative_path'],
 				'readable'      => $this->files->is_readable( $local['absolute_path'] ),
 			)
+		);
+	}
+
+	/**
+	 * Report local uploads URLs that are not currently attachment-backed.
+	 *
+	 * @param InventoryOccurrence $occurrence Occurrence.
+	 * @return ImageIssueFinding|null
+	 */
+	private function local_unregistered_url_finding( InventoryOccurrence $occurrence ): ?ImageIssueFinding {
+		if ( PageInventoryItem::ORIGIN_LOCAL_UNREGISTERED !== $occurrence->origin() ) {
+			return null;
+		}
+
+		$local    = $this->local_file_reference( $occurrence );
+		$evidence = array(
+			'url' => $occurrence->url(),
+		);
+
+		if ( is_array( $local ) && ! empty( $local['relative_path'] ) ) {
+			$evidence['relative_path'] = $local['relative_path'];
+		}
+
+		$occurrence_evidence = $occurrence->evidence();
+
+		if ( isset( $occurrence_evidence['url_resolution'] ) && is_array( $occurrence_evidence['url_resolution'] ) ) {
+			$evidence['url_resolution'] = $occurrence_evidence['url_resolution'];
+		}
+
+		return new ImageIssueFinding(
+			'local_unregistered_url',
+			ImageIssueFinding::SEVERITY_LOW,
+			'Unregistered local image URL',
+			'This occurrence points at a local uploads image URL, but it is not currently trusted as attachment-backed markup for automatic modern-format delivery.',
+			'Add a trustworthy attachment marker, replace the raw URL with normal attachment image output, or leave it unchanged when the original request is intentional.',
+			array( $occurrence->id() ),
+			array(),
+			$evidence
 		);
 	}
 

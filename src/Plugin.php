@@ -75,6 +75,7 @@ use HyperWeb\LighthouseImageOptimizer\Delivery\CriticalImageRegistry;
 use HyperWeb\LighthouseImageOptimizer\Delivery\DeliveryManager;
 use HyperWeb\LighthouseImageOptimizer\Delivery\IntrinsicDimensionRepair;
 use HyperWeb\LighthouseImageOptimizer\Delivery\LateDiscoveredCriticalImageLocator;
+use HyperWeb\LighthouseImageOptimizer\Delivery\LocalUploadAttachmentResolver;
 use HyperWeb\LighthouseImageOptimizer\Delivery\LoadingAttributeManager;
 use HyperWeb\LighthouseImageOptimizer\Delivery\MarkupEligibility;
 use HyperWeb\LighthouseImageOptimizer\Delivery\PictureRenderer;
@@ -296,6 +297,7 @@ final class Plugin {
 		$media_reader                 = new AttachmentStatusReader( $meta );
 		$content_inventory_runtime    = new WordPressContentInventoryRuntime();
 		$trusted_markers              = new TrustedAttachmentMarkerParser();
+		$local_upload_resolver        = LocalUploadAttachmentResolver::for_wordpress( $trusted_markers );
 		$bulk_sessions                = new WordPressTransientBulkScanSessionStore( new WordPressTransientStore() );
 		$bulk_runtime                 = new WordPressBulkScannerRuntime();
 		$bulk_scans                   = new BulkScanService(
@@ -365,7 +367,8 @@ final class Plugin {
 			$media_reader,
 			$elementor_document_store,
 			new ElementorBackgroundDiscovery( $elementor_document_store ),
-			$trusted_markers
+			$trusted_markers,
+			$local_upload_resolver
 		);
 		$pagespeed_reports            = new PageSpeedInsightsService(
 			$settings,
@@ -710,7 +713,8 @@ final class Plugin {
 					new PictureRenderer( $delivery_analyzer ),
 					new TransformedMarkupRegistry(),
 					$dimension_repair,
-					$loading_manager
+					$loading_manager,
+					$local_upload_resolver
 				),
 				new I18n( self::SLUG, dirname( $basename ) . '/languages/' ),
 			)

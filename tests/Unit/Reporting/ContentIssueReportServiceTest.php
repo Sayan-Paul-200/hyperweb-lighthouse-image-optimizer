@@ -211,6 +211,39 @@ final class ContentIssueReportServiceTest extends TestCase {
 	}
 
 	/**
+	 * Test local unregistered uploads URLs are reported as delivery coverage findings.
+	 *
+	 * @return void
+	 */
+	public function test_report_detects_local_unregistered_uploads_urls(): void {
+		$runtime              = new FakeContentInventoryRuntime();
+		$runtime->content[78] = array(
+			'type'   => 'page',
+			'status' => 'publish',
+			'title'  => 'Raw local URL',
+			'body'   => '<img src="https://example.test/wp-content/uploads/2026/07/raw-local.jpg" width="800" height="600">',
+		);
+
+		$uploads = new FakeUploadsUrlRuntime();
+		$files   = new FakeImageFileProbe( array( 'C:/site/wp-content/uploads' ) );
+		$files->add_file( 'C:/site/wp-content/uploads/2026/07/raw-local.jpg', 32000, 1783526400, 'image/jpeg', 800, 600 );
+
+		$report = $this->issue_service(
+			new FakeSettingsRepository( array( 'enabled_formats' => array( 'webp' ) ) ),
+			new FakeAttachmentImageRuntime(),
+			$uploads,
+			$files,
+			new FakeAnimationDetector(),
+			new FakeCriticalImagePostMetaStore()
+		)->report( $this->inventory_service( $runtime, new FakeAttachmentMetaStore() )->inspect( 78 ) )->to_array();
+
+		$codes = array_column( $report, 'code' );
+
+		self::assertContains( 'local_unregistered_url', $codes );
+		self::assertNotContains( 'broken_image_url', $codes );
+	}
+
+	/**
 	 * Test excluded attachments skip derivative-missing findings while Elementor backgrounds still report advisory issues.
 	 *
 	 * @return void

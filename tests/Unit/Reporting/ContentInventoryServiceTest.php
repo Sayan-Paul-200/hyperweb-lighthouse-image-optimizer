@@ -8,6 +8,7 @@
 namespace HyperWeb\LighthouseImageOptimizer\Tests\Unit\Reporting;
 
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
+use HyperWeb\LighthouseImageOptimizer\Delivery\LocalUploadAttachmentResolver;
 use HyperWeb\LighthouseImageOptimizer\Infrastructure\LifecyclePolicy;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundDiscovery;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorDocumentData;
@@ -58,6 +59,47 @@ final class ContentInventoryServiceTest extends TestCase {
 		self::assertSame( 'unknown', $report['items'][3]['origin'] );
 		self::assertCount( 1, $report['unsupported'] );
 		self::assertSame( 'content_non_classifiable_reference', $report['unsupported'][0]['code'] );
+	}
+
+	/**
+	 * Test raw local uploads URLs can resolve to trusted attachment-backed inventory.
+	 *
+	 * @return void
+	 */
+	public function test_raw_local_uploads_urls_can_resolve_to_attachment_backed_inventory(): void {
+		$runtime              = new FakeContentInventoryRuntime();
+		$runtime->content[56] = array(
+			'type'   => 'page',
+			'status' => 'publish',
+			'title'  => 'Landing page',
+			'body'   => '<img src="https://example.test/wp-content/uploads/2026/07/hero.jpg" width="1200" alt="Hero"><img src="https://example.test/wp-content/uploads/2026/07/unregistered.jpg" alt="Unregistered">',
+		);
+		$meta                 = new FakeAttachmentMetaStore();
+		$meta->meta[321][ LifecyclePolicy::META_STATUS ] = array(
+			'state'    => 'optimized',
+			'formats'  => array( 'webp' ),
+			'excluded' => false,
+		);
+		$resolver                                        = new LocalUploadAttachmentResolver(
+			static function (): string {
+				return 'https://example.test/wp-content/uploads';
+			},
+			static function ( string $url ): int {
+				return 'https://example.test/wp-content/uploads/2026/07/hero.jpg' === $url ? 321 : 0;
+			}
+		);
+
+		$report = $this->service( $runtime, $meta, null, $resolver )->report( 56 )->to_array();
+
+		self::assertSame( 2, $report['summary']['total_items'] );
+		self::assertSame( 1, $report['summary']['by_origin']['local_attachment'] );
+		self::assertSame( 1, $report['summary']['by_origin']['local_unregistered_url'] );
+		self::assertSame( 321, $report['items'][0]['attachment_id'] );
+		self::assertSame( 'resolved_upload_url', $report['items'][0]['evidence']['marker'] );
+		self::assertSame( 'resolved_upload_url', $report['items'][0]['evidence']['url_resolution_code'] );
+		self::assertSame( '2026/07/hero.jpg', $report['items'][0]['evidence']['resolved_relative_path'] );
+		self::assertSame( 'local_unregistered_url', $report['items'][1]['origin'] );
+		self::assertSame( 'unresolved', $report['items'][1]['evidence']['url_resolution_code'] );
 	}
 
 	/**
@@ -145,12 +187,14 @@ final class ContentInventoryServiceTest extends TestCase {
 	 * @param FakeContentInventoryRuntime|null    $runtime Runtime.
 	 * @param FakeAttachmentMetaStore|null        $meta Meta store.
 	 * @param FakeElementorDocumentDataStore|null $store Elementor store.
+	 * @param LocalUploadAttachmentResolver|null  $local_uploads Local uploads resolver.
 	 * @return ContentInventoryService
 	 */
 	private function service(
 		?FakeContentInventoryRuntime $runtime = null,
 		?FakeAttachmentMetaStore $meta = null,
-		?FakeElementorDocumentDataStore $store = null
+		?FakeElementorDocumentDataStore $store = null,
+		?LocalUploadAttachmentResolver $local_uploads = null
 	): ContentInventoryService {
 		$runtime = $runtime ?? new FakeContentInventoryRuntime();
 		$meta    = $meta ?? new FakeAttachmentMetaStore();
@@ -161,7 +205,8 @@ final class ContentInventoryServiceTest extends TestCase {
 			new AttachmentStatusReader( $meta ),
 			$store,
 			new ElementorBackgroundDiscovery( $store ),
-			new TrustedAttachmentMarkerParser()
+			new TrustedAttachmentMarkerParser(),
+			$local_uploads
 		);
 	}
 

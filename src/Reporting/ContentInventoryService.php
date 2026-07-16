@@ -8,6 +8,8 @@
 namespace HyperWeb\LighthouseImageOptimizer\Reporting;
 
 use HyperWeb\LighthouseImageOptimizer\Admin\MediaLibrary\AttachmentStatusReader;
+use HyperWeb\LighthouseImageOptimizer\Delivery\LocalUploadAttachmentResolution;
+use HyperWeb\LighthouseImageOptimizer\Delivery\LocalUploadAttachmentResolver;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundDiscovery;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorBackgroundSource;
 use HyperWeb\LighthouseImageOptimizer\Integration\ElementorDocumentDataStoreInterface;
@@ -54,6 +56,13 @@ final class ContentInventoryService {
 	private $markers;
 
 	/**
+	 * Local uploads attachment resolver.
+	 *
+	 * @var LocalUploadAttachmentResolver|null
+	 */
+	private $local_uploads;
+
+	/**
 	 * Create service.
 	 *
 	 * @param ContentInventoryRuntimeInterface    $runtime Runtime seam.
@@ -61,19 +70,22 @@ final class ContentInventoryService {
 	 * @param ElementorDocumentDataStoreInterface $elementor_documents Elementor document store.
 	 * @param ElementorBackgroundDiscovery        $elementor_backgrounds Background discovery.
 	 * @param TrustedAttachmentMarkerParser       $markers Marker parser.
+	 * @param LocalUploadAttachmentResolver|null  $local_uploads Local uploads attachment resolver.
 	 */
 	public function __construct(
 		ContentInventoryRuntimeInterface $runtime,
 		AttachmentStatusReader $attachments,
 		ElementorDocumentDataStoreInterface $elementor_documents,
 		ElementorBackgroundDiscovery $elementor_backgrounds,
-		TrustedAttachmentMarkerParser $markers
+		TrustedAttachmentMarkerParser $markers,
+		?LocalUploadAttachmentResolver $local_uploads = null
 	) {
 		$this->runtime               = $runtime;
 		$this->attachments           = $attachments;
 		$this->elementor_documents   = $elementor_documents;
 		$this->elementor_backgrounds = $elementor_backgrounds;
 		$this->markers               = $markers;
+		$this->local_uploads         = $local_uploads;
 	}
 
 	/**
@@ -230,8 +242,26 @@ final class ContentInventoryService {
 			'occurrence' => $occurrence,
 		);
 
+		if ( $attachment_id < 1 && null !== $this->local_uploads ) {
+			$resolution = $this->local_uploads->resolve( $fragment );
+
+			if ( $resolution->is_resolved() ) {
+				$attachment_id                      = $resolution->attachment_id();
+				$evidence['url_resolution']         = $resolution->to_array();
+				$evidence['url_resolution_code']    = $resolution->code();
+				$evidence['resolved_relative_path'] = $resolution->relative_path();
+			} elseif ( LocalUploadAttachmentResolution::CODE_UNRESOLVED === $resolution->code() && '' !== $resolution->relative_path() ) {
+				$evidence['url_resolution']         = $resolution->to_array();
+				$evidence['url_resolution_code']    = $resolution->code();
+				$evidence['resolved_relative_path'] = $resolution->relative_path();
+			}
+		}
+
 		if ( $attachment_id > 0 ) {
-			$evidence['marker'] = 'trusted_attachment';
+			$resolution_code    = isset( $evidence['url_resolution_code'] ) ? (string) $evidence['url_resolution_code'] : '';
+			$evidence['marker'] = '' !== $resolution_code
+				? $resolution_code
+				: 'trusted_attachment';
 
 			return new InventoryOccurrence(
 				$id,

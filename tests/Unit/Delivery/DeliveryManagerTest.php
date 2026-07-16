@@ -18,6 +18,7 @@ use HyperWeb\LighthouseImageOptimizer\Delivery\DeliveryManager;
 use HyperWeb\LighthouseImageOptimizer\Delivery\DerivativeUrlResolver;
 use HyperWeb\LighthouseImageOptimizer\Delivery\IntrinsicDimensionRepair;
 use HyperWeb\LighthouseImageOptimizer\Delivery\LoadingAttributeManager;
+use HyperWeb\LighthouseImageOptimizer\Delivery\LocalUploadAttachmentResolver;
 use HyperWeb\LighthouseImageOptimizer\Delivery\MarkupEligibility;
 use HyperWeb\LighthouseImageOptimizer\Delivery\PictureRenderer;
 use HyperWeb\LighthouseImageOptimizer\Delivery\SourceSetBuilder;
@@ -387,6 +388,29 @@ final class DeliveryManagerTest extends TestCase {
 	}
 
 	/**
+	 * Test unresolved content images with resolvable local uploads URLs render picture markup.
+	 *
+	 * @return void
+	 */
+	public function test_unresolved_content_images_with_resolvable_local_uploads_urls_render_picture_markup(): void {
+		$html     = '<img class="alignnone size-full" src="https://example.test/wp-content/uploads/2026/07/hero.jpg" srcset="https://example.test/wp-content/uploads/2026/07/hero-150x100.jpg 150w, https://example.test/wp-content/uploads/2026/07/hero.jpg 2400w" sizes="100vw" width="2400" height="1600" alt="Hero" data-large_image="https://example.test/wp-content/uploads/2026/07/hero.jpg">';
+		$resolver = new LocalUploadAttachmentResolver(
+			static function (): string {
+				return 'https://example.test/wp-content/uploads';
+			},
+			static function (): int {
+				return self::ATTACHMENT_ID;
+			}
+		);
+		$result   = $this->manager( $this->runtime(), null, true, $resolver )->filter_content_img_tag( $html, 'the_content', 0 );
+
+		self::assertStringStartsWith( '<picture class="hwlio-picture">', $result );
+		self::assertStringContainsString( $html, $result );
+		self::assertStringContainsString( '<source type="image/webp"', $result );
+		self::assertStringContainsString( 'data-large_image="https://example.test/wp-content/uploads/2026/07/hero.jpg"', $result );
+	}
+
+	/**
 	 * Test content images without valid derivatives still receive certain intrinsic-dimension repair.
 	 *
 	 * @return void
@@ -481,15 +505,17 @@ final class DeliveryManagerTest extends TestCase {
 	/**
 	 * Build manager.
 	 *
-	 * @param FakeAttachmentImageRuntime  $runtime Runtime seam.
-	 * @param FakeSettingsRepository|null $settings Settings repository.
-	 * @param bool                        $with_derivatives Whether derivatives exist.
+	 * @param FakeAttachmentImageRuntime         $runtime Runtime seam.
+	 * @param FakeSettingsRepository|null        $settings Settings repository.
+	 * @param bool                               $with_derivatives Whether derivatives exist.
+	 * @param LocalUploadAttachmentResolver|null $local_uploads Local uploads resolver.
 	 * @return DeliveryManager
 	 */
 	private function manager(
 		FakeAttachmentImageRuntime $runtime,
 		?FakeSettingsRepository $settings = null,
-		bool $with_derivatives = true
+		bool $with_derivatives = true,
+		?LocalUploadAttachmentResolver $local_uploads = null
 	): DeliveryManager {
 		$settings          = $settings ?? new FakeSettingsRepository( array( 'delivery_enabled' => true ) );
 		$runtime->metadata = $this->image_meta();
@@ -527,7 +553,8 @@ final class DeliveryManagerTest extends TestCase {
 				new CriticalImageRegistry( $runtime, $settings, new FakeCriticalImagePostMetaStore() ),
 				$runtime,
 				$analyzer
-			)
+			),
+			$local_uploads
 		);
 	}
 

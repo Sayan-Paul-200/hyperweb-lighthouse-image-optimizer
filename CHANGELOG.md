@@ -59,6 +59,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added optional manual PageSpeed Insights integration with separate autoload-disabled API-key storage, cached per-content PSI summaries, dedicated cached/live REST routes, and Diagnostics/Settings tab controls.
 - Added bounded WP-CLI bulk/dev-ops commands for scan, queue, retry-failures, reconcile-stale, prune-logs, and cleanup dry-run, backed by shared reconciliation queueing and streamed table progress.
 - Added a canonical public developer extension guide covering stable hooks/actions, owned storage boundaries, integration recipes, and rollback/fail-open guarantees, while keeping the CDN/offload contract as a focused appendix.
+- Added safe local uploads URL attachment resolution for unresolved `wp_content_img_tag` fragments, plus Diagnostics inventory evidence for resolved and unresolved local uploads URLs.
 
 ### Removed
 
@@ -75,6 +76,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Fixed bulk queueing creating an immediate Action Scheduler burst by pacing bulk optimization jobs with scheduled delays based on the configured queue concurrency.
 - Fixed completed bulk queue summaries disappearing after a page refresh and requested a dashboard statistics refresh when bulk queueing completes.
 - Fixed dashboard statistics recalculation missing normal Media Library attachments by explicitly including the `inherit` attachment status.
+- Fixed some parser-loaded original image coverage gaps by allowing same-site uploads URLs to resolve to attachment-backed delivery when WordPress did not pass an attachment ID.
 
 ### Notes
 

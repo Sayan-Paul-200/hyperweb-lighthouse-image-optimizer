@@ -80,17 +80,25 @@ final class DeliveryManager implements HookProviderInterface {
 	private $loading_attributes;
 
 	/**
+	 * Local uploads attachment resolver.
+	 *
+	 * @var LocalUploadAttachmentResolver|null
+	 */
+	private $local_uploads;
+
+	/**
 	 * Create provider.
 	 *
-	 * @param SettingsRepositoryInterface     $settings Settings repository.
-	 * @param AttachmentImageRuntimeInterface $runtime Runtime seam.
-	 * @param MarkupEligibility               $eligibility Eligibility service.
-	 * @param AttachmentImageSourceExtractor  $extractor Source extractor.
-	 * @param SourceSetBuilder                $builder Source-set builder.
-	 * @param PictureRenderer                 $renderer Picture renderer.
-	 * @param TransformedMarkupRegistry       $registry Request-local registry.
-	 * @param IntrinsicDimensionRepair        $dimension_repair Intrinsic dimension repair.
-	 * @param LoadingAttributeManager         $loading_attributes Loading attribute manager.
+	 * @param SettingsRepositoryInterface        $settings Settings repository.
+	 * @param AttachmentImageRuntimeInterface    $runtime Runtime seam.
+	 * @param MarkupEligibility                  $eligibility Eligibility service.
+	 * @param AttachmentImageSourceExtractor     $extractor Source extractor.
+	 * @param SourceSetBuilder                   $builder Source-set builder.
+	 * @param PictureRenderer                    $renderer Picture renderer.
+	 * @param TransformedMarkupRegistry          $registry Request-local registry.
+	 * @param IntrinsicDimensionRepair           $dimension_repair Intrinsic dimension repair.
+	 * @param LoadingAttributeManager            $loading_attributes Loading attribute manager.
+	 * @param LocalUploadAttachmentResolver|null $local_uploads Local uploads attachment resolver.
 	 */
 	public function __construct(
 		SettingsRepositoryInterface $settings,
@@ -101,7 +109,8 @@ final class DeliveryManager implements HookProviderInterface {
 		PictureRenderer $renderer,
 		TransformedMarkupRegistry $registry,
 		IntrinsicDimensionRepair $dimension_repair,
-		LoadingAttributeManager $loading_attributes
+		LoadingAttributeManager $loading_attributes,
+		?LocalUploadAttachmentResolver $local_uploads = null
 	) {
 		$this->settings           = $settings;
 		$this->runtime            = $runtime;
@@ -112,6 +121,7 @@ final class DeliveryManager implements HookProviderInterface {
 		$this->registry           = $registry;
 		$this->dimension_repair   = $dimension_repair;
 		$this->loading_attributes = $loading_attributes;
+		$this->local_uploads      = $local_uploads;
 	}
 
 	/**
@@ -160,6 +170,16 @@ final class DeliveryManager implements HookProviderInterface {
 	 * @return string
 	 */
 	public function filter_content_img_tag( string $html, string $context, int $attachment_id ): string {
+		$resolution = null;
+
+		if ( $attachment_id < 1 && null !== $this->local_uploads ) {
+			$resolution = $this->local_uploads->resolve( $html );
+
+			if ( $resolution->is_resolved() ) {
+				$attachment_id = $resolution->attachment_id();
+			}
+		}
+
 		return $this->transform_markup(
 			$html,
 			$attachment_id,
@@ -170,6 +190,7 @@ final class DeliveryManager implements HookProviderInterface {
 				'attr'            => array(),
 				'content_context' => $context,
 				'request_context' => $this->runtime->request_context(),
+				'url_resolution'  => null !== $resolution ? $resolution->to_array() : null,
 			),
 			null
 		);
