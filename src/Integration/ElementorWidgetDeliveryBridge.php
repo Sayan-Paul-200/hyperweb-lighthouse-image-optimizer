@@ -115,7 +115,7 @@ final class ElementorWidgetDeliveryBridge implements HookProviderInterface {
 
 		$widget_name = $this->widget_name( $widget );
 
-		if ( ! in_array( $widget_name, array( 'image', 'image-box', 'call-to-action' ), true ) ) {
+		if ( ! in_array( $widget_name, ElementorWidgetMatcher::SUPPORTED_STATIC_WIDGET_NAMES, true ) ) {
 			return $content;
 		}
 
@@ -151,14 +151,15 @@ final class ElementorWidgetDeliveryBridge implements HookProviderInterface {
 			$html,
 			$attachment_id,
 			array(
-				'hook'            => 'elementor/widget/render_content',
-				'size'            => null,
-				'icon'            => false,
-				'attr'            => array(),
-				'content_context' => $widget_name,
-				'request_context' => $this->runtime->request_context(),
-				'url_resolution'  => null !== $resolution ? $resolution->to_array() : null,
-				'image_meta'      => $this->runtime->attachment_metadata( $attachment_id ),
+				'hook'                    => 'elementor/widget/render_content',
+				'size'                    => null,
+				'icon'                    => false,
+				'attr'                    => array(),
+				'content_context'         => $widget_name,
+				'request_context'         => $this->runtime->request_context(),
+				'url_resolution'          => null !== $resolution ? $resolution->to_array() : null,
+				'image_meta'              => $this->runtime->attachment_metadata( $attachment_id ),
+				'allow_repeated_original' => true,
 			),
 			null
 		);

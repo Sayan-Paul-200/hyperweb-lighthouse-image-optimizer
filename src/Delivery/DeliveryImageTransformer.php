@@ -121,7 +121,7 @@ final class DeliveryImageTransformer {
 				return $html;
 			}
 
-			if ( $this->registry->has( $attachment_id, $html ) ) {
+			if ( ! $this->allow_repeated_original( $context ) && $this->registry->has( $attachment_id, $html ) ) {
 				return $html;
 			}
 
@@ -180,5 +180,15 @@ final class DeliveryImageTransformer {
 		}
 
 		return array();
+	}
+
+	/**
+	 * Whether a trusted isolated caller may transform repeated identical original markup.
+	 *
+	 * @param array<string,mixed> $context Transform context.
+	 * @return bool
+	 */
+	private function allow_repeated_original( array $context ): bool {
+		return ! empty( $context['allow_repeated_original'] );
 	}
 }

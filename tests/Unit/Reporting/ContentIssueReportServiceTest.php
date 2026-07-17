@@ -348,6 +348,29 @@ final class ContentIssueReportServiceTest extends TestCase {
 
 		self::assertContains( 'css_background_image', $codes );
 		self::assertNotContains( 'missing_modern_derivative', $codes );
+
+		$background_finding = $this->finding_by_code( $report, 'css_background_image' );
+
+		self::assertSame( 'attachment_excluded', $background_finding['evidence']['delivery_readiness'] );
+		self::assertSame( 'excluded', $background_finding['evidence']['attachment_state'] );
+		self::assertSame( array( 'webp' ), $background_finding['evidence']['enabled_formats'] );
+	}
+
+	/**
+	 * Find one report entry by stable code.
+	 *
+	 * @param array<int,array<string,mixed>> $report Report data.
+	 * @param string                         $code Finding code.
+	 * @return array<string,mixed>
+	 */
+	private function finding_by_code( array $report, string $code ): array {
+		foreach ( $report as $finding ) {
+			if ( isset( $finding['code'] ) && $code === $finding['code'] ) {
+				return $finding;
+			}
+		}
+
+		self::fail( 'Finding not found: ' . $code );
 	}
 
 	/**

@@ -655,20 +655,61 @@ final class ContentIssueReportService {
 			return null;
 		}
 
+		$attachment = $occurrence->attachment();
+		$evidence   = array(
+			'device'        => $occurrence->evidence()['device'] ?? null,
+			'setting_group' => $occurrence->evidence()['setting_group'] ?? null,
+			'element_id'    => $occurrence->evidence()['element_id'] ?? null,
+		);
+
+		if ( is_array( $attachment ) ) {
+			$enabled_formats = $this->settings->enabled_formats();
+			$ready_formats   = isset( $attachment['ready_formats'] ) && is_array( $attachment['ready_formats'] ) ? array_values( $attachment['ready_formats'] ) : array();
+			$missing_formats = array_values( array_diff( $enabled_formats, $ready_formats ) );
+
+			$evidence['attachment_state']   = isset( $attachment['state'] ) && is_string( $attachment['state'] ) ? $attachment['state'] : AttachmentStatus::STATE_UNPROCESSED;
+			$evidence['enabled_formats']    = $enabled_formats;
+			$evidence['ready_formats']      = $ready_formats;
+			$evidence['missing_formats']    = $missing_formats;
+			$evidence['delivery_readiness'] = $this->background_delivery_readiness( $attachment, $enabled_formats, $missing_formats );
+		} else {
+			$evidence['delivery_readiness'] = 'no_trusted_attachment';
+		}
+
 		return new ImageIssueFinding(
 			'css_background_image',
 			ImageIssueFinding::SEVERITY_LOW,
 			'CSS background image',
 			'This image is used through a structured Elementor background configuration, so it is not part of ordinary inline image markup analysis.',
-			'Review background-image usage carefully because delivery, loading, and responsive behavior differ from inline attachment markup.',
+			'Review the readiness evidence to see whether companion background delivery can use ready derivatives or whether this background still falls back to Elementor CSS.',
 			array( $occurrence->id() ),
 			null !== $occurrence->attachment_id() ? array( $occurrence->attachment_id() ) : array(),
-			array(
-				'device'        => $occurrence->evidence()['device'] ?? null,
-				'setting_group' => $occurrence->evidence()['setting_group'] ?? null,
-				'element_id'    => $occurrence->evidence()['element_id'] ?? null,
-			)
+			$evidence
 		);
+	}
+
+	/**
+	 * Classify structured background derivative readiness for reporting.
+	 *
+	 * @param array<string,mixed> $attachment Attachment summary.
+	 * @param string[]            $enabled_formats Enabled format keys.
+	 * @param string[]            $missing_formats Missing format keys.
+	 * @return string
+	 */
+	private function background_delivery_readiness( array $attachment, array $enabled_formats, array $missing_formats ): string {
+		if ( ! empty( $attachment['excluded'] ) ) {
+			return 'attachment_excluded';
+		}
+
+		if ( array() === $enabled_formats ) {
+			return 'no_enabled_formats';
+		}
+
+		if ( array() === $missing_formats ) {
+			return 'ready_derivatives_available';
+		}
+
+		return 'missing_ready_derivatives';
 	}
 
 	/**

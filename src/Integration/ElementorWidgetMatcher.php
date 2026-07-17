@@ -43,6 +43,18 @@ final class ElementorWidgetMatcher {
 	public const MATCH_UNRECOGNIZED = 'unrecognized';
 
 	/**
+	 * Static attachment-widget names supported by the narrow Elementor delivery bridge.
+	 *
+	 * @var string[]
+	 */
+	public const SUPPORTED_STATIC_WIDGET_NAMES = array(
+		'image',
+		'image-box',
+		'call-to-action',
+		'theme-site-logo',
+	);
+
+	/**
 	 * Runtime seam.
 	 *
 	 * @var ElementorRuntimeInterface
@@ -183,7 +195,7 @@ final class ElementorWidgetMatcher {
 	private function is_supported_static_widget_name( string $widget_name ): bool {
 		return in_array(
 			strtolower( trim( $widget_name ) ),
-			array( 'image', 'image-box', 'call-to-action' ),
+			self::SUPPORTED_STATIC_WIDGET_NAMES,
 			true
 		);
 	}

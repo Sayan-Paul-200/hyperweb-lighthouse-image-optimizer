@@ -60,7 +60,8 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Added bounded WP-CLI bulk/dev-ops commands for scan, queue, retry-failures, reconcile-stale, prune-logs, and cleanup dry-run, backed by shared reconciliation queueing and streamed table progress.
 - Added a canonical public developer extension guide covering stable hooks/actions, owned storage boundaries, integration recipes, and rollback/fail-open guarantees, while keeping the CDN/offload contract as a focused appendix.
 - Added safe local uploads URL attachment resolution for unresolved `wp_content_img_tag` fragments, plus Diagnostics inventory evidence for resolved and unresolved local uploads URLs.
-- Added a narrow Elementor widget-content delivery bridge for confirmed static Image, Image Box, and CTA attachment widgets, reusing the existing picture-delivery pipeline while preserving wrappers and lightbox/script data unchanged.
+- Added a narrow Elementor widget-content delivery bridge for confirmed static Image, Image Box, CTA, and site-logo attachment widgets, reusing the existing picture-delivery pipeline while preserving wrappers and lightbox/script data unchanged.
+- Added richer Diagnostics readiness evidence for structured Elementor background findings so reports can distinguish ready derivatives, missing derivatives, disabled formats, and excluded attachments.
 
 ### Removed
 
@@ -78,6 +79,7 @@ The format is based on Keep a Changelog, and this project will use semantic vers
 - Fixed completed bulk queue summaries disappearing after a page refresh and requested a dashboard statistics refresh when bulk queueing completes.
 - Fixed dashboard statistics recalculation missing normal Media Library attachments by explicitly including the `inherit` attachment status.
 - Fixed some parser-loaded original image coverage gaps by allowing same-site uploads URLs to resolve to attachment-backed delivery when WordPress did not pass an attachment ID.
+- Fixed repeated identical Elementor static widget images being skipped after the first instance by allowing the isolated Elementor widget bridge to transform repeated originals while preserving duplicate protection for normal WordPress hook paths.
 - Fixed additional Elementor-rendered static image widget coverage gaps where attachment-backed widget markup bypassed WordPress image/content image filters.
 
 ### Notes

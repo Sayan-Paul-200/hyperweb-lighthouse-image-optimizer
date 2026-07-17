@@ -104,6 +104,10 @@ final class ElementorWidgetMatcherTest extends TestCase {
 			$matcher->match_widget_fragment( $html, 'image', true )
 		);
 		self::assertSame(
+			ElementorWidgetMatcher::MATCH_SUPPORTED_ATTACHMENT_WIDGET,
+			$matcher->match_widget_fragment( $html, 'theme-site-logo', true )
+		);
+		self::assertSame(
 			ElementorWidgetMatcher::MATCH_UNRECOGNIZED,
 			$matcher->match_widget_fragment( $html, 'gallery', true )
 		);
